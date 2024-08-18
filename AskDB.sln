@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34511.84
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AskDB", "AskDB\AskDB.csproj", "{9CBDAA1A-CDD4-46F8-BBA9-3FD5D3836BD8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Helper", "Helper\Helper.csproj", "{0A0B43CC-EC75-42CF-AFC2-5FB1285C17B9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gemini API Helper", "Gemini API Helper\Gemini API Helper.csproj", "{ED1BA258-4CAF-4B7F-AC21-A1481B64298B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GenAI", "GenAI\GenAI.csproj", "{841A58B0-71C1-4F85-96AD-8B1C7064D3B7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Functions", "Functions\Functions.csproj", "{6B34B840-E096-4FCE-B86C-430904F777C2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseAnalyzer", "DatabaseAnalyzer\DatabaseAnalyzer.csproj", "{36798E15-04F6-4DF2-A74B-E40BA5DF816C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AskDB.Server", "AskDB.Server\AskDB.Server.csproj", "{B630436A-DD61-4A32-973B-76E80B55BC05}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,18 +17,22 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{9CBDAA1A-CDD4-46F8-BBA9-3FD5D3836BD8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9CBDAA1A-CDD4-46F8-BBA9-3FD5D3836BD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9CBDAA1A-CDD4-46F8-BBA9-3FD5D3836BD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9CBDAA1A-CDD4-46F8-BBA9-3FD5D3836BD8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{ED1BA258-4CAF-4B7F-AC21-A1481B64298B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{ED1BA258-4CAF-4B7F-AC21-A1481B64298B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{ED1BA258-4CAF-4B7F-AC21-A1481B64298B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{ED1BA258-4CAF-4B7F-AC21-A1481B64298B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6B34B840-E096-4FCE-B86C-430904F777C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6B34B840-E096-4FCE-B86C-430904F777C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6B34B840-E096-4FCE-B86C-430904F777C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6B34B840-E096-4FCE-B86C-430904F777C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A0B43CC-EC75-42CF-AFC2-5FB1285C17B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A0B43CC-EC75-42CF-AFC2-5FB1285C17B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A0B43CC-EC75-42CF-AFC2-5FB1285C17B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A0B43CC-EC75-42CF-AFC2-5FB1285C17B9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{841A58B0-71C1-4F85-96AD-8B1C7064D3B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{841A58B0-71C1-4F85-96AD-8B1C7064D3B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{841A58B0-71C1-4F85-96AD-8B1C7064D3B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{841A58B0-71C1-4F85-96AD-8B1C7064D3B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{36798E15-04F6-4DF2-A74B-E40BA5DF816C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36798E15-04F6-4DF2-A74B-E40BA5DF816C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36798E15-04F6-4DF2-A74B-E40BA5DF816C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36798E15-04F6-4DF2-A74B-E40BA5DF816C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B630436A-DD61-4A32-973B-76E80B55BC05}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B630436A-DD61-4A32-973B-76E80B55BC05}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B630436A-DD61-4A32-973B-76E80B55BC05}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B630436A-DD61-4A32-973B-76E80B55BC05}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

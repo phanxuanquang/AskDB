@@ -1,20 +1,9 @@
 ﻿using System.ComponentModel;
 using System.Reflection;
 
-namespace Gemini_API_Helper
+namespace Helper
 {
-    public enum EnumModel
-    {
-        [Description("gemini-1.5-flash")]
-        Gemini_15_Flash,
-
-        [Description("gemini-1.0-pro")]
-        Gemini_10_Pro,
-
-        [Description("gemini-1.5-pro")]
-        Gemini_15_Pro,
-    }
-    public static class EnumHelper
+    public static class Extractor
     {
         public static string GetEnumDescription(Enum value)
         {
@@ -30,5 +19,6 @@ namespace Gemini_API_Helper
                 return value.ToString();
             }
         }
+
     }
 }

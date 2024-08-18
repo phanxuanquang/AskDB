@@ -1,10 +1,9 @@
 ﻿using Newtonsoft.Json;
 
-namespace Gemini_API_Helper.DTO
+namespace GenAI
 {
-    public class ResponseForOneShot
+    public class ApiResponseDto
     {
-        // Response myDeserializedClass = JsonConvert.DeserializeObject<Response>(myJsonResponse);
         public class Candidate
         {
             [JsonProperty("content")]
