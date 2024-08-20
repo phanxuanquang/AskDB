@@ -7,33 +7,40 @@ namespace DatabaseAnalyzer
     {
         public const byte MaxTotalTables = 100;
         public const short MaxTotalColumns = 500;
-        public static async Task<List<Table>> GetDatabaseSchemas(DatabaseType databaseType, string connectionString)
+
+        public static async Task<List<Table>> GetTables(DatabaseType databaseType, string connectionString)
         {
-            IDatabaseSchemaExtractor schemaExtractor;
+            IDatabaseExtractor schemaExtractor;
             List<Table> tables;
 
             switch (databaseType)
             {
                 case DatabaseType.MSSQL:
-                    schemaExtractor = new SqlServerSchemaExtractor();
+                    schemaExtractor = new SqlServerExtractor();
                     break;
                 case DatabaseType.PostgreSQL:
-                    schemaExtractor = new PostgreSqlSchemaExtractor();
+                    schemaExtractor = new PostgreSqlExtractor();
                     break;
                 case DatabaseType.SQLite:
-                    schemaExtractor = new SqliteSchemaExtractor();
+                    schemaExtractor = new SqliteExtractor();
                     break;
                 case DatabaseType.MariaDB:
                 case DatabaseType.MySQL:
-                    schemaExtractor = new MySqlSchemaExtractor();
+                    schemaExtractor = new MySqlExtractor();
                     break;
                 default:
                     throw new NotSupportedException("Not Supported");
             }
 
-            tables = await schemaExtractor.GetDatabaseStructureAsync(connectionString);
+            tables = await schemaExtractor.GetTables(connectionString);
 
             return tables;
+        }
+
+        public static string TablesAsString(List<Table> tables)
+        {
+            var schemas = tables.Select(d => d.ToString()).ToList();
+            return string.Join(string.Empty, schemas).Trim();
         }
     }
 }

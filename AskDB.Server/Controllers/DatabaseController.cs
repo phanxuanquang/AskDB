@@ -20,7 +20,7 @@ namespace AskDB.Server.Controllers
         {
             try
             {
-                var tables = await Analyzer.GetDatabaseSchemas(databaseType, connectionString);
+                var tables = await Analyzer.GetTables(databaseType, connectionString);
                 return Ok(tables);
             }
             catch (Exception ex)
@@ -34,7 +34,7 @@ namespace AskDB.Server.Controllers
         {
             try
             {
-                var tables = await Analyzer.GetDatabaseSchemas(databaseType, connectionString);
+                var tables = await Analyzer.GetTables(databaseType, connectionString);
                 var schemas = string.Join(Environment.NewLine, tables.AsParallel().Select(table => table.ToString())).Trim();
 
                 return Ok(schemas);

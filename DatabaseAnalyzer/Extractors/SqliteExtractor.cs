@@ -2,23 +2,22 @@
 using DatabaseAnalyzer.Models;
 using Microsoft.Data.Sqlite;
 using System.Collections.Concurrent;
+using System.Data;
 
 namespace DatabaseAnalyzer.Extractors
 {
-    public class SqliteSchemaExtractor : IDatabaseSchemaExtractor
+    public class SqliteExtractor : IDatabaseExtractor
     {
-        public async Task<List<Table>> GetDatabaseStructureAsync(string connectionString)
+        public async Task<List<Table>> GetTables(string connectionString)
         {
             using (var connection = new SqliteConnection(connectionString))
             {
                 await connection.OpenAsync();
 
-                string fullSchemaQuery = @"
-                SELECT name FROM sqlite_master 
-                WHERE type = 'table' AND name NOT LIKE 'sqlite_%'";
+                string query = @"SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'";
 
                 var tables = new ConcurrentDictionary<string, Table>();
-                var tableNames = await connection.QueryAsync<string>(fullSchemaQuery);
+                var tableNames = await connection.QueryAsync<string>(query);
 
                 foreach (var tableName in tableNames)
                 {
@@ -43,6 +42,19 @@ namespace DatabaseAnalyzer.Extractors
                 return tables.Values.ToList();
             }
         }
-    }
 
+        public async Task<DataTable> GetData(string connectionString, string sqlQuery)
+        {
+            using (var connection = new SqliteConnection(connectionString))
+            {
+                var dataTable = new DataTable();
+                await connection.OpenAsync();
+                using (var reader = await connection.ExecuteReaderAsync(sqlQuery))
+                {
+                    dataTable.Load(reader);
+                }
+                return dataTable;
+            }
+        }
+    }
 }

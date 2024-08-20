@@ -1,28 +1,28 @@
 ﻿using Dapper;
 using DatabaseAnalyzer.Models;
-using Npgsql;
+using MySql.Data.MySqlClient;
 using System.Collections.Concurrent;
+using System.Data;
 
 namespace DatabaseAnalyzer.Extractors
 {
-    public class PostgreSqlSchemaExtractor : IDatabaseSchemaExtractor
+    public class MySqlExtractor : IDatabaseExtractor
     {
-        public async Task<List<Table>> GetDatabaseStructureAsync(string connectionString)
+        public async Task<List<Table>> GetTables(string connectionString)
         {
-            using (var connection = new NpgsqlConnection(connectionString))
+            using (var connection = new MySqlConnection(connectionString))
             {
                 await connection.OpenAsync();
 
-                string fullSchemaQuery = @"
-                SELECT table_name, column_name, data_type, 
-                       character_maximum_length, is_nullable, column_default 
-                FROM information_schema.columns 
-                WHERE table_schema = 'public' 
-                ORDER BY table_name, ordinal_position";
+                string query = @"
+                    SELECT table_name, column_name, data_type, character_maximum_length, is_nullable, column_default 
+                    FROM information_schema.columns 
+                    WHERE table_schema = DATABASE() 
+                    ORDER BY table_name, ordinal_position";
 
                 var tables = new ConcurrentDictionary<string, Table>();
 
-                var rows = await connection.QueryAsync<dynamic>(fullSchemaQuery);
+                var rows = await connection.QueryAsync<dynamic>(query);
                 foreach (var row in rows)
                 {
                     string tableName = row.table_name;
@@ -42,7 +42,7 @@ namespace DatabaseAnalyzer.Extractors
                     };
 
                     tables.AddOrUpdate(tableName,
-                        _ => new Table { Name = tableName, Columns = new List<Column> { column } },
+                        new Table { Name = tableName, Columns = new List<Column> { column } },
                         (_, table) =>
                         {
                             table.Columns.Add(column);
@@ -51,6 +51,20 @@ namespace DatabaseAnalyzer.Extractors
                 }
 
                 return tables.Values.ToList();
+            }
+        }
+
+        public async Task<DataTable> GetData(string connectionString, string sqlQuery)
+        {
+            using (var connection = new MySqlConnection(connectionString))
+            {
+                var dataTable = new DataTable();
+                await connection.OpenAsync();
+                using (var reader = await connection.ExecuteReaderAsync(sqlQuery))
+                {
+                    dataTable.Load(reader);
+                }
+                return dataTable;
             }
         }
     }

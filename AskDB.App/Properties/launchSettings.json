@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "AskDB.App (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "AskDB.App (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

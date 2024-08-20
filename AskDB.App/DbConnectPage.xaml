@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AskDB.App.DbConnectPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:AskDB.App"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid x:Name="RootGrid" Padding="20">
+        <Border
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        BorderThickness="0"
+        Background="{StaticResource LayerOnMicaBaseAltFillColorDefault}"
+        CornerRadius="15"
+        Padding="40"
+        MinWidth="600">
+
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                <TextBlock FontSize="30" FontWeight="Bold" Text="Connect to your SQL database" HorizontalAlignment="Left" Margin="0,0,0,20"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
+                    <ComboBox PlaceholderText="Choose your database" Width="200" Margin="0,0,10,0" Height="35">
+                        <x:String>SQL Server</x:String>
+                        <x:String>MySQL</x:String>
+                        <x:String>PostgreSQL</x:String>
+                        <x:String>SQLite</x:String>
+                    </ComboBox>
+                    <TextBox x:Name="queryBox" PlaceholderText="Enter the connection string . . ." AutomationProperties.Name="simple text editor" MinWidth="500" Margin="0,0,10,0"/>
+                </StackPanel>
+
+                <Button HorizontalAlignment="Center" Style="{StaticResource AccentButtonStyle}" Content="Connect and Start" Height="40" Width="150" Click="StartButton_Click"/>
+            </StackPanel>
+
+        </Border>
+    </Grid>
+</Page>
