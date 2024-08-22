@@ -21,12 +21,7 @@ namespace AskDB.App
         public MainWindow()
         {
             this.InitializeComponent();
-            MainFrame.Navigate(typeof(DbConnectPage),
-                null,
-                new SlideNavigationTransitionInfo()
-                {
-                    Effect = SlideNavigationTransitionEffect.FromRight
-                });
+            MainFrame.Navigate(typeof(DbConnectPage));
         }
     }
 }

@@ -1,4 +1,5 @@
 using CommunityToolkit.WinUI.UI.Controls;
+using DatabaseAnalyzer;
 using DatabaseAnalyzer.Extractors;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
@@ -32,16 +33,29 @@ namespace AskDB.App
         public DbConnectPage()
         {
             this.InitializeComponent();
+            this.connectionStringBox.TextChanged += ConnectionStringBox_TextChanged;
+            this.dbTypeCombobox.SelectionChanged += DbTypeCombobox_SelectionChanged;
         }
 
-        private async void StartButton_Click(object sender, RoutedEventArgs e)
+        private void DbTypeCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            Frame.Navigate(typeof(MainPage), 
-                null, 
-                new SlideNavigationTransitionInfo() 
-                { 
-                    Effect = SlideNavigationTransitionEffect.FromRight 
-                });
+            throw new NotImplementedException();
+        }
+
+        private void ConnectionStringBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void StartButton_Click(object sender, RoutedEventArgs e)
+        {
+            Frame.Navigate(typeof(MainPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
+        }
+
+        private async void ConnectButton_Click(object sender, RoutedEventArgs e)
+        {
+            var tables = await Analyzer.GetTables(DatabaseAnalyzer.Models.DatabaseType.MSSQL, connectionStringBox.Text);
+            tablesListView.ItemsSource = tables.Select(t => t.Name).ToList();
         }
     }
 }

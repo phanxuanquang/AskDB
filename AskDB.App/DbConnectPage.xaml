@@ -20,18 +20,30 @@
         MinWidth="600">
 
             <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                <TextBlock FontSize="30" FontWeight="Bold" Text="Connect to your SQL database" HorizontalAlignment="Left" Margin="0,0,0,20"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
-                    <ComboBox PlaceholderText="Choose your database" Width="200" Margin="0,0,10,0" Height="35">
+                <TextBlock FontSize="24" FontWeight="Bold" Text="Connect to your SQL database" HorizontalAlignment="Left" Margin="0,0,0,20"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+                    <ComboBox x:Name="dbTypeCombobox" PlaceholderText="Choose your database" Width="200" Margin="0,0,10,0" Height="35">
                         <x:String>SQL Server</x:String>
                         <x:String>MySQL</x:String>
                         <x:String>PostgreSQL</x:String>
                         <x:String>SQLite</x:String>
                     </ComboBox>
-                    <TextBox x:Name="queryBox" PlaceholderText="Enter the connection string . . ." AutomationProperties.Name="simple text editor" MinWidth="500" Margin="0,0,10,0"/>
+                    <TextBox x:Name="connectionStringBox" PlaceholderText="Enter the connection string . . ." AutomationProperties.Name="simple text editor" MinWidth="500" Margin="0,0,10,0"/>
+                    <Button HorizontalAlignment="Center" Style="{StaticResource AccentButtonStyle}" Content="Connect" Height="35" Click="ConnectButton_Click"/>
                 </StackPanel>
 
-                <Button HorizontalAlignment="Center" Style="{StaticResource AccentButtonStyle}" Content="Connect and Start" Height="40" Width="150" Click="StartButton_Click"/>
+                <ListView 
+                    x:Name="tablesListView" 
+                    SelectionMode="Multiple" 
+                    BorderThickness="2"
+                    BorderBrush="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}"
+                    UseLayoutRounding="True"
+                    Width="800"
+                    MaxHeight="500"
+                    HorizontalAlignment="Left"
+                    Margin="0,0,0,10"/>    
+
+                <Button IsEnabled="False" HorizontalAlignment="Center" Style="{StaticResource AccentButtonStyle}" Content="START" Height="35" Width="100" Click="StartButton_Click"/>
             </StackPanel>
 
         </Border>
