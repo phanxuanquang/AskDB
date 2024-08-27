@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DatabaseAnalyzer\DatabaseAnalyzer.csproj" />
+    <ProjectReference Include="..\Helper\Helper.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Page Update="DbConnectPage.xaml">

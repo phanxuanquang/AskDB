@@ -20,30 +20,59 @@
         MinWidth="600">
 
             <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                <TextBlock FontSize="24" FontWeight="Bold" Text="Connect to your SQL database" HorizontalAlignment="Left" Margin="0,0,0,20"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
-                    <ComboBox x:Name="dbTypeCombobox" PlaceholderText="Choose your database" Width="200" Margin="0,0,10,0" Height="35">
-                        <x:String>SQL Server</x:String>
-                        <x:String>MySQL</x:String>
-                        <x:String>PostgreSQL</x:String>
-                        <x:String>SQLite</x:String>
-                    </ComboBox>
-                    <TextBox x:Name="connectionStringBox" PlaceholderText="Enter the connection string . . ." AutomationProperties.Name="simple text editor" MinWidth="500" Margin="0,0,10,0"/>
-                    <Button HorizontalAlignment="Center" Style="{StaticResource AccentButtonStyle}" Content="Connect" Height="35" Click="ConnectButton_Click"/>
-                </StackPanel>
 
-                <ListView 
-                    x:Name="tablesListView" 
-                    SelectionMode="Multiple" 
-                    BorderThickness="2"
-                    BorderBrush="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}"
-                    UseLayoutRounding="True"
-                    Width="800"
-                    MaxHeight="500"
-                    HorizontalAlignment="Left"
-                    Margin="0,0,0,10"/>    
+                <Expander x:Name="step1Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsExpanded="True">
+                    <Expander.Header>
+                        <ContentControl FontWeight="SemiBold">Step 1 - Connect to Gemini</ContentControl>
+                    </Expander.Header>
+                    <Expander.Content>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
+                                <TextBox x:Name="apiKeyBox" PlaceholderText="Enter the Gemini API Key" AutomationProperties.Name="simple text editor" MinWidth="830" Margin="0,0,10,0"/>
+                                <Button x:Name="getApiKeyButton" HorizontalAlignment="Center" Style="{StaticResource DefaultButtonStyle}" Content="Get API Key" Height="35"/>
+                        </StackPanel>
+                            <Button x:Name="connectGeminiButton" Style="{StaticResource AccentButtonStyle}" Content="Connect" Height="35" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Expander.Content>
+                </Expander>
 
-                <Button IsEnabled="False" HorizontalAlignment="Center" Style="{StaticResource AccentButtonStyle}" Content="START" Height="35" Width="100" Click="StartButton_Click"/>
+                <Expander x:Name="step2Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsExpanded="False" IsEnabled="False">
+                    <Expander.Header>
+                        <ContentControl FontWeight="SemiBold"> Step 2 - Connect to your SQL database</ContentControl>
+                    </Expander.Header>
+                    <Expander.Content>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
+                                <ComboBox  x:Name="dbTypeCombobox" PlaceholderText="Choose your database type" Width="230" Margin="0,0,10,0" Height="35"/>
+                                <TextBox x:Name="connectionStringBox" PlaceholderText="Enter the connection string . . ." AutomationProperties.Name="simple text editor" MinWidth="700"/>
+                                
+                            </StackPanel>
+                            <Button x:Name="connectDbButton" Style="{StaticResource AccentButtonStyle}" Content="Connect" Height="35" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Expander.Content>
+                </Expander>
+
+                <Expander x:Name="step3Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsExpanded="False" IsEnabled="False">
+                    <Expander.Header>
+                        <ContentControl FontWeight="SemiBold">Step 3 - Select tables to ask</ContentControl>
+                    </Expander.Header>
+                    <Expander.Content>
+                        <StackPanel>
+                            <ListView 
+                                x:Name="tablesListView" 
+                                SelectionMode="Multiple" 
+                                BorderThickness="2"
+                                BorderBrush="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}"
+                                UseLayoutRounding="True"
+                                Width="800"
+                                MaxHeight="500"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,10"/>
+                        </StackPanel>
+                    </Expander.Content>
+                </Expander>
+
+                <Button x:Name="startBtn" IsEnabled="False" HorizontalAlignment="Center" Style="{StaticResource AccentButtonStyle}" Content="START" FontWeight="SemiBold" Height="35" Width="100" Click="StartButton_Click"/>
             </StackPanel>
 
         </Border>

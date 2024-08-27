@@ -26,7 +26,7 @@ namespace DatabaseAnalyzer.Extractors
                 foreach (var row in rows)
                 {
                     string tableName = row.table_name;
-                    string columnName = row.column_name;                                                               
+                    string columnName = row.column_name;
                     string dataType = row.data_type;
                     int? maxLength = row.character_maximum_length;
                     bool isNullable = row.is_nullable == "YES";

@@ -1,61 +1,184 @@
-using CommunityToolkit.WinUI.UI.Controls;
-using DatabaseAnalyzer;
-using DatabaseAnalyzer.Extractors;
-using Microsoft.UI.Composition;
+﻿using DatabaseAnalyzer;
+using DatabaseAnalyzer.Models;
+using GenAI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Navigation;
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.IO;
+using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Devices.Enumeration;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace AskDB.App
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class DbConnectPage : Page
     {
         public DbConnectPage()
         {
             this.InitializeComponent();
-            this.connectionStringBox.TextChanged += ConnectionStringBox_TextChanged;
-            this.dbTypeCombobox.SelectionChanged += DbTypeCombobox_SelectionChanged;
+            this.Loaded += DbConnectPage_Loaded;
+            connectGeminiButton.Click += ConnectGeminiButton_Click;
+            connectDbButton.Click += ConnectDbButton_Click;
+            getApiKeyButton.Click += GetApiKeyButton_Click;
+            tablesListView.SelectionChanged += TablesListView_SelectionChanged;
         }
 
-        private void DbTypeCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void GetApiKeyButton_Click(object sender, RoutedEventArgs e)
         {
-            throw new NotImplementedException();
+            try
+            {
+                Process.Start(new ProcessStartInfo("https://aistudio.google.com/app/apikey") { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                ContentDialog dialog = new ContentDialog();
+
+                dialog.XamlRoot = RootGrid.XamlRoot;
+                dialog.Title = "Error";
+                dialog.PrimaryButtonText = "OK";
+                dialog.DefaultButton = ContentDialogButton.Primary;
+                dialog.Content = ex.Message;
+
+                await dialog.ShowAsync();
+            }
         }
 
-        private void ConnectionStringBox_TextChanged(object sender, TextChangedEventArgs e)
+        private async void ConnectGeminiButton_Click(object sender, RoutedEventArgs e)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(apiKeyBox.Text) || string.IsNullOrWhiteSpace(apiKeyBox.Text))
+            {
+                ContentDialog dialog = new ContentDialog();
+
+                dialog.XamlRoot = RootGrid.XamlRoot;
+                dialog.Title = "Error";
+                dialog.PrimaryButtonText = "OK";
+                dialog.DefaultButton = ContentDialogButton.Primary;
+                dialog.Content = "You have not input your API Key.";
+
+                await dialog.ShowAsync();
+                return;
+            }
+
+            try
+            {
+                await Generator.GenerateContent(apiKeyBox.Text, "Say 'Hello World' to me!", false, CreativityLevel.Low);
+            }
+            catch
+            {
+                ContentDialog dialog = new ContentDialog();
+
+                dialog.XamlRoot = RootGrid.XamlRoot;
+                dialog.Title = "Error";
+                dialog.PrimaryButtonText = "OK";
+                dialog.DefaultButton = ContentDialogButton.Primary;
+                dialog.Content = "Invalid API Key. Please try again.";
+
+                await dialog.ShowAsync();
+                return;
+            }
+
+            step1Expander.IsExpanded = step1Expander.IsEnabled = false;
+            step2Expander.IsExpanded = step2Expander.IsEnabled = true;
+            Analyzer.ApiKey = apiKeyBox.Text;
         }
 
-        private void StartButton_Click(object sender, RoutedEventArgs e)
+        private async void ConnectDbButton_Click(object sender, RoutedEventArgs e)
         {
-            Frame.Navigate(typeof(MainPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
+            if (dbTypeCombobox.SelectedIndex == -1)
+            {
+                ContentDialog dialog = new ContentDialog();
+
+                dialog.XamlRoot = RootGrid.XamlRoot;
+                dialog.Title = "Error";
+                dialog.PrimaryButtonText = "OK";
+                dialog.DefaultButton = ContentDialogButton.Primary;
+                dialog.Content = "Please choose your database type.";
+
+                await dialog.ShowAsync();
+                return;
+            }
+
+            if (string.IsNullOrEmpty(connectionStringBox.Text) || string.IsNullOrWhiteSpace(connectionStringBox.Text))
+            {
+                ContentDialog dialog = new ContentDialog();
+
+                dialog.XamlRoot = RootGrid.XamlRoot;
+                dialog.Title = "Error";
+                dialog.PrimaryButtonText = "OK";
+                dialog.DefaultButton = ContentDialogButton.Primary;
+                dialog.Content = "Please input the connection string to connect to your database.";
+
+                await dialog.ShowAsync();
+                return;
+            }
+
+            try
+            {
+                var selectedType = (DatabaseType)dbTypeCombobox.SelectedItem;
+                var tables = await Analyzer.GetTables(selectedType, connectionStringBox.Text);
+                tablesListView.ItemsSource = tables.Select(t => t.Name).ToList();
+            }
+            catch (Exception ex)
+            {
+                ContentDialog dialog = new ContentDialog();
+
+                dialog.XamlRoot = RootGrid.XamlRoot;
+                dialog.Title = "Error";
+                dialog.PrimaryButtonText = "OK";
+                dialog.DefaultButton = ContentDialogButton.Primary;
+                dialog.Content = ex.Message;
+
+                await dialog.ShowAsync();
+                return;
+            }
+
+            step2Expander.IsExpanded = step2Expander.IsEnabled = false;
+            step3Expander.IsExpanded = step3Expander.IsEnabled = true;
+            Analyzer.ConnectionString = connectionStringBox.Text;
+            Analyzer.DatabaseType = (DatabaseType)dbTypeCombobox.SelectedItem;
         }
 
-        private async void ConnectButton_Click(object sender, RoutedEventArgs e)
+        private void DbConnectPage_Loaded(object sender, RoutedEventArgs e)
         {
-            var tables = await Analyzer.GetTables(DatabaseAnalyzer.Models.DatabaseType.MSSQL, connectionStringBox.Text);
-            tablesListView.ItemsSource = tables.Select(t => t.Name).ToList();
+            var dbtypes = (DatabaseType[])Enum.GetValues(typeof(DatabaseType));
+            dbTypeCombobox.ItemsSource = dbtypes;
+        }
+
+        private void TablesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (tablesListView.SelectedItems.Count > 0)
+            {
+                startBtn.IsEnabled = true;
+            }
+            else
+            {
+                startBtn.IsEnabled = false;
+            }
+        }
+
+        private async void StartButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var tables = await Analyzer.GetTables(Analyzer.DatabaseType, Analyzer.ConnectionString);
+                var selectedTableNames = tablesListView.SelectedItems.Select(t => t.ToString()).ToList();
+                Analyzer.Tables = tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
+
+                Frame.Navigate(typeof(MainPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
+            }
+            catch (Exception ex)
+            {
+                ContentDialog dialog = new ContentDialog();
+
+                dialog.XamlRoot = RootGrid.XamlRoot;
+                dialog.Title = "Error";
+                dialog.PrimaryButtonText = "OK";
+                dialog.DefaultButton = ContentDialogButton.Primary;
+                dialog.Content = ex.Message;
+
+                await dialog.ShowAsync();
+            }
         }
     }
 }

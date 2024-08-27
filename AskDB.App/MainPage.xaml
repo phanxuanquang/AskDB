@@ -9,9 +9,9 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid x:Name="RootGrid" Padding="20">
+    <Grid x:Name="RootGrid" Padding="100">
         <Border
-        HorizontalAlignment="Center"
+        HorizontalAlignment="Stretch"
         VerticalAlignment="Center"
         BorderThickness="0"
         Background="{StaticResource LayerOnMicaBaseAltFillColorDefault}"
@@ -20,15 +20,33 @@
         MinWidth="800">
 
             <StackPanel Orientation="Vertical" >
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+                <TextBlock FontSize="36" FontWeight="Bold" Text="ASK ME ANYTHING ABOUT YOUR SQL DATABASE" HorizontalAlignment="Center" Margin="0,0,0,30"/>
+                <Expander x:Name="selectTableExpander" MinWidth="1070" Margin="0,0,0,20" IsExpanded="False" HorizontalAlignment="Stretch">
+                    <Expander.Header>
+                        <ContentControl FontWeight="SemiBold">Select tables to ask</ContentControl>
+                    </Expander.Header>
+                    <Expander.Content>
+                        <StackPanel>
+                            <ListView 
+                                x:Name="tablesListView" 
+                                SelectionMode="Multiple" 
+                                BorderThickness="2"
+                                BorderBrush="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}"
+                                UseLayoutRounding="True"
+                                Width="800"
+                                MaxHeight="400"
+                                HorizontalAlignment="Stretch"/> 
+                        </StackPanel>
+                    </Expander.Content>
+                </Expander>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
                     <TextBox x:Name="queryBox" TextWrapping="Wrap" IsSpellCheckEnabled="True" PlaceholderText="Enter your question . . ." AutomationProperties.Name="simple text editor" MinWidth="1000" Margin="0,0,10,0"/>
                     <Button x:Name="myButton" Click="SendButton_Click" Style="{StaticResource AccentButtonStyle}" Width="60" Height="35">
                         <SymbolIcon Symbol="Send"/>
                     </Button>
                 </StackPanel>
-                <RichEditBox x:Name="resultBox" AutomationProperties.Name="simple text editor" IsReadOnly="True"></RichEditBox>
-                <controls:DataGrid x:Name="myDataGrid" MinHeight="150" Margin="0,20,0,10" IsReadOnly="True" AutoGenerateColumns="False" VerticalAlignment="Top"/>
-
+                <controls:DataGrid x:Name="outputGridView" MaxHeight="800" Margin="0,0,0,10" IsReadOnly="True" AutoGenerateColumns="False" VerticalAlignment="Top"/>
             </StackPanel>
 
         </Border>

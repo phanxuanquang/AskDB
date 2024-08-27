@@ -5,18 +5,18 @@ namespace DatabaseAnalyzer.Models
     public enum DatabaseType
     {
         [Description("SQL Server")]
-        MSSQL,
+        MSSQL = 0,
 
         [Description("PostgreSQL")]
-        PostgreSQL,
+        PostgreSQL = 1,
 
         [Description("MySQL")]
-        MySQL,
+        MySQL = 2,
 
         [Description("MariaDB")]
-        MariaDB,
+        MariaDB = 3,
 
         [Description("SQLite")]
-        SQLite,
+        SQLite = 4,
     }
 }

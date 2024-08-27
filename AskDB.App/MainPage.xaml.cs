@@ -1,54 +1,121 @@
+using DatabaseAnalyzer;
 using DatabaseAnalyzer.Extractors;
+using DatabaseAnalyzer.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace AskDB.App
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class MainPage : Page
     {
+        private List<Table> Tables;
         public MainPage()
         {
             this.InitializeComponent();
+            this.Loaded += MainPage_Loaded;
+            queryBox.KeyDown += QueryBox_KeyDown;
         }
+
+        private void QueryBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                SendButton_Click(sender, e);
+                e.Handled = true;
+            }
+        }
+
+        private async void MainPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            Tables = await Analyzer.GetTables(Analyzer.DatabaseType, Analyzer.ConnectionString);
+            tablesListView.ItemsSource = Tables.Select(t => t.Name).ToList();
+
+            foreach (var t in Analyzer.Tables)
+            {
+                tablesListView.SelectedItems.Add(t.Name);
+            }
+        }
+
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
-            IDatabaseExtractor extractor = new SqlServerExtractor();
-            var MyDataTable = await extractor.GetData("Server=localhost;Database=CompanyDB;Integrated Security = True;", "Select * from Employees");
+            var sqlCommand = new SqlCommander();
+            outputGridView.Columns.Clear();
+            Analyzer.Tables = Tables.Where(t => tablesListView.SelectedItems.Contains(t.Name)).ToList();
 
-            for (int i = 0; i < MyDataTable.Columns.Count; i++)
+            try
             {
-                myDataGrid.Columns.Add(new CommunityToolkit.WinUI.UI.Controls.DataGridTextColumn()
+                sqlCommand = await Analyzer.GetSql(Analyzer.ApiKey, Analyzer.Tables, queryBox.Text, Analyzer.DatabaseType);
+            }
+            catch (Exception ex)
+            {
+                ContentDialog dialog = new ContentDialog();
+
+                dialog.XamlRoot = RootGrid.XamlRoot;
+                dialog.Title = "Error";
+                dialog.PrimaryButtonText = "OK";
+                dialog.DefaultButton = ContentDialogButton.Primary;
+                dialog.Content = ex.Message;
+
+                await dialog.ShowAsync();
+                return;
+            }
+
+            if (!sqlCommand.IsSql)
+            {
+                ContentDialog dialog = new ContentDialog();
+
+                dialog.XamlRoot = RootGrid.XamlRoot;
+                dialog.Title = "Not an SQL command";
+                dialog.PrimaryButtonText = "OK";
+                dialog.DefaultButton = ContentDialogButton.Primary;
+                dialog.Content = sqlCommand.Output;
+
+                await dialog.ShowAsync();
+                return;
+            }
+
+            IDatabaseExtractor extractor = new SqlServerExtractor();
+            selectTableExpander.IsExpanded = true;
+
+            switch (Analyzer.DatabaseType)
+            {
+                case DatabaseType.MSSQL:
+                    break;
+                case DatabaseType.PostgreSQL:
+                    extractor = new PostgreSqlExtractor();
+                    break;
+                case DatabaseType.MySQL:
+                case DatabaseType.MariaDB:
+                    extractor = new MySqlExtractor();
+                    break;
+                case DatabaseType.SQLite:
+                    extractor = new SqliteExtractor();
+                    break;
+            }
+
+            var dataTable = await extractor.GetData(Analyzer.ConnectionString, sqlCommand.Output);
+
+            for (int i = 0; i < dataTable.Columns.Count; i++)
+            {
+                outputGridView.Columns.Add(new CommunityToolkit.WinUI.UI.Controls.DataGridTextColumn()
                 {
-                    Header = MyDataTable.Columns[i].ColumnName,
+                    Header = dataTable.Columns[i].ColumnName,
                     Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
                 });
             }
 
             var collectionObjects = new System.Collections.ObjectModel.ObservableCollection<object>();
-            foreach (DataRow row in MyDataTable.Rows)
+            foreach (DataRow row in dataTable.Rows)
             {
                 collectionObjects.Add(row.ItemArray);
             }
-            myDataGrid.ItemsSource = collectionObjects;
+
+            outputGridView.ItemsSource = collectionObjects;
         }
     }
 }

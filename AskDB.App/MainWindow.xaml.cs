@@ -1,12 +1,4 @@
-﻿using DatabaseAnalyzer.Extractors;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Media.Animation;
-using System;
-using System.Data;
-using System.Linq;
-using Windows.Devices.Enumeration;
+﻿using Microsoft.UI.Xaml;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
