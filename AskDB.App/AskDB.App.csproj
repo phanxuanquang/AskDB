@@ -11,6 +11,11 @@
     <PublishProfile>win-$(Platform).pubxml</PublishProfile>
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
+    <AssemblyName>AskDB</AssemblyName>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+    <PackageCertificateThumbprint>AF2A5AD07432D7732A3276A9E91ADDB399976084</PackageCertificateThumbprint>
+    <PackageCertificateKeyFile>AskDB.App_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="DbConnectPage.xaml" />
