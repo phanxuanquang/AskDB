@@ -56,7 +56,7 @@ namespace AskDB.App
                 dialog.Title = "Error";
                 dialog.PrimaryButtonText = "OK";
                 dialog.DefaultButton = ContentDialogButton.Primary;
-                dialog.Content = "You have not input your API Key.";
+                dialog.Content = "You have not entered your API Key yet.";
 
                 await dialog.ShowAsync();
                 return;

@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using static System.Net.Mime.MediaTypeNames;
 using Windows.ApplicationModel.DataTransfer;
 
 namespace AskDB.App
@@ -38,7 +37,7 @@ namespace AskDB.App
             dialog.Content = SqlQuery;
 
             var result = await dialog.ShowAsync();
-            if(result == ContentDialogResult.Primary)
+            if (result == ContentDialogResult.Primary)
             {
                 var dataPackage = new DataPackage();
                 dataPackage.SetText(SqlQuery);
@@ -79,7 +78,7 @@ namespace AskDB.App
                 dialog.Content = ex.Message;
 
                 var result = await dialog.ShowAsync();
-                if(result == ContentDialogResult.Primary)
+                if (result == ContentDialogResult.Primary)
                 {
                     Frame.Navigate(typeof(DbConnectPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
                 }
