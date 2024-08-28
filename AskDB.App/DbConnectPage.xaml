@@ -39,7 +39,7 @@
                     </Expander.Content>
                 </Expander>
 
-                <Expander x:Name="step2Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsExpanded="False" IsEnabled="False">
+                <Expander x:Name="step2Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsEnabled="False">
                     <Expander.Header>
                         <ContentControl FontWeight="SemiBold"> Step 2 - Connect to your SQL database</ContentControl>
                     </Expander.Header>
@@ -54,7 +54,7 @@
                     </Expander.Content>
                 </Expander>
 
-                <Expander x:Name="step3Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsExpanded="False" IsEnabled="False">
+                <Expander x:Name="step3Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsEnabled="False">
                     <Expander.Header>
                         <ContentControl FontWeight="SemiBold">Step 3 - Select tables to ask</ContentControl>
                     </Expander.Header>

@@ -9,17 +9,42 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using static System.Net.Mime.MediaTypeNames;
+using Windows.ApplicationModel.DataTransfer;
 
 namespace AskDB.App
 {
     public sealed partial class MainPage : Page
     {
         private List<Table> Tables;
+        private string SqlQuery;
         public MainPage()
         {
             this.InitializeComponent();
             this.Loaded += MainPage_Loaded;
             queryBox.KeyDown += QueryBox_KeyDown;
+            showSqlButton.Click += ShowSqlButton_Click;
+        }
+
+        private async void ShowSqlButton_Click(object sender, RoutedEventArgs e)
+        {
+            ContentDialog dialog = new ContentDialog();
+
+            dialog.XamlRoot = RootGrid.XamlRoot;
+            dialog.Title = "SQL Query";
+            dialog.PrimaryButtonText = "Copy";
+            dialog.CloseButtonText = "Close";
+            dialog.DefaultButton = ContentDialogButton.Primary;
+            dialog.Content = SqlQuery;
+
+            var result = await dialog.ShowAsync();
+            if(result == ContentDialogResult.Primary)
+            {
+                var dataPackage = new DataPackage();
+                dataPackage.SetText(SqlQuery);
+                Clipboard.SetContent(dataPackage);
+                Clipboard.Flush();
+            }
         }
 
         private void QueryBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
@@ -64,7 +89,7 @@ namespace AskDB.App
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
             LoadingOverlay.Visibility = Visibility.Visible;
-            mainPanel.Visibility = Visibility.Collapsed;
+            mainPanel.Visibility = exportButton.Visibility = showSqlButton.Visibility = Visibility.Collapsed;
 
             var sqlCommand = new SqlCommander();
             outputGridView.Columns.Clear();
@@ -108,6 +133,8 @@ namespace AskDB.App
 
             IDatabaseExtractor extractor = new SqlServerExtractor();
             selectTableExpander.IsExpanded = false;
+            exportButton.Visibility = showSqlButton.Visibility = Visibility.Visible;
+            SqlQuery = sqlCommand.Output;
 
             switch (Analyzer.DatabaseType)
             {
