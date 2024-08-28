@@ -63,6 +63,9 @@ namespace AskDB.App
 
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
+            LoadingOverlay.Visibility = Visibility.Visible;
+            mainPanel.Visibility = Visibility.Collapsed;
+
             var sqlCommand = new SqlCommander();
             outputGridView.Columns.Clear();
             Analyzer.Tables = Tables.Where(t => tablesListView.SelectedItems.Contains(t.Name)).ToList();
@@ -73,6 +76,8 @@ namespace AskDB.App
             }
             catch (Exception ex)
             {
+                LoadingOverlay.Visibility = Visibility.Collapsed;
+                mainPanel.Visibility = Visibility.Visible;
                 ContentDialog dialog = new ContentDialog();
 
                 dialog.XamlRoot = RootGrid.XamlRoot;
@@ -87,6 +92,8 @@ namespace AskDB.App
 
             if (!sqlCommand.IsSql)
             {
+                LoadingOverlay.Visibility = Visibility.Collapsed;
+                mainPanel.Visibility = Visibility.Visible;
                 ContentDialog dialog = new ContentDialog();
 
                 dialog.XamlRoot = RootGrid.XamlRoot;
@@ -100,7 +107,7 @@ namespace AskDB.App
             }
 
             IDatabaseExtractor extractor = new SqlServerExtractor();
-            selectTableExpander.IsExpanded = true;
+            selectTableExpander.IsExpanded = false;
 
             switch (Analyzer.DatabaseType)
             {
@@ -150,6 +157,11 @@ namespace AskDB.App
                 dialog.Content = $"SQL Command: {sqlCommand.Output}\n\n{ex.Message}";
 
                 await dialog.ShowAsync();
+            }
+            finally
+            {
+                LoadingOverlay.Visibility = Visibility.Collapsed;
+                mainPanel.Visibility = Visibility.Visible;
             }
         }
     }

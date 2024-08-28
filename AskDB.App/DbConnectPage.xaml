@@ -27,7 +27,10 @@
                     </Expander.Header>
                     <Expander.Content>
                         <StackPanel>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
+                            <StackPanel x:Name="LoadingOverlay" Background="Transparent" Visibility="Collapsed" Margin="0,0,0,20">
+                                <ProgressRing IsActive="True" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel x:Name="apiInputPanel" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
                                 <TextBox x:Name="apiKeyBox" PlaceholderText="Enter the Gemini API Key" AutomationProperties.Name="simple text editor" MinWidth="830" Margin="0,0,10,0"/>
                                 <Button x:Name="getApiKeyButton" HorizontalAlignment="Center" Style="{StaticResource DefaultButtonStyle}" Content="Get API Key" Height="35"/>
                         </StackPanel>
@@ -45,7 +48,6 @@
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
                                 <ComboBox  x:Name="dbTypeCombobox" PlaceholderText="Choose your database type" Width="230" Margin="0,0,10,0" Height="35"/>
                                 <TextBox x:Name="connectionStringBox" PlaceholderText="Enter the connection string . . ." AutomationProperties.Name="simple text editor" MinWidth="700"/>
-                                
                             </StackPanel>
                             <Button x:Name="connectDbButton" Style="{StaticResource AccentButtonStyle}" Content="Connect" Height="35" HorizontalAlignment="Center"/>
                         </StackPanel>
@@ -65,7 +67,7 @@
                                 BorderBrush="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}"
                                 UseLayoutRounding="True"
                                 Width="800"
-                                MaxHeight="500"
+                                MaxHeight="300"
                                 HorizontalAlignment="Left"
                                 Margin="0,0,0,10"/>
                         </StackPanel>

@@ -40,13 +40,19 @@
                     </Expander.Content>
                 </Expander>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
-                    <TextBox x:Name="queryBox" TextWrapping="Wrap" IsSpellCheckEnabled="True" PlaceholderText="Enter your question . . ." AutomationProperties.Name="simple text editor" MinWidth="1000" Margin="0,0,10,0"/>
-                    <Button x:Name="myButton" Click="SendButton_Click" Style="{StaticResource AccentButtonStyle}" Width="60" Height="35">
-                        <SymbolIcon Symbol="Send"/>
-                    </Button>
+                <StackPanel x:Name="LoadingOverlay" Background="Transparent" Visibility="Collapsed" Margin="0,0,0,20">
+                    <ProgressRing IsActive="True" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </StackPanel>
-                <controls:DataGrid x:Name="outputGridView" MaxHeight="800" Margin="0,0,0,10" IsReadOnly="True" AutoGenerateColumns="False" VerticalAlignment="Top"/>
+
+                <StackPanel x:Name="mainPanel">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
+                        <TextBox x:Name="queryBox" TextWrapping="Wrap" IsSpellCheckEnabled="True" PlaceholderText="Enter your question . . ." AutomationProperties.Name="simple text editor" MinWidth="1000" Margin="0,0,10,0"/>
+                        <Button x:Name="myButton" Click="SendButton_Click" Style="{StaticResource AccentButtonStyle}" Width="60" Height="35">
+                            <SymbolIcon Symbol="Send"/>
+                        </Button>
+                    </StackPanel>
+                    <controls:DataGrid x:Name="outputGridView" MaxHeight="800" IsReadOnly="True" AutoGenerateColumns="False" VerticalAlignment="Top"/>
+                </StackPanel>
             </StackPanel>
 
         </Border>

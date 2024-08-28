@@ -62,6 +62,9 @@ namespace AskDB.App
 
             try
             {
+                LoadingOverlay.Visibility = Visibility.Visible;
+                (sender as Button).IsEnabled = false;
+                apiInputPanel.Visibility = Visibility.Collapsed;
                 await Generator.GenerateContent(apiKeyBox.Text, "Say 'Hello World' to me!", false, CreativityLevel.Low);
             }
             catch
@@ -76,6 +79,12 @@ namespace AskDB.App
 
                 await dialog.ShowAsync();
                 return;
+            }
+            finally
+            {
+                LoadingOverlay.Visibility = Visibility.Collapsed;
+                (sender as Button).IsEnabled = true;
+                apiInputPanel.Visibility = Visibility.Visible;
             }
 
             step1Expander.IsExpanded = step1Expander.IsEnabled = false;
