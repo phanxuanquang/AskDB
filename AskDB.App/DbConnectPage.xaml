@@ -27,7 +27,7 @@
                     </Expander.Header>
                     <Expander.Content>
                         <StackPanel>
-                            <StackPanel x:Name="LoadingOverlay" Background="Transparent" Visibility="Collapsed" Margin="0,0,0,20">
+                            <StackPanel x:Name="apiKeyInputLoadingOverlay" Background="Transparent" Visibility="Collapsed" Margin="0,0,0,20">
                                 <ProgressRing IsActive="True" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </StackPanel>
                             <StackPanel x:Name="apiInputPanel" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
@@ -45,7 +45,10 @@
                     </Expander.Header>
                     <Expander.Content>
                         <StackPanel>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
+                            <StackPanel x:Name="dbInputLoadingOverlay" Background="Transparent" Visibility="Collapsed" Margin="0,0,0,20">
+                                <ProgressRing IsActive="True" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel x:Name="dbInputPanel" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
                                 <ComboBox  x:Name="dbTypeCombobox" PlaceholderText="Choose your database type" Width="230" Margin="0,0,10,0" Height="35"/>
                                 <TextBox x:Name="connectionStringBox" PlaceholderText="Enter the connection string . . ." AutomationProperties.Name="simple text editor" MinWidth="700"/>
                             </StackPanel>
@@ -73,7 +76,6 @@
                         </StackPanel>
                     </Expander.Content>
                 </Expander>
-
                 <Button x:Name="startBtn" IsEnabled="False" HorizontalAlignment="Center" Style="{StaticResource AccentButtonStyle}" Content="START" FontWeight="SemiBold" Height="35" Width="100" Click="StartButton_Click"/>
             </StackPanel>
 

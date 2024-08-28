@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
@@ -14,6 +15,7 @@ namespace AskDB.App
 {
     public sealed partial class DbConnectPage : Page
     {
+        private List<Table> Tables = new List<Table>();
         public DbConnectPage()
         {
             this.InitializeComponent();
@@ -62,7 +64,7 @@ namespace AskDB.App
 
             try
             {
-                LoadingOverlay.Visibility = Visibility.Visible;
+                apiKeyInputLoadingOverlay.Visibility = Visibility.Visible;
                 (sender as Button).IsEnabled = false;
                 apiInputPanel.Visibility = Visibility.Collapsed;
                 await Generator.GenerateContent(apiKeyBox.Text, "Say 'Hello World' to me!", false, CreativityLevel.Low);
@@ -82,7 +84,7 @@ namespace AskDB.App
             }
             finally
             {
-                LoadingOverlay.Visibility = Visibility.Collapsed;
+                apiKeyInputLoadingOverlay.Visibility = Visibility.Collapsed;
                 (sender as Button).IsEnabled = true;
                 apiInputPanel.Visibility = Visibility.Visible;
             }
@@ -124,9 +126,13 @@ namespace AskDB.App
 
             try
             {
+                dbInputLoadingOverlay.Visibility = Visibility.Visible;
+                (sender as Button).IsEnabled = false;
+                dbInputPanel.Visibility = Visibility.Collapsed;
+
                 var selectedType = (DatabaseType)dbTypeCombobox.SelectedItem;
-                var tables = await Analyzer.GetTables(selectedType, connectionStringBox.Text);
-                tablesListView.ItemsSource = tables.Select(t => t.Name).ToList();
+                Tables = await Analyzer.GetTables(selectedType, connectionStringBox.Text);
+                tablesListView.ItemsSource = Tables.Select(t => t.Name).ToList();
             }
             catch (Exception ex)
             {
@@ -140,6 +146,12 @@ namespace AskDB.App
 
                 await dialog.ShowAsync();
                 return;
+            }
+            finally
+            {
+                dbInputLoadingOverlay.Visibility = Visibility.Collapsed;
+                (sender as Button).IsEnabled = true;
+                dbInputPanel.Visibility = Visibility.Visible;
             }
 
             step2Expander.IsExpanded = step2Expander.IsEnabled = false;
@@ -170,9 +182,8 @@ namespace AskDB.App
         {
             try
             {
-                var tables = await Analyzer.GetTables(Analyzer.DatabaseType, Analyzer.ConnectionString);
                 var selectedTableNames = tablesListView.SelectedItems.Select(t => t.ToString()).ToList();
-                Analyzer.Tables = tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
+                Analyzer.Tables = Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
 
                 Frame.Navigate(typeof(MainPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
             }
