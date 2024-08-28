@@ -16,6 +16,21 @@
     <PackageCertificateThumbprint>AF2A5AD07432D7732A3276A9E91ADDB399976084</PackageCertificateThumbprint>
     <PackageCertificateKeyFile>AskDB.App_TemporaryKey.pfx</PackageCertificateKeyFile>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
+	  <WindowsPackageType>None</WindowsPackageType>
+	  <WindowsAppSDKBootstrapAutoInitializeOptions_OnNoMatch_ShowUI>true</WindowsAppSDKBootstrapAutoInitializeOptions_OnNoMatch_ShowUI>
+	  <PublishSingleFile>true</PublishSingleFile>
+	  <SelfContained>true</SelfContained>
+	  <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <PackageId>AskDB</PackageId>
+    <Title>AskDB</Title>
+    <Authors>Phan Xuan Quang</Authors>
+    <Company>Phan Xuan Quang</Company>
+    <Description>Ask the AI about your SQL database</Description>
+    <Copyright>© 2024 Phan Xuan Quang / AskDb Project</Copyright>
+    <PackageProjectUrl>https://github.com/phanxuanquang/AskDB</PackageProjectUrl>
+    <PackageIcon>icon.png</PackageIcon>
+    <RepositoryUrl>https://github.com/phanxuanquang/AskDB</RepositoryUrl>
+    <NeutralLanguage>en-001</NeutralLanguage>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="DbConnectPage.xaml" />
@@ -50,6 +65,12 @@
   <ItemGroup>
     <ProjectReference Include="..\DatabaseAnalyzer\DatabaseAnalyzer.csproj" />
     <ProjectReference Include="..\Helper\Helper.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Assets\icon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Page Update="DbConnectPage.xaml">
