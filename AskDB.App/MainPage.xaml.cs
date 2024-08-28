@@ -4,6 +4,7 @@ using DatabaseAnalyzer.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -32,12 +33,31 @@ namespace AskDB.App
 
         private async void MainPage_Loaded(object sender, RoutedEventArgs e)
         {
-            Tables = await Analyzer.GetTables(Analyzer.DatabaseType, Analyzer.ConnectionString);
-            tablesListView.ItemsSource = Tables.Select(t => t.Name).ToList();
-
-            foreach (var t in Analyzer.Tables)
+            try
             {
-                tablesListView.SelectedItems.Add(t.Name);
+                Tables = await Analyzer.GetTables(Analyzer.DatabaseType, Analyzer.ConnectionString);
+                tablesListView.ItemsSource = Tables.Select(t => t.Name).ToList();
+
+                foreach (var t in Analyzer.Tables)
+                {
+                    tablesListView.SelectedItems.Add(t.Name);
+                }
+            }
+            catch (Exception ex)
+            {
+                ContentDialog dialog = new ContentDialog();
+
+                dialog.XamlRoot = RootGrid.XamlRoot;
+                dialog.Title = "Error";
+                dialog.PrimaryButtonText = "OK";
+                dialog.DefaultButton = ContentDialogButton.Primary;
+                dialog.Content = ex.Message;
+
+                var result = await dialog.ShowAsync();
+                if(result == ContentDialogResult.Primary)
+                {
+                    Frame.Navigate(typeof(DbConnectPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
+                }
             }
         }
 
@@ -98,24 +118,39 @@ namespace AskDB.App
                     break;
             }
 
-            var dataTable = await extractor.GetData(Analyzer.ConnectionString, sqlCommand.Output);
-
-            for (int i = 0; i < dataTable.Columns.Count; i++)
+            try
             {
-                outputGridView.Columns.Add(new CommunityToolkit.WinUI.UI.Controls.DataGridTextColumn()
+                var dataTable = await extractor.GetData(Analyzer.ConnectionString, sqlCommand.Output);
+
+                for (int i = 0; i < dataTable.Columns.Count; i++)
                 {
-                    Header = dataTable.Columns[i].ColumnName,
-                    Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
-                });
-            }
+                    outputGridView.Columns.Add(new CommunityToolkit.WinUI.UI.Controls.DataGridTextColumn()
+                    {
+                        Header = dataTable.Columns[i].ColumnName,
+                        Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
+                    });
+                }
 
-            var collectionObjects = new System.Collections.ObjectModel.ObservableCollection<object>();
-            foreach (DataRow row in dataTable.Rows)
+                var collectionObjects = new System.Collections.ObjectModel.ObservableCollection<object>();
+                foreach (DataRow row in dataTable.Rows)
+                {
+                    collectionObjects.Add(row.ItemArray);
+                }
+
+                outputGridView.ItemsSource = collectionObjects;
+            }
+            catch (Exception ex)
             {
-                collectionObjects.Add(row.ItemArray);
-            }
+                ContentDialog dialog = new ContentDialog();
 
-            outputGridView.ItemsSource = collectionObjects;
+                dialog.XamlRoot = RootGrid.XamlRoot;
+                dialog.Title = "Not an SQL command";
+                dialog.PrimaryButtonText = "OK";
+                dialog.DefaultButton = ContentDialogButton.Primary;
+                dialog.Content = $"SQL Command: {sqlCommand.Output}\n\n{ex.Message}";
+
+                await dialog.ShowAsync();
+            }
         }
     }
 }
