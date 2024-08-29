@@ -23,7 +23,13 @@ namespace AskDB.App
             connectGeminiButton.Click += ConnectGeminiButton_Click;
             connectDbButton.Click += ConnectDbButton_Click;
             getApiKeyButton.Click += GetApiKeyButton_Click;
+            forwardButton.Click += ForwardButton_Click;
             tablesListView.SelectionChanged += TablesListView_SelectionChanged;
+        }
+
+        private void ForwardButton_Click(object sender, RoutedEventArgs e)
+        {
+            Frame.Navigate(typeof(MainPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
         }
 
         private async void GetApiKeyButton_Click(object sender, RoutedEventArgs e)
@@ -64,9 +70,10 @@ namespace AskDB.App
 
             try
             {
+                apiInputPanel.Visibility = tutorialButton.Visibility = Visibility.Collapsed;
                 apiKeyInputLoadingOverlay.Visibility = Visibility.Visible;
                 (sender as Button).IsEnabled = false;
-                apiInputPanel.Visibility = Visibility.Collapsed;
+
                 await Generator.GenerateContent(apiKeyBox.Text, "Say 'Hello World' to me!", false, CreativityLevel.Low);
             }
             catch
@@ -86,10 +93,12 @@ namespace AskDB.App
             {
                 apiKeyInputLoadingOverlay.Visibility = Visibility.Collapsed;
                 (sender as Button).IsEnabled = true;
-                apiInputPanel.Visibility = Visibility.Visible;
+
+                apiInputPanel.Visibility = tutorialButton.Visibility = Visibility.Visible;
             }
 
-            step1Expander.IsExpanded = step1Expander.IsEnabled = false;
+            step1Expander.IsExpanded = false;
+            step1Expander.IsEnabled = true;
             step2Expander.IsExpanded = step2Expander.IsEnabled = true;
             Analyzer.ApiKey = apiKeyBox.Text;
         }
@@ -164,6 +173,17 @@ namespace AskDB.App
         {
             var dbtypes = (DatabaseType[])Enum.GetValues(typeof(DatabaseType));
             dbTypeCombobox.ItemsSource = dbtypes;
+
+            if (Analyzer.IsActivated)
+            {
+                apiKeyBox.Text = Analyzer.ApiKey;
+                connectionStringBox.Text = Analyzer.ConnectionString;
+                dbTypeCombobox.SelectedItem = Analyzer.DatabaseType;
+
+                step2Expander.IsEnabled = true;
+
+                forwardButton.IsEnabled = true;
+            }
         }
 
         private void TablesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)

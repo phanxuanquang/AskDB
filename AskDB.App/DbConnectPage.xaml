@@ -49,7 +49,7 @@
                                 <TextBox x:Name="apiKeyBox" PlaceholderText="Enter the Gemini API Key" AutomationProperties.Name="simple text editor" MinWidth="830" Margin="0,0,10,0"/>
                                 <Button x:Name="getApiKeyButton" HorizontalAlignment="Center" Style="{StaticResource DefaultButtonStyle}" Content="Get API Key" Height="35"/>
                         </StackPanel>
-                            <HyperlinkButton Content="I don't know how to get the API key" NavigateUri="https://www.youtube.com/embed/z8-S9P2SFU8" Padding="5,0,0,0"/>
+                            <HyperlinkButton x:Name="tutorialButton" Content="I don't know how to get the API key" NavigateUri="https://www.youtube.com/embed/z8-S9P2SFU8" Padding="5,0,0,0"/>
                             <Button x:Name="connectGeminiButton" Style="{StaticResource AccentButtonStyle}" Content="Connect" Height="35" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Expander.Content>
