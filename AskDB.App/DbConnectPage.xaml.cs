@@ -9,18 +9,15 @@ using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
-using Windows.Storage.Pickers;
-using Windows.Storage;
-using Windows.UI.Popups;
-using WinRT.Interop;
-using Helper;
+using System.Threading.Tasks;
 
 
 namespace AskDB.App
 {
     public sealed partial class DbConnectPage : Page
     {
-        private List<Table> Tables = new List<Table>();
+        private List<Table> _tables = new List<Table>();
+
         public DbConnectPage()
         {
             this.InitializeComponent();
@@ -30,6 +27,7 @@ namespace AskDB.App
             getApiKeyButton.Click += GetApiKeyButton_Click;
             forwardButton.Click += ForwardButton_Click;
             tablesListView.SelectionChanged += TablesListView_SelectionChanged;
+            startBtn.Click += StartButton_Click;
         }
 
         private void ForwardButton_Click(object sender, RoutedEventArgs e)
@@ -45,186 +43,179 @@ namespace AskDB.App
             }
             catch (Exception ex)
             {
-                ContentDialog dialog = new ContentDialog();
-
-                dialog.XamlRoot = RootGrid.XamlRoot;
-                dialog.Title = "Error";
-                dialog.PrimaryButtonText = "OK";
-                dialog.DefaultButton = ContentDialogButton.Primary;
-                dialog.Content = ex.Message;
-
-                await dialog.ShowAsync();
+                await ShowErrorDialog(ex.Message);
             }
         }
 
         private async void ConnectGeminiButton_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(apiKeyBox.Text) || string.IsNullOrWhiteSpace(apiKeyBox.Text))
+            if (string.IsNullOrWhiteSpace(apiKeyBox.Text))
             {
-                ContentDialog dialog = new ContentDialog();
-
-                dialog.XamlRoot = RootGrid.XamlRoot;
-                dialog.Title = "Error";
-                dialog.PrimaryButtonText = "OK";
-                dialog.DefaultButton = ContentDialogButton.Primary;
-                dialog.Content = "You have not entered your API Key yet.";
-
-                await dialog.ShowAsync();
+                await ShowErrorDialog("You have not entered your API Key yet.");
                 return;
             }
 
             try
             {
-                apiInputPanel.Visibility = tutorialButton.Visibility = Visibility.Collapsed;
-                apiKeyInputLoadingOverlay.Visibility = Visibility.Visible;
-                (sender as Button).IsEnabled = false;
-
-                await Generator.GenerateContent(apiKeyBox.Text, "Say 'Hello World' to me!", false, CreativityLevel.Low);
+                await ValidateApiKey(sender as Button);
+                UpdateUIAfterApiValidation();
             }
             catch
             {
-                ContentDialog dialog = new ContentDialog();
-
-                dialog.XamlRoot = RootGrid.XamlRoot;
-                dialog.Title = "Error";
-                dialog.PrimaryButtonText = "OK";
-                dialog.DefaultButton = ContentDialogButton.Primary;
-                dialog.Content = "Invalid API Key. Please try again.";
-
-                await dialog.ShowAsync();
-                return;
+                await ShowErrorDialog("Invalid API Key. Please try again.");
             }
-            finally
-            {
-                apiKeyInputLoadingOverlay.Visibility = Visibility.Collapsed;
-                (sender as Button).IsEnabled = true;
-
-                apiInputPanel.Visibility = tutorialButton.Visibility = Visibility.Visible;
-            }
-
-            step1Expander.IsExpanded = false;
-            step1Expander.IsEnabled = true;
-            step2Expander.IsExpanded = step2Expander.IsEnabled = true;
-            Analyzer.ApiKey = apiKeyBox.Text;
         }
 
         private async void ConnectDbButton_Click(object sender, RoutedEventArgs e)
         {
-            if (dbTypeCombobox.SelectedIndex == -1)
+            if (!ValidateDatabaseInput())
             {
-                ContentDialog dialog = new ContentDialog();
-
-                dialog.XamlRoot = RootGrid.XamlRoot;
-                dialog.Title = "Error";
-                dialog.PrimaryButtonText = "OK";
-                dialog.DefaultButton = ContentDialogButton.Primary;
-                dialog.Content = "Please choose your database type.";
-
-                await dialog.ShowAsync();
-                return;
-            }
-
-            if (string.IsNullOrEmpty(connectionStringBox.Text) || string.IsNullOrWhiteSpace(connectionStringBox.Text))
-            {
-                ContentDialog dialog = new ContentDialog();
-
-                dialog.XamlRoot = RootGrid.XamlRoot;
-                dialog.Title = "Error";
-                dialog.PrimaryButtonText = "OK";
-                dialog.DefaultButton = ContentDialogButton.Primary;
-                dialog.Content = "Please input the connection string to connect to your database.";
-
-                await dialog.ShowAsync();
                 return;
             }
 
             try
             {
-                dbInputLoadingOverlay.Visibility = Visibility.Visible;
-                (sender as Button).IsEnabled = false;
-                dbInputPanel.Visibility = Visibility.Collapsed;
-
-                var selectedType = (DatabaseType)dbTypeCombobox.SelectedItem;
-                Tables = await Analyzer.GetTables(selectedType, connectionStringBox.Text);
-                tablesListView.ItemsSource = Tables.Select(t => t.Name).ToList();
+                await ConnectToDatabase(sender as Button);
+                UpdateUIAfterDatabaseConnection();
             }
             catch (Exception ex)
             {
-                ContentDialog dialog = new ContentDialog();
-
-                dialog.XamlRoot = RootGrid.XamlRoot;
-                dialog.Title = "Error";
-                dialog.PrimaryButtonText = "OK";
-                dialog.DefaultButton = ContentDialogButton.Primary;
-                dialog.Content = ex.Message;
-
-                await dialog.ShowAsync();
-                return;
+                await ShowErrorDialog(ex.Message);
             }
             finally
             {
-                dbInputLoadingOverlay.Visibility = Visibility.Collapsed;
-                (sender as Button).IsEnabled = true;
-                dbInputPanel.Visibility = Visibility.Visible;
+                SetDatabaseLoadingState(false, sender as Button);
             }
-
-            step2Expander.IsExpanded = step2Expander.IsEnabled = false;
-            step3Expander.IsExpanded = step3Expander.IsEnabled = true;
-            Analyzer.ConnectionString = connectionStringBox.Text;
-            Analyzer.DatabaseType = (DatabaseType)dbTypeCombobox.SelectedItem;
         }
 
         private void DbConnectPage_Loaded(object sender, RoutedEventArgs e)
         {
-            var dbtypes = (DatabaseType[])Enum.GetValues(typeof(DatabaseType));
-            dbTypeCombobox.ItemsSource = dbtypes;
-
+            LoadDatabaseTypes();
             if (Analyzer.IsActivated)
             {
-                apiKeyBox.Text = Analyzer.ApiKey;
-                connectionStringBox.Text = Analyzer.ConnectionString;
-                dbTypeCombobox.SelectedItem = Analyzer.DatabaseType;
-
-                step2Expander.IsEnabled = true;
-
-                forwardButton.IsEnabled = true;
+                LoadSavedSettings();
             }
         }
 
         private void TablesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (tablesListView.SelectedItems.Count > 0)
-            {
-                startBtn.IsEnabled = true;
-            }
-            else
-            {
-                startBtn.IsEnabled = false;
-            }
+            startBtn.IsEnabled = tablesListView.SelectedItems.Count > 0;
         }
 
         private async void StartButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                var selectedTableNames = tablesListView.SelectedItems.Select(t => t.ToString()).ToList();
-                Analyzer.Tables = Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
+                SaveSelectedTables();
                 Analyzer.IsActivated = true;
-
                 Frame.Navigate(typeof(MainPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
             }
             catch (Exception ex)
             {
-                ContentDialog dialog = new ContentDialog();
-
-                dialog.XamlRoot = RootGrid.XamlRoot;
-                dialog.Title = "Error";
-                dialog.PrimaryButtonText = "OK";
-                dialog.DefaultButton = ContentDialogButton.Primary;
-                dialog.Content = ex.Message;
-
-                await dialog.ShowAsync();
+                await ShowErrorDialog(ex.Message);
             }
+        }
+
+        private async Task ShowErrorDialog(string message)
+        {
+            ContentDialog dialog = new ContentDialog
+            {
+                XamlRoot = RootGrid.XamlRoot,
+                Title = "Error",
+                Content = message,
+                PrimaryButtonText = "OK",
+                DefaultButton = ContentDialogButton.Primary
+            };
+
+            await dialog.ShowAsync();
+        }
+
+        private async Task ValidateApiKey(Button sender)
+        {
+            SetApiKeyLoadingState(true, sender);
+            try
+            {
+                await Generator.GenerateContent(apiKeyBox.Text, "Say 'Hello World' to me!", false, CreativityLevel.Low);
+            }
+            finally
+            {
+                SetApiKeyLoadingState(false, sender);
+            }
+        }
+
+        private void UpdateUIAfterApiValidation()
+        {
+            step1Expander.IsExpanded = false;
+            step1Expander.IsEnabled = true;
+            step2Expander.IsExpanded = step2Expander.IsEnabled = true;
+            Analyzer.ApiKey = apiKeyBox.Text;
+        }
+
+        private bool ValidateDatabaseInput()
+        {
+            if (dbTypeCombobox.SelectedIndex == -1)
+            {
+                ShowErrorDialog("Please choose your database type.").Wait();
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(connectionStringBox.Text))
+            {
+                ShowErrorDialog("Please input the connection string to connect to your database.").Wait();
+                return false;
+            }
+
+            return true;
+        }
+
+        private async Task ConnectToDatabase(Button sender)
+        {
+            SetDatabaseLoadingState(true, sender);
+            var selectedType = (DatabaseType)dbTypeCombobox.SelectedItem;
+            _tables = await Analyzer.GetTables(selectedType, connectionStringBox.Text.Trim());
+            tablesListView.ItemsSource = _tables.Select(t => t.Name).ToList();
+        }
+
+        private void UpdateUIAfterDatabaseConnection()
+        {
+            step2Expander.IsExpanded = step2Expander.IsEnabled = false;
+            step3Expander.IsExpanded = step3Expander.IsEnabled = true;
+            Analyzer.ConnectionString = connectionStringBox.Text;
+            Analyzer.DatabaseType = (DatabaseType)dbTypeCombobox.SelectedItem;
+        }
+
+        private void LoadDatabaseTypes()
+        {
+            dbTypeCombobox.ItemsSource = Enum.GetValues(typeof(DatabaseType));
+        }
+
+        private void LoadSavedSettings()
+        {
+            apiKeyBox.Text = Analyzer.ApiKey;
+            connectionStringBox.Text = Analyzer.ConnectionString;
+            dbTypeCombobox.SelectedItem = Analyzer.DatabaseType;
+            step2Expander.IsEnabled = true;
+            forwardButton.IsEnabled = true;
+        }
+
+        private void SaveSelectedTables()
+        {
+            var selectedTableNames = tablesListView.SelectedItems.Cast<string>().ToList();
+            Analyzer.Tables = _tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
+        }
+
+        private void SetApiKeyLoadingState(bool isLoading, Button sender)
+        {
+            apiInputPanel.Visibility = tutorialButton.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
+            apiKeyInputLoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
+            sender.IsEnabled = !isLoading;
+        }
+
+        private void SetDatabaseLoadingState(bool isLoading, Button sender)
+        {
+            dbInputLoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
+            sender.IsEnabled = !isLoading;
+            dbInputPanel.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
         }
     }
 }
