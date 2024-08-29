@@ -44,7 +44,7 @@ namespace DatabaseAnalyzer
 
             tables = await schemaExtractor.GetTables(connectionString);
 
-            return tables;
+            return tables.OrderBy(t => t.Name).ToList();
         }
 
         public static string TablesAsString(List<Table> tables)
