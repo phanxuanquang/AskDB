@@ -184,6 +184,7 @@ namespace AskDB.App
             {
                 var selectedTableNames = tablesListView.SelectedItems.Select(t => t.ToString()).ToList();
                 Analyzer.Tables = Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
+                Analyzer.IsActivated = true;
 
                 Frame.Navigate(typeof(MainPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
             }

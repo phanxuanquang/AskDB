@@ -15,6 +15,7 @@ namespace DatabaseAnalyzer
         public static string ConnectionString = string.Empty;
         public static DatabaseType DatabaseType = DatabaseType.MSSQL;
         public static List<Table> Tables = new List<Table>();
+        public static bool IsActivated = false;
 
 
         public static async Task<List<Table>> GetTables(DatabaseType databaseType, string connectionString)
@@ -61,7 +62,7 @@ namespace DatabaseAnalyzer
             promptBuilder.AppendLine("I am someone who knows nothing about SQL.");
             promptBuilder.AppendLine($"I will provide you with the structure of my database and my query in natural language. Please help me convert it into a corresponding {databaseType} query.");
             promptBuilder.AppendLine("Your response must include two parts as follows:");
-            promptBuilder.AppendLine($"- Output: This is your response to my input. If my input cannot be converted into a {databaseType} query or you find it is not relevant to the table structure in the database I provided or not a query or you find it is an INSERT/UPDATE/DELETE query, please respond that my request is invalid. Otherwise, please return the corresponding {databaseType} query. In addition, the SQL command must be well-formated.");
+            promptBuilder.AppendLine($"- Output: This is your response to my input. If my input cannot be converted into a {databaseType} query or you find it is not relevant to the table structure in the database I provided or not a query or you find it is an INSERT/UPDATE/DELETE query, please respond that my request is invalid. Otherwise, please return the corresponding {databaseType} query. In addition, the SQL command must be well-formated for me to read and understand.");
             promptBuilder.AppendLine("- IsSql: If the Output is an SQL query, this should be TRUE; otherwise, it should be FALSE.");
             promptBuilder.AppendLine("Your response should be a JSON that corresponds to the following C# class:");
             promptBuilder.AppendLine("class SqlCommander");
@@ -70,10 +71,10 @@ namespace DatabaseAnalyzer
             promptBuilder.AppendLine("    bool IsSql;");
             promptBuilder.AppendLine("}");
             promptBuilder.AppendLine("To help you understand my command and do the task more effectively, here is an example:");
-            promptBuilder.AppendLine("My input: list all products");
+            promptBuilder.AppendLine("My input: give me all available products");
             promptBuilder.AppendLine("Your response:");
             promptBuilder.AppendLine("{");
-            promptBuilder.AppendLine("    \"Output\" : \"SELECT * as AllProducts FROM Products\",");
+            promptBuilder.AppendLine("    \"Output\" : \"SELECT * AS AvailableProducts FROM Products WHERE IsAvailable = 1\",");
             promptBuilder.AppendLine("    \"IsSql\" : true");
             promptBuilder.AppendLine("}");
             promptBuilder.AppendLine("Now, let's get started.");

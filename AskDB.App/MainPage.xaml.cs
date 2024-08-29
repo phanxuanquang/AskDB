@@ -23,6 +23,12 @@ namespace AskDB.App
             this.Loaded += MainPage_Loaded;
             queryBox.KeyDown += QueryBox_KeyDown;
             showSqlButton.Click += ShowSqlButton_Click;
+            backButton.Click += BackButton_Click;
+        }
+
+        private void BackButton_Click(object sender, RoutedEventArgs e)
+        {
+            Frame.Navigate(typeof(DbConnectPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
         }
 
         private async void ShowSqlButton_Click(object sender, RoutedEventArgs e)

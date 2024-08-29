@@ -20,7 +20,22 @@
         MinWidth="600">
 
             <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                <TextBlock FontSize="36" FontWeight="Bold" Text="HELP ME TO PREPARE EVERYTHING" HorizontalAlignment="Center" Margin="0,0,0,30"/>
+                <Grid Margin="0,0,0,20" MinWidth="1000">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button x:Name="backButton" Grid.Column="0" BorderThickness="0" Background="Transparent" IsEnabled="False">
+                        <SymbolIcon Symbol="Back"/>
+                    </Button>
+                    <TextBlock Text="GETTING STARTED" FontSize="36" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Column="1"/>
+                    <Button x:Name="forwardButton" Grid.Column="2" BorderThickness="0" Background="Transparent" IsEnabled="False">
+                        <SymbolIcon Symbol="Forward"/>
+                    </Button>
+                </Grid>
+
                 <Expander x:Name="step1Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsExpanded="True">
                     <Expander.Header>
                         <ContentControl FontWeight="SemiBold">Step 1 - Connect to Gemini</ContentControl>

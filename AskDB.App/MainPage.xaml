@@ -20,7 +20,21 @@
         MinWidth="800">
 
             <StackPanel Orientation="Vertical" >
-                <TextBlock FontSize="36" FontWeight="Bold" Text="ASK ME EVERYTHING ABOUT YOUR DATABASE" HorizontalAlignment="Center" Margin="0,0,0,30"/>
+                <Grid Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button x:Name="backButton" Grid.Column="0" BorderThickness="0" Background="Transparent">
+                        <SymbolIcon Symbol="Back"/>
+                    </Button>
+                    <TextBlock Text="ASK ME EVERYTHING ABOUT YOUR DATABASE" FontSize="36" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Column="1"/>
+                    <Button x:Name="forwardButton" Grid.Column="2" BorderThickness="0" Background="Transparent" IsEnabled="False">
+                        <SymbolIcon Symbol="Forward"/>
+                    </Button>
+                </Grid>
                 <Expander x:Name="selectTableExpander" MinWidth="1070" Margin="0,0,0,20" IsExpanded="False" HorizontalAlignment="Stretch">
                     <Expander.Header>
                         <ContentControl FontWeight="SemiBold">Select tables to ask</ContentControl>
