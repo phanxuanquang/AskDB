@@ -46,7 +46,7 @@
                                 <ProgressRing IsActive="True" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </StackPanel>
                             <StackPanel x:Name="apiInputPanel" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
-                                <TextBox x:Name="apiKeyBox" PlaceholderText="Enter the Gemini API Key" AutomationProperties.Name="simple text editor" MinWidth="830" Margin="0,0,10,0"/>
+                                <TextBox x:Name="apiKeyBox" IsSpellCheckEnabled="False" PlaceholderText="Enter the Gemini API Key" AutomationProperties.Name="simple text editor" MinWidth="830" Margin="0,0,10,0"/>
                                 <Button x:Name="getApiKeyButton" HorizontalAlignment="Center" Style="{StaticResource DefaultButtonStyle}" Content="Get API Key" Height="35"/>
                         </StackPanel>
                             <HyperlinkButton x:Name="tutorialButton" Content="I don't know how to get the API key" NavigateUri="https://www.youtube.com/embed/z8-S9P2SFU8" Padding="5,0,0,0"/>
@@ -66,7 +66,7 @@
                             </StackPanel>
                             <StackPanel x:Name="dbInputPanel" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
                                 <ComboBox  x:Name="dbTypeCombobox" PlaceholderText="Choose your database type" Width="230" Margin="0,0,10,0" Height="35"/>
-                                <TextBox x:Name="connectionStringBox" PlaceholderText="Enter the connection string . . ." AutomationProperties.Name="simple text editor" MinWidth="700"/>
+                                <TextBox x:Name="connectionStringBox" PlaceholderText="Enter the connection string . . ." AutomationProperties.Name="simple text editor" MinWidth="700" IsSpellCheckEnabled="False"/>
                             </StackPanel>
                             <Button x:Name="connectDbButton" Style="{StaticResource AccentButtonStyle}" Content="Connect" Height="35" HorizontalAlignment="Center"/>
                         </StackPanel>

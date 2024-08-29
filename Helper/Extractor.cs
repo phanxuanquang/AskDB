@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel;
+using System.Data;
 using System.Reflection;
+using System.Text;
 
 namespace Helper
 {
@@ -18,6 +20,22 @@ namespace Helper
             {
                 return value.ToString();
             }
+        }
+
+        public static void ExportData(DataTable table, string outputFilePath)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            string[] columnNames = table.Columns.Cast<DataColumn>().Select(column => column.ColumnName).ToArray();
+            sb.AppendLine(string.Join(",", columnNames));
+
+            foreach (DataRow row in table.Rows)
+            {
+                string[] fields = row.ItemArray.Select(field => field.ToString()).ToArray();
+                sb.AppendLine(string.Join(",", fields));
+            }
+
+            File.WriteAllText(outputFilePath, sb.ToString());
         }
 
     }

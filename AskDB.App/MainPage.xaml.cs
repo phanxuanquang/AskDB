@@ -1,21 +1,31 @@
-using DatabaseAnalyzer;
+﻿using DatabaseAnalyzer;
 using DatabaseAnalyzer.Extractors;
 using DatabaseAnalyzer.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media.Animation;
+using MySqlX.XDevAPI.Relational;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage.Pickers;
+using Windows.Storage;
+using WinRT.Interop;
+using Helper;
+using Table = DatabaseAnalyzer.Models.Table;
+using Windows.ApplicationModel.Core;
+using Windows.UI.Popups;
+using System.Data.SqlClient;
 
 namespace AskDB.App
 {
     public sealed partial class MainPage : Page
     {
-        private List<Table> Tables;
+        private DataTable DataTable = new DataTable();
+        private List<Table> Tables = new List<Table>();
         private string SqlQuery;
         public MainPage()
         {
@@ -23,7 +33,42 @@ namespace AskDB.App
             this.Loaded += MainPage_Loaded;
             queryBox.KeyDown += QueryBox_KeyDown;
             showSqlButton.Click += ShowSqlButton_Click;
+            exportButton.Click += ExportButton_Click;
             backButton.Click += BackButton_Click;
+        }
+
+        private async void ExportButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var savePicker = new FileSavePicker();
+
+                nint windowHandle = WindowNative.GetWindowHandle(App.Window);
+                InitializeWithWindow.Initialize(savePicker, windowHandle);
+
+                savePicker.SuggestedStartLocation = PickerLocationId.Desktop;
+                savePicker.FileTypeChoices.Add("CSV", new[] { ".csv" });
+                savePicker.SuggestedFileName = "Exported Data";
+
+                StorageFile file = await savePicker.PickSaveFileAsync();
+
+                if (file != null)
+                {
+                    Extractor.ExportData(DataTable, file.Path);
+                }
+            }
+            catch (Exception ex)
+            {
+                ContentDialog dialog = new ContentDialog();
+
+                dialog.XamlRoot = RootGrid.XamlRoot;
+                dialog.Title = "Error";
+                dialog.PrimaryButtonText = "OK";
+                dialog.DefaultButton = ContentDialogButton.Primary;
+                dialog.Content = ex.Message;
+
+                await dialog.ShowAsync();
+            }
         }
 
         private void BackButton_Click(object sender, RoutedEventArgs e)
@@ -93,53 +138,15 @@ namespace AskDB.App
 
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
+            var isQuerySql = true;
             LoadingOverlay.Visibility = Visibility.Visible;
             mainPanel.Visibility = exportButton.Visibility = showSqlButton.Visibility = Visibility.Collapsed;
 
             var sqlCommand = new SqlCommander();
             outputGridView.Columns.Clear();
-            Analyzer.Tables = Tables.Where(t => tablesListView.SelectedItems.Contains(t.Name)).ToList();
-
-            try
-            {
-                sqlCommand = await Analyzer.GetSql(Analyzer.ApiKey, Analyzer.Tables, queryBox.Text, Analyzer.DatabaseType);
-            }
-            catch (Exception ex)
-            {
-                LoadingOverlay.Visibility = Visibility.Collapsed;
-                mainPanel.Visibility = Visibility.Visible;
-                ContentDialog dialog = new ContentDialog();
-
-                dialog.XamlRoot = RootGrid.XamlRoot;
-                dialog.Title = "Error";
-                dialog.PrimaryButtonText = "OK";
-                dialog.DefaultButton = ContentDialogButton.Primary;
-                dialog.Content = ex.Message;
-
-                await dialog.ShowAsync();
-                return;
-            }
-
-            if (!sqlCommand.IsSql)
-            {
-                LoadingOverlay.Visibility = Visibility.Collapsed;
-                mainPanel.Visibility = Visibility.Visible;
-                ContentDialog dialog = new ContentDialog();
-
-                dialog.XamlRoot = RootGrid.XamlRoot;
-                dialog.Title = "Not an SQL command";
-                dialog.PrimaryButtonText = "OK";
-                dialog.DefaultButton = ContentDialogButton.Primary;
-                dialog.Content = sqlCommand.Output;
-
-                await dialog.ShowAsync();
-                return;
-            }
 
             IDatabaseExtractor extractor = new SqlServerExtractor();
             selectTableExpander.IsExpanded = false;
-            exportButton.Visibility = showSqlButton.Visibility = Visibility.Visible;
-            SqlQuery = sqlCommand.Output;
 
             switch (Analyzer.DatabaseType)
             {
@@ -159,42 +166,97 @@ namespace AskDB.App
 
             try
             {
-                var dataTable = await extractor.GetData(Analyzer.ConnectionString, sqlCommand.Output);
+                DataTable = await extractor.GetData(Analyzer.ConnectionString, queryBox.Text);
+                exportButton.Visibility = Visibility.Visible;
+            }
+            catch
+            {
+                isQuerySql = false;
+            }
 
-                for (int i = 0; i < dataTable.Columns.Count; i++)
+            if (!isQuerySql)
+            {
+                Analyzer.Tables = Tables.Where(t => tablesListView.SelectedItems.Contains(t.Name)).ToList();
+
+                try
                 {
-                    outputGridView.Columns.Add(new CommunityToolkit.WinUI.UI.Controls.DataGridTextColumn()
-                    {
-                        Header = dataTable.Columns[i].ColumnName,
-                        Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
-                    });
+                    sqlCommand = await Analyzer.GetSql(Analyzer.ApiKey, Analyzer.Tables, queryBox.Text, Analyzer.DatabaseType);
+                }
+                catch (Exception ex)
+                {
+                    LoadingOverlay.Visibility = Visibility.Collapsed;
+                    mainPanel.Visibility = Visibility.Visible;
+                    ContentDialog dialog = new ContentDialog();
+
+                    dialog.XamlRoot = RootGrid.XamlRoot;
+                    dialog.Title = "Error";
+                    dialog.PrimaryButtonText = "OK";
+                    dialog.DefaultButton = ContentDialogButton.Primary;
+                    dialog.Content = ex.Message;
+
+                    await dialog.ShowAsync();
+                    return;
                 }
 
-                var collectionObjects = new System.Collections.ObjectModel.ObservableCollection<object>();
-                foreach (DataRow row in dataTable.Rows)
+                if (!sqlCommand.IsSql)
                 {
-                    collectionObjects.Add(row.ItemArray);
+                    LoadingOverlay.Visibility = Visibility.Collapsed;
+                    mainPanel.Visibility = Visibility.Visible;
+                    exportButton.Visibility = showSqlButton.Visibility = Visibility.Collapsed;
+                    ContentDialog dialog = new ContentDialog();
+
+                    dialog.XamlRoot = RootGrid.XamlRoot;
+                    dialog.Title = "Not an SQL command";
+                    dialog.PrimaryButtonText = "OK";
+                    dialog.DefaultButton = ContentDialogButton.Primary;
+                    dialog.Content = sqlCommand.Output;
+
+                    await dialog.ShowAsync();
+                    return;
                 }
 
-                outputGridView.ItemsSource = collectionObjects;
-            }
-            catch (Exception ex)
-            {
-                ContentDialog dialog = new ContentDialog();
+                SqlQuery = sqlCommand.Output;
 
-                dialog.XamlRoot = RootGrid.XamlRoot;
-                dialog.Title = "Not an SQL command";
-                dialog.PrimaryButtonText = "OK";
-                dialog.DefaultButton = ContentDialogButton.Primary;
-                dialog.Content = $"SQL Command: {sqlCommand.Output}\n\n{ex.Message}";
+                try
+                {
+                    DataTable = await extractor.GetData(Analyzer.ConnectionString, sqlCommand.Output);
+                    exportButton.Visibility = showSqlButton.Visibility = Visibility.Visible;
+                    exportButton.IsEnabled = showSqlButton.IsEnabled = true;
+                }
+                catch (Exception ex)
+                {
+                    ContentDialog dialog = new ContentDialog();
 
-                await dialog.ShowAsync();
+                    dialog.XamlRoot = RootGrid.XamlRoot;
+                    dialog.Title = "Not an SQL command";
+                    dialog.PrimaryButtonText = "OK";
+                    dialog.DefaultButton = ContentDialogButton.Primary;
+                    dialog.Content = $"SQL Command: {sqlCommand.Output}\n\n{ex.Message}";
+                    exportButton.Visibility = showSqlButton.Visibility = Visibility.Collapsed;
+                    exportButton.IsEnabled = showSqlButton.IsEnabled = false;
+
+                    await dialog.ShowAsync();
+                }
             }
-            finally
+
+            for (int i = 0; i < DataTable.Columns.Count; i++)
             {
-                LoadingOverlay.Visibility = Visibility.Collapsed;
-                mainPanel.Visibility = Visibility.Visible;
+                outputGridView.Columns.Add(new CommunityToolkit.WinUI.UI.Controls.DataGridTextColumn()
+                {
+                    Header = DataTable.Columns[i].ColumnName,
+                    Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
+                });
             }
+
+            var collectionObjects = new System.Collections.ObjectModel.ObservableCollection<object>();
+            foreach (DataRow row in DataTable.Rows)
+            {
+                collectionObjects.Add(row.ItemArray);
+            }
+
+            outputGridView.ItemsSource = collectionObjects;
+            LoadingOverlay.Visibility = Visibility.Collapsed;
+            mainPanel.Visibility = Visibility.Visible;
         }
     }
 }
