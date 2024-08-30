@@ -31,6 +31,7 @@
     <PackageIcon>icon.png</PackageIcon>
     <RepositoryUrl>https://github.com/phanxuanquang/AskDB</RepositoryUrl>
     <NeutralLanguage>en-001</NeutralLanguage>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Content Remove="Assets\PopularWords.txt" />

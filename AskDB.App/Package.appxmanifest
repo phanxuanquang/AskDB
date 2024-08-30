@@ -44,10 +44,4 @@
       </uap:VisualElements>
     </Application>
   </Applications>
-
-  <Capabilities>
-    <rescap:Capability Name="runFullTrust" />
-    <Capability Name="codeGeneration"/>
-    <Capability Name="internetClient"/>
-  </Capabilities>
 </Package>

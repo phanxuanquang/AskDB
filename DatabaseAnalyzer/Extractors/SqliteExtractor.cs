@@ -8,6 +8,16 @@ namespace DatabaseAnalyzer.Extractors
 {
     public class SqliteExtractor : IDatabaseExtractor
     {
+        private sealed class ColumnInfor
+        {
+            public int Cid { get; set; }
+            public string Name { get; set; }
+            public string Type { get; set; }
+            public bool NotNull { get; set; }
+            public string? DefaultValue { get; set; }
+            public int? Pk { get; set; }
+        }
+
         public async Task<List<Table>> GetTables(string connectionString)
         {
             using (var connection = new SqliteConnection(connectionString))
@@ -21,20 +31,20 @@ namespace DatabaseAnalyzer.Extractors
 
                 foreach (var tableName in tableNames)
                 {
-                    var columns = await connection.QueryAsync<dynamic>($"PRAGMA table_info({tableName})");
-                    var table = new Table { Name = tableName };
+                    var columns = await connection.QueryAsync<ColumnInfor>($"PRAGMA table_info({tableName})");
 
-                    foreach (var column in columns)
+                    var table = new Table
                     {
-                        table.Columns.Add(new Column
+                        Name = tableName,
+                        Columns = columns.Select(column => new Column
                         {
-                            Name = column.name,
-                            DataType = column.type,
-                            IsNullable = !column.notnull,
-                            DefaultValue = column.dflt_value,
-                            PrimaryKey = column.pk == 1 ? column.name : null
-                        });
-                    }
+                            Name = column.Name,
+                            DataType = column.Type,
+                            IsNullable = !column.NotNull,
+                            DefaultValue = column.DefaultValue,
+                            PrimaryKey = column.Pk == 1 ? column.Name : null
+                        }).ToList()
+                    };
 
                     tables.TryAdd(tableName, table);
                 }
