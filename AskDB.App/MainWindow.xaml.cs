@@ -13,6 +13,10 @@ namespace AskDB.App
         public MainWindow()
         {
             this.InitializeComponent();
+
+            this.AppWindow.TitleBar.IconShowOptions = Microsoft.UI.Windowing.IconShowOptions.HideIconAndSystemMenu;
+            this.AppWindow.Title = "AskDB - by Phan Xuan Quang";
+
             MainFrame.Navigate(typeof(DbConnectPage));
         }
     }

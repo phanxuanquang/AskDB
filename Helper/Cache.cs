@@ -13,7 +13,17 @@
         {
             using (StreamWriter sw = new StreamWriter(CacheFilePath, append: true))
             {
-                await sw.WriteLineAsync(line.Trim());
+                if (!File.Exists(CacheFilePath))
+                {
+                    using (FileStream fs = File.Create(CacheFilePath))
+                    {
+                        await sw.WriteLineAsync(line.Trim());
+                    }
+                }
+                else
+                {
+                    await sw.WriteLineAsync(line.Trim());
+                }
             }
         }
     }

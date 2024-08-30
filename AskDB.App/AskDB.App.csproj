@@ -33,7 +33,6 @@
     <NeutralLanguage>en-001</NeutralLanguage>
   </PropertyGroup>
   <ItemGroup>
-    <Content Remove="Assets\Cache.txt" />
     <Content Remove="Assets\PopularWords.txt" />
   </ItemGroup>
   <ItemGroup>
