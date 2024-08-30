@@ -1,6 +1,7 @@
 ﻿using DatabaseAnalyzer;
 using DatabaseAnalyzer.Models;
 using GenAI;
+using Helper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -10,24 +11,133 @@ using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.System;
 
 
 namespace AskDB.App
 {
     public sealed partial class DbConnectPage : Page
     {
-        private List<Table> _tables = new List<Table>();
+        private List<Table> Tables = new List<Table>();
+        private List<string> Keywords = new List<string>();
 
         public DbConnectPage()
         {
             this.InitializeComponent();
             this.Loaded += DbConnectPage_Loaded;
+
+            tablesListView.SelectionChanged += TablesListView_SelectionChanged;
+
+            apiKeyBox.KeyDown += ApiKeyBox_KeyDown;
+            apiKeyBox.TextChanged += ApiKeyBox_TextChanged;
+            connectionStringBox.KeyDown += ConnectionStringBox_KeyDown;
+            connectionStringBox.TextChanged += ConnectionStringBox_TextChanged;
+
             connectGeminiButton.Click += ConnectGeminiButton_Click;
             connectDbButton.Click += ConnectDbButton_Click;
             getApiKeyButton.Click += GetApiKeyButton_Click;
             forwardButton.Click += ForwardButton_Click;
-            tablesListView.SelectionChanged += TablesListView_SelectionChanged;
             startBtn.Click += StartButton_Click;
+        }
+
+        private void ConnectionStringBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                if (string.IsNullOrEmpty(sender.Text))
+                {
+                    return;
+                }
+
+                var suggestions = Keywords.Where(k => k.ToUpper().StartsWith(sender.Text.ToUpper())).Take(10).OrderBy(k => k).Select(t => StringEngineer.ReplaceLastOccurrence(sender.Text, sender.Text, t)).ToList();
+                sender.ItemsSource = suggestions;
+            }
+        }
+
+        private void ApiKeyBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                if (string.IsNullOrEmpty(sender.Text))
+                {
+                    return;
+                }
+
+                var suggestions = Keywords.Where(k => k.ToUpper().StartsWith(sender.Text.ToUpper())).Take(10).OrderBy(k => k).Select(t => StringEngineer.ReplaceLastOccurrence(sender.Text, sender.Text, t)).ToList();
+                sender.ItemsSource = suggestions;
+            }
+        }
+
+        private void ConnectionStringBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty((sender as AutoSuggestBox).Text))
+            {
+                return;
+            }
+
+            if (e.Key == VirtualKey.Enter)
+            {
+                ConnectDbButton_Click(sender, e);
+                e.Handled = true;
+            }
+            else if (e.Key == VirtualKey.Tab)
+            {
+                var autoSuggestBox = sender as AutoSuggestBox;
+                var query = autoSuggestBox.Text;
+                var lastWord = StringEngineer.GetLastWord(query);
+
+                if (!string.IsNullOrEmpty(lastWord))
+                {
+                    var suggestion = Keywords.FirstOrDefault(k => k.ToUpper().StartsWith(lastWord.ToUpper()));
+
+                    if (suggestion != null)
+                    {
+                        autoSuggestBox.Text = StringEngineer.ReplaceLastOccurrence(query, lastWord, suggestion);
+
+                        autoSuggestBox.Focus(FocusState.Programmatic);
+
+                        e.Handled = true;
+                    }
+
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private void ApiKeyBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty((sender as AutoSuggestBox).Text))
+            {
+                return;
+            }
+
+            if (e.Key == VirtualKey.Enter)
+            {
+                ConnectGeminiButton_Click(sender, e);
+                e.Handled = true;
+            }
+            else if (e.Key == VirtualKey.Tab)
+            {
+                var autoSuggestBox = sender as AutoSuggestBox;
+                var query = autoSuggestBox.Text;
+                var lastWord = StringEngineer.GetLastWord(query);
+
+                if (!string.IsNullOrEmpty(lastWord))
+                {
+                    var suggestion = Keywords.FirstOrDefault(k => k.ToUpper().StartsWith(lastWord.ToUpper()));
+
+                    if (suggestion != null)
+                    {
+                        autoSuggestBox.Text = StringEngineer.ReplaceLastOccurrence(query, lastWord, suggestion);
+
+                        autoSuggestBox.Focus(FocusState.Programmatic);
+
+                        e.Handled = true;
+                    }
+
+                    e.Handled = true;
+                }
+            }
         }
 
         private void ForwardButton_Click(object sender, RoutedEventArgs e)
@@ -58,6 +168,7 @@ namespace AskDB.App
             try
             {
                 await ValidateApiKey(sender as Button);
+                await Cache.SetContent(apiKeyBox.Text);
                 UpdateUIAfterApiValidation();
             }
             catch
@@ -76,6 +187,7 @@ namespace AskDB.App
             try
             {
                 await ConnectToDatabase(sender as Button);
+                await Cache.SetContent(connectionStringBox.Text);
                 UpdateUIAfterDatabaseConnection();
             }
             catch (Exception ex)
@@ -88,9 +200,11 @@ namespace AskDB.App
             }
         }
 
-        private void DbConnectPage_Loaded(object sender, RoutedEventArgs e)
+        private async void DbConnectPage_Loaded(object sender, RoutedEventArgs e)
         {
             LoadDatabaseTypes();
+            Keywords = (await Cache.GetContent()).Distinct().OrderBy(x => x).ToList();
+
             if (Analyzer.IsActivated)
             {
                 LoadSavedSettings();
@@ -172,8 +286,8 @@ namespace AskDB.App
         {
             SetDatabaseLoadingState(true, sender);
             var selectedType = (DatabaseType)dbTypeCombobox.SelectedItem;
-            _tables = await Analyzer.GetTables(selectedType, connectionStringBox.Text.Trim());
-            tablesListView.ItemsSource = _tables.Select(t => t.Name).ToList();
+            Tables = await Analyzer.GetTables(selectedType, connectionStringBox.Text.Trim());
+            tablesListView.ItemsSource = Tables.Select(t => t.Name).ToList();
         }
 
         private void UpdateUIAfterDatabaseConnection()
@@ -201,7 +315,7 @@ namespace AskDB.App
         private void SaveSelectedTables()
         {
             var selectedTableNames = tablesListView.SelectedItems.Cast<string>().ToList();
-            Analyzer.Tables = _tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
+            Analyzer.Tables = Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
         }
 
         private void SetApiKeyLoadingState(bool isLoading, Button sender)

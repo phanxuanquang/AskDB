@@ -33,6 +33,14 @@
     <NeutralLanguage>en-001</NeutralLanguage>
   </PropertyGroup>
   <ItemGroup>
+    <Content Remove="Assets\Cache.txt" />
+    <Content Remove="Assets\PopularWords.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Assets\SqlKeywords\MSSQL.txt" />
+    <None Remove="Assets\SqlKeywords\MySQL.txt" />
+    <None Remove="Assets\SqlKeywords\PostgreSQL.txt" />
+    <None Remove="Assets\SqlKeywords\SQLite.txt" />
     <None Remove="DbConnectPage.xaml" />
     <None Remove="MainPage.xaml" />
   </ItemGroup>
@@ -65,6 +73,20 @@
   <ItemGroup>
     <ProjectReference Include="..\DatabaseAnalyzer\DatabaseAnalyzer.csproj" />
     <ProjectReference Include="..\Helper\Helper.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Update="Assets\SqlKeywords\MSSQL.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Assets\SqlKeywords\MySQL.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Assets\SqlKeywords\PostgreSQL.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Assets\SqlKeywords\SQLite.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <None Update="Assets\icon.png">

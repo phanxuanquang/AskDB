@@ -60,8 +60,8 @@
 
                 <StackPanel x:Name="mainPanel">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
-                        <TextBox x:Name="queryBox" HorizontalAlignment="Stretch" TextWrapping="Wrap" IsSpellCheckEnabled="False" PlaceholderText="Enter your question or the SQL query . . ." AutomationProperties.Name="simple text editor" MinWidth="1000" Margin="0,0,10,0"/>
-                        <Button x:Name="myButton" Click="SendButton_Click" Style="{StaticResource AccentButtonStyle}" Width="60" Height="35" Margin="0,0,10,0">
+                        <AutoSuggestBox x:Name="queryBox" HorizontalAlignment="Stretch" PlaceholderText="Enter your question or the SQL query . . ." AutomationProperties.Name="simple text editor" MinWidth="1000" Margin="0,0,10,0"/>
+                        <Button x:Name="sendButton" Style="{StaticResource AccentButtonStyle}" Width="60" Height="35" Margin="0,0,10,0">
                             <SymbolIcon Symbol="Send"/>
                         </Button>
                         <Button x:Name="exportButton" Style="{StaticResource DefaultButtonStyle}" Width="60" Height="35" Visibility="Collapsed" Margin="0,0,10,0" >

@@ -11,10 +11,10 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using Windows.ApplicationModel.DataTransfer;
-using Windows.Storage;
 using Windows.Storage.Pickers;
+using Windows.System;
 using WinRT.Interop;
+using Cache = Helper.Cache;
 using Table = DatabaseAnalyzer.Models.Table;
 
 namespace AskDB.App
@@ -24,53 +24,138 @@ namespace AskDB.App
         private DataTable DataTable = new DataTable();
         private List<Table> Tables = new List<Table>();
         private string SqlQuery;
+        private List<string> Keywords = new List<string>();
 
         public MainPage()
         {
-            this.InitializeComponent();
-            this.Loaded += MainPage_Loaded;
+            InitializeComponent();
+
+            Loaded += MainPage_Loaded;
+
+            queryBox.TextChanged += QueryBox_TextChanged;
             queryBox.KeyDown += QueryBox_KeyDown;
+
+            sendButton.Click += SendButton_Click;
             showSqlButton.Click += ShowSqlButton_Click;
             exportButton.Click += ExportButton_Click;
             backButton.Click += BackButton_Click;
         }
 
-        private async void ExportButton_Click(object sender, RoutedEventArgs e)
+        #region Events
+        private async void MainPage_Loaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                var file = await PickSaveFile();
-                if (file != null)
+                await LoadTables();
+                await LoadKeywords();
+            }
+            catch (Exception ex)
+            {
+                var result = await ShowErrorDialog(ex.Message);
+                if (result == ContentDialogResult.Primary)
                 {
-                    Extractor.ExportData(DataTable, file.Path);
+                    Frame.Navigate(typeof(DbConnectPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
                 }
+            }
+        }
+
+        private void QueryBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                if (string.IsNullOrEmpty(sender.Text))
+                {
+                    return;
+                }
+
+                var lastWord = StringEngineer.GetLastWord(sender.Text);
+                var suggestions = Keywords.Where(k => k.ToUpper().StartsWith(lastWord.ToUpper())).Take(10).OrderBy(k => k).Select(t => StringEngineer.ReplaceLastOccurrence(sender.Text, lastWord, t)).ToList();
+                sender.ItemsSource = suggestions;
+            }
+        }
+        private void QueryBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty((sender as AutoSuggestBox).Text))
+            {
+                return;
+            }
+
+            if (e.Key == VirtualKey.Enter)
+            {
+                SendButton_Click(sender, e);
+                e.Handled = true;
+            }
+            else if (e.Key == VirtualKey.Tab)
+            {
+                var autoSuggestBox = sender as AutoSuggestBox;
+                var query = autoSuggestBox.Text;
+                var lastWord = StringEngineer.GetLastWord(query);
+
+                if (!string.IsNullOrEmpty(lastWord))
+                {
+                    var suggestion = Keywords.FirstOrDefault(k => k.ToUpper().StartsWith(lastWord.ToUpper()));
+
+                    if (suggestion != null)
+                    {
+                        autoSuggestBox.Text = StringEngineer.ReplaceLastOccurrence(query, lastWord, suggestion);
+
+                        autoSuggestBox.Focus(FocusState.Programmatic);
+
+                        e.Handled = true;
+                    }
+
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private async void SendButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(queryBox.Text))
+            {
+                return;
+            }
+
+            SetLoadingState(true);
+
+            try
+            {
+                IDatabaseExtractor extractor;
+
+                switch (Analyzer.DatabaseType)
+                {
+                    case DatabaseType.PostgreSQL:
+                        extractor = new PostgreSqlExtractor();
+                        break;
+                    case DatabaseType.MySQL:
+                        extractor = new MySqlExtractor();
+                        break;
+                    case DatabaseType.SQLite:
+                        extractor = new SqliteExtractor();
+                        break;
+                    default:
+                        extractor = new SqlServerExtractor();
+                        break;
+                }
+
+                var isQuerySql = await TryExecuteDirectSql(extractor);
+
+                if (!isQuerySql)
+                {
+                    await ExecuteAnalyzedQuery(extractor);
+                }
+
+                UpdateOutputGrid();
             }
             catch (Exception ex)
             {
                 await ShowErrorDialog(ex.Message);
             }
-        }
-
-        private async Task<StorageFile> PickSaveFile()
-        {
-            var savePicker = new FileSavePicker
+            finally
             {
-                SuggestedStartLocation = PickerLocationId.Desktop,
-                SuggestedFileName = "Exported Data"
-            };
-            savePicker.FileTypeChoices.Add("CSV", new[] { ".csv" });
-
-            nint windowHandle = WindowNative.GetWindowHandle(App.Window);
-            InitializeWithWindow.Initialize(savePicker, windowHandle);
-
-            return await savePicker.PickSaveFileAsync();
+                SetLoadingState(false);
+            }
         }
-
-        private void BackButton_Click(object sender, RoutedEventArgs e)
-        {
-            Frame.Navigate(typeof(DbConnectPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
-        }
-
         private async void ShowSqlButton_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new ContentDialog
@@ -86,47 +171,47 @@ namespace AskDB.App
             var result = await dialog.ShowAsync();
             if (result == ContentDialogResult.Primary)
             {
-                CopyToClipboard(SqlQuery);
+                await Cache.SetContent(SqlQuery);
             }
         }
-
-        private void CopyToClipboard(string text)
-        {
-            var dataPackage = new DataPackage();
-            dataPackage.SetText(text);
-            Clipboard.SetContent(dataPackage);
-            Clipboard.Flush();
-        }
-
-        private void QueryBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
-        {
-            if (e.Key == Windows.System.VirtualKey.Enter)
-            {
-                SendButton_Click(sender, e);
-                e.Handled = true;
-            }
-        }
-
-        private async void MainPage_Loaded(object sender, RoutedEventArgs e)
+        private async void ExportButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                await LoadTables();
+                var savePicker = new FileSavePicker
+                {
+                    SuggestedStartLocation = PickerLocationId.Desktop,
+                    SuggestedFileName = "Exported Data"
+                };
+                savePicker.FileTypeChoices.Add("CSV", new[] { ".csv" });
+
+                nint windowHandle = WindowNative.GetWindowHandle(App.Window);
+                InitializeWithWindow.Initialize(savePicker, windowHandle);
+
+                var file = await savePicker.PickSaveFileAsync();
+
+                if (file != null)
+                {
+                    Extractor.ExportData(DataTable, file.Path);
+                }
             }
             catch (Exception ex)
             {
-                var result = await ShowErrorDialog(ex.Message);
-                if (result == ContentDialogResult.Primary)
-                {
-                    Frame.Navigate(typeof(DbConnectPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
-                }
+                await ShowErrorDialog(ex.Message);
             }
         }
+        private void BackButton_Click(object sender, RoutedEventArgs e)
+        {
+            Frame.Navigate(typeof(DbConnectPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
+        }
+        #endregion
 
+        #region Helpers
         private async Task LoadTables()
         {
             Tables = await Analyzer.GetTables(Analyzer.DatabaseType, Analyzer.ConnectionString);
-            tablesListView.ItemsSource = Tables.Select(t => t.Name).ToList();
+
+            tablesListView.ItemsSource = Tables.Select(t => t.Name);
 
             foreach (var t in Analyzer.Tables)
             {
@@ -134,51 +219,21 @@ namespace AskDB.App
             }
         }
 
-        private async void SendButton_Click(object sender, RoutedEventArgs e)
+        private async Task LoadKeywords()
         {
-            SetLoadingState(true);
+            var sqlKeywords = await StringEngineer.GetWords(@$"Assets\SqlKeywords\{Analyzer.DatabaseType.ToString()}.txt");
+            var commonKeywords = await StringEngineer.GetWords(@"Assets\PopularWords.txt");
+            var tableNames = Analyzer.Tables.Select(t => t.Name);
+            var columnNames = Analyzer.Tables.SelectMany(table => table.Columns.Select(column => column.Name));
+            var clipboardContent = await Cache.GetContent();
 
-            try
-            {
-                await ProcessQuery();
-            }
-            catch (Exception ex)
-            {
-                await ShowErrorDialog(ex.Message);
-            }
-            finally
-            {
-                SetLoadingState(false);
-            }
-        }
+            Keywords.AddRange(sqlKeywords);
+            Keywords.AddRange(commonKeywords);
+            Keywords.AddRange(tableNames);
+            Keywords.AddRange(columnNames);
+            Keywords.AddRange(clipboardContent);
 
-        private async Task ProcessQuery()
-        {
-            var extractor = GetDatabaseExtractor();
-            var isQuerySql = await TryExecuteDirectSql(extractor);
-
-            if (!isQuerySql)
-            {
-                await ExecuteAnalyzedQuery(extractor);
-            }
-
-            UpdateOutputGrid();
-        }
-
-        private IDatabaseExtractor GetDatabaseExtractor()
-        {
-            switch (Analyzer.DatabaseType)
-            {
-                case DatabaseType.PostgreSQL:
-                    return new PostgreSqlExtractor();
-                case DatabaseType.MySQL:
-                case DatabaseType.MariaDB:
-                    return new MySqlExtractor();
-                case DatabaseType.SQLite:
-                    return new SqliteExtractor();
-                default:
-                    return new SqlServerExtractor();
-            }
+            Keywords = Keywords.Distinct().OrderBy(x => x).ToList();
         }
 
         private async Task<bool> TryExecuteDirectSql(IDatabaseExtractor extractor)
@@ -202,7 +257,17 @@ namespace AskDB.App
 
             if (!sqlCommand.IsSql)
             {
-                await ShowNotSqlDialog(sqlCommand.Output);
+                var dialog = new ContentDialog
+                {
+                    XamlRoot = RootGrid.XamlRoot,
+                    Title = "Not an SQL command",
+                    PrimaryButtonText = "OK",
+                    DefaultButton = ContentDialogButton.Primary,
+                    Content = sqlCommand.Output
+                };
+
+                await dialog.ShowAsync();
+
                 return;
             }
 
@@ -215,9 +280,33 @@ namespace AskDB.App
             }
             catch (Exception ex)
             {
-                await ShowSqlErrorDialog(sqlCommand.Output, ex.Message);
+                var dialog = new ContentDialog
+                {
+                    XamlRoot = RootGrid.XamlRoot,
+                    Title = "SQL Error",
+                    PrimaryButtonText = "OK",
+                    DefaultButton = ContentDialogButton.Primary,
+                    Content = $"SQL Command: {sqlCommand.Output}\n\n{ex.Message}"
+                };
+
+                await dialog.ShowAsync();
+
                 SetButtonVisibility(false);
             }
+        }
+
+        private async Task<ContentDialogResult> ShowErrorDialog(string message)
+        {
+            var dialog = new ContentDialog
+            {
+                XamlRoot = RootGrid.XamlRoot,
+                Title = "Error",
+                PrimaryButtonText = "OK",
+                DefaultButton = ContentDialogButton.Primary,
+                Content = message
+            };
+
+            return await dialog.ShowAsync();
         }
 
         private void UpdateOutputGrid()
@@ -251,48 +340,7 @@ namespace AskDB.App
             exportButton.Visibility = showSqlButton.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
             exportButton.IsEnabled = showSqlButton.IsEnabled = isVisible;
         }
-
-        private async Task<ContentDialogResult> ShowErrorDialog(string message)
-        {
-            var dialog = new ContentDialog
-            {
-                XamlRoot = RootGrid.XamlRoot,
-                Title = "Error",
-                PrimaryButtonText = "OK",
-                DefaultButton = ContentDialogButton.Primary,
-                Content = message
-            };
-
-            return await dialog.ShowAsync();
-        }
-
-        private async Task ShowNotSqlDialog(string message)
-        {
-            var dialog = new ContentDialog
-            {
-                XamlRoot = RootGrid.XamlRoot,
-                Title = "Not an SQL command",
-                PrimaryButtonText = "OK",
-                DefaultButton = ContentDialogButton.Primary,
-                Content = message
-            };
-
-            await dialog.ShowAsync();
-        }
-
-        private async Task ShowSqlErrorDialog(string sqlCommand, string errorMessage)
-        {
-            var dialog = new ContentDialog
-            {
-                XamlRoot = RootGrid.XamlRoot,
-                Title = "SQL Error",
-                PrimaryButtonText = "OK",
-                DefaultButton = ContentDialogButton.Primary,
-                Content = $"SQL Command: {sqlCommand}\n\n{errorMessage}"
-            };
-
-            await dialog.ShowAsync();
-        }
+        #endregion
     }
 
 }

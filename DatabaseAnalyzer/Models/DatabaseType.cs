@@ -13,10 +13,7 @@ namespace DatabaseAnalyzer.Models
         [Description("MySQL")]
         MySQL = 2,
 
-        [Description("MariaDB")]
-        MariaDB = 3,
-
         [Description("SQLite")]
-        SQLite = 4,
+        SQLite = 3,
     }
 }

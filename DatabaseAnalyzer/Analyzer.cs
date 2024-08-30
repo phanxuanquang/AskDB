@@ -34,7 +34,6 @@ namespace DatabaseAnalyzer
                 case DatabaseType.SQLite:
                     schemaExtractor = new SqliteExtractor();
                     break;
-                case DatabaseType.MariaDB:
                 case DatabaseType.MySQL:
                     schemaExtractor = new MySqlExtractor();
                     break;
