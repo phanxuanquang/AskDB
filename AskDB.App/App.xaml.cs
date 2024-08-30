@@ -29,7 +29,7 @@ namespace AskDB.App
             Window.Activate();
         }
 
-        public static Window? Window { get; private set; }
+        public static Window Window { get; private set; }
 
     }
 }
