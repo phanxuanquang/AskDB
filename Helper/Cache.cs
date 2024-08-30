@@ -11,13 +11,25 @@
 
         public static async Task SetContent(string line)
         {
+            if (!File.Exists(CacheFilePath))
+            {
+                File.Create(CacheFilePath);
+            }
+
+            using (var streamReader = new StreamReader(CacheFilePath))
+            {
+                string currentLine;
+                while ((currentLine = await streamReader.ReadLineAsync()) != null)
+                {
+                    if (currentLine.Equals(line, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return;
+                    }
+                }
+            }
+
             using (StreamWriter sw = new StreamWriter(CacheFilePath, append: true))
             {
-                if (!File.Exists(CacheFilePath))
-                {
-                    File.Create(CacheFilePath);
-                }
-
                 await sw.WriteLineAsync(StringCipher.Encode(line.Trim()));
             }
         }

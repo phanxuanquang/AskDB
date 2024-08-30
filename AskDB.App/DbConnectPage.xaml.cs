@@ -68,7 +68,10 @@ namespace AskDB.App
                     return;
                 }
 
-                var suggestions = Analyzer.Keywords.Where(k => k.ToUpper().StartsWith(sender.Text.ToUpper())).Take(10).OrderBy(k => k).Select(t => StringEngineer.ReplaceLastOccurrence(sender.Text, sender.Text, t)).ToList();
+                var suggestions = Analyzer.Keywords
+                    .Where(k => k.ToUpper().StartsWith(sender.Text.ToUpper())).Take(10).OrderBy(k => k)
+                    .Select(t => StringEngineer.ReplaceLastOccurrence(sender.Text, sender.Text, t));
+
                 sender.ItemsSource = suggestions;
             }
         }
@@ -101,10 +104,10 @@ namespace AskDB.App
                         autoSuggestBox.Focus(FocusState.Programmatic);
 
                         e.Handled = true;
-                    }
-
-                    e.Handled = true;
+                    } 
                 }
+
+                e.Handled = true;
             }
         }
 
@@ -117,14 +120,11 @@ namespace AskDB.App
                     return;
                 }
 
-                var suggestions = Analyzer.Keywords
+                sender.ItemsSource = Analyzer.Keywords
                     .Where(k => k.ToUpper().StartsWith(sender.Text.ToUpper()))
                     .Take(10)
                     .OrderBy(k => k)
-                    .Select(t => StringEngineer.ReplaceLastOccurrence(sender.Text, sender.Text, t))
-                    .ToList();
-
-                sender.ItemsSource = suggestions;
+                    .Select(t => StringEngineer.ReplaceLastOccurrence(sender.Text, sender.Text, t));
             }
         }
         private void ConnectionStringBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
@@ -328,7 +328,7 @@ namespace AskDB.App
 
             await Analyzer.DatabaseExtractor.ExtractTables();
 
-            tablesListView.ItemsSource = Analyzer.DatabaseExtractor.Tables.Select(t => t.Name).ToList();
+            tablesListView.ItemsSource = Analyzer.DatabaseExtractor.Tables.Select(t => t.Name);
         }
 
         private void UpdateUIAfterDatabaseConnection()
@@ -353,7 +353,7 @@ namespace AskDB.App
 
         private void SaveSelectedTables()
         {
-            var selectedTableNames = tablesListView.SelectedItems.Cast<string>().ToList();
+            var selectedTableNames = tablesListView.SelectedItems.Cast<string>();
             Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
         }
 

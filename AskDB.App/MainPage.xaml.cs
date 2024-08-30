@@ -64,8 +64,12 @@ namespace AskDB.App
                 }
 
                 var lastWord = StringEngineer.GetLastWord(sender.Text);
-                var suggestions = Analyzer.Keywords.Where(k => k.ToUpper().StartsWith(lastWord.ToUpper())).Take(10).OrderBy(k => k).Select(t => StringEngineer.ReplaceLastOccurrence(sender.Text, lastWord, t)).ToList();
-                sender.ItemsSource = suggestions;
+
+                sender.ItemsSource = Analyzer.Keywords
+                    .Where(k => k.ToUpper().StartsWith(lastWord.ToUpper()))
+                    .Take(10)
+                    .OrderBy(k => k)
+                    .Select(t => StringEngineer.ReplaceLastOccurrence(sender.Text, lastWord, t));
             }
         }
         private void QueryBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
@@ -210,7 +214,7 @@ namespace AskDB.App
             Analyzer.Keywords.AddRange(tableNames);
             Analyzer.Keywords.AddRange(columnNames);
 
-            Analyzer.Keywords = Analyzer.Keywords.Distinct().OrderBy(x => x).ToList();
+            Analyzer.Keywords = Analyzer.Keywords.AsParallel().Distinct().OrderBy(x => x).ToList();
         }
 
         private async Task<bool> TryExecuteDirectSql()
