@@ -4,14 +4,21 @@ namespace Helper
 {
     public static class StringEngineer
     {
-        public static async Task<List<string>> GetWords(string path)
+        public static async Task<List<string>> GetWords(string path, bool useDecoding = false)
         {
             var words = new List<string>();
 
             if (File.Exists(path))
             {
                 var sqlKeywords = await File.ReadAllLinesAsync(path);
-                words.AddRange(sqlKeywords);
+                if (useDecoding)
+                {
+                    words.AddRange(sqlKeywords.Select(StringCipher.Decode));
+                }
+                else
+                {
+                    words.AddRange(sqlKeywords);
+                }
             }
 
             return words;

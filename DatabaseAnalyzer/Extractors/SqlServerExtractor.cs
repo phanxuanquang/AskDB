@@ -6,59 +6,63 @@ using System.Data.SqlClient;
 
 namespace DatabaseAnalyzer.Extractors
 {
-    public class SqlServerExtractor : IDatabaseExtractor
+    public class SqlServerExtractor : DatabaseExtractor
     {
-        public async Task<List<Table>> GetTables(string connectionString)
+        public SqlServerExtractor(string connectionString) : base(connectionString)
+        {
+            DatabaseType = DatabaseType.SqlServer;
+            TableStructureQuery = @"
+                SELECT t.TABLE_NAME, 
+                       c.COLUMN_NAME, 
+                       c.DATA_TYPE, 
+                       c.CHARACTER_MAXIMUM_LENGTH, 
+                       c.IS_NULLABLE, 
+                       c.COLUMN_DEFAULT,
+                       pk.COLUMN_NAME AS PRIMARY_KEY,
+                       fk.FK_Name, 
+                       fk.ParentColumn, 
+                       OBJECT_NAME(fk.referenced_object_id) AS ReferencedTable, 
+                       fk.ReferencedColumn
+                FROM INFORMATION_SCHEMA.TABLES t
+                LEFT JOIN INFORMATION_SCHEMA.COLUMNS c ON t.TABLE_NAME = c.TABLE_NAME
+                LEFT JOIN (
+                    SELECT 
+                        kcu.TABLE_NAME, 
+                        kcu.COLUMN_NAME, 
+                        kcu.CONSTRAINT_NAME AS PRIMARY_KEY
+                    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+                    WHERE kcu.CONSTRAINT_NAME IN (
+                        SELECT CONSTRAINT_NAME 
+                        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+                        WHERE CONSTRAINT_TYPE = 'PRIMARY KEY'
+                    )
+                ) pk ON t.TABLE_NAME = pk.TABLE_NAME AND c.COLUMN_NAME = pk.COLUMN_NAME
+                LEFT JOIN (
+                    SELECT 
+                        fk.name AS FK_Name,
+                        tp.name AS ParentTable,
+                        cp.name AS ParentColumn,
+                        cr.name AS ReferencedColumn,
+                        fk.referenced_object_id
+                    FROM sys.foreign_keys AS fk
+                    INNER JOIN sys.tables AS tp ON fk.parent_object_id = tp.object_id
+                    INNER JOIN sys.foreign_key_columns AS fkc ON fk.object_id = fkc.constraint_object_id
+                    INNER JOIN sys.columns AS cp ON fkc.parent_object_id = cp.object_id AND fkc.parent_column_id = cp.column_id
+                    INNER JOIN sys.columns AS cr ON fkc.referenced_object_id = cr.object_id AND fkc.referenced_column_id = cr.column_id
+                ) fk ON t.TABLE_NAME = fk.ParentTable AND c.COLUMN_NAME = fk.ParentColumn
+                WHERE t.TABLE_TYPE = 'BASE TABLE'
+                ORDER BY t.TABLE_NAME, c.ORDINAL_POSITION";
+        }
+
+        public override async Task ExtractTables()
         {
             var tables = new ConcurrentDictionary<string, Table>();
 
-            using (SqlConnection connection = new SqlConnection(connectionString))
+            using (SqlConnection connection = new SqlConnection(ConnectionString))
             {
                 await connection.OpenAsync();
 
-                string query = @"
-                        SELECT t.TABLE_NAME, 
-                               c.COLUMN_NAME, 
-                               c.DATA_TYPE, 
-                               c.CHARACTER_MAXIMUM_LENGTH, 
-                               c.IS_NULLABLE, 
-                               c.COLUMN_DEFAULT,
-                               pk.COLUMN_NAME AS PRIMARY_KEY,
-                               fk.FK_Name, 
-                               fk.ParentColumn, 
-                               OBJECT_NAME(fk.referenced_object_id) AS ReferencedTable, 
-                               fk.ReferencedColumn
-                        FROM INFORMATION_SCHEMA.TABLES t
-                        LEFT JOIN INFORMATION_SCHEMA.COLUMNS c ON t.TABLE_NAME = c.TABLE_NAME
-                        LEFT JOIN (
-                            SELECT 
-                                kcu.TABLE_NAME, 
-                                kcu.COLUMN_NAME, 
-                                kcu.CONSTRAINT_NAME AS PRIMARY_KEY
-                            FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
-                            WHERE kcu.CONSTRAINT_NAME IN (
-                                SELECT CONSTRAINT_NAME 
-                                FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
-                                WHERE CONSTRAINT_TYPE = 'PRIMARY KEY'
-                            )
-                        ) pk ON t.TABLE_NAME = pk.TABLE_NAME AND c.COLUMN_NAME = pk.COLUMN_NAME
-                        LEFT JOIN (
-                            SELECT 
-                                fk.name AS FK_Name,
-                                tp.name AS ParentTable,
-                                cp.name AS ParentColumn,
-                                cr.name AS ReferencedColumn,
-                                fk.referenced_object_id
-                            FROM sys.foreign_keys AS fk
-                            INNER JOIN sys.tables AS tp ON fk.parent_object_id = tp.object_id
-                            INNER JOIN sys.foreign_key_columns AS fkc ON fk.object_id = fkc.constraint_object_id
-                            INNER JOIN sys.columns AS cp ON fkc.parent_object_id = cp.object_id AND fkc.parent_column_id = cp.column_id
-                            INNER JOIN sys.columns AS cr ON fkc.referenced_object_id = cr.object_id AND fkc.referenced_column_id = cr.column_id
-                        ) fk ON t.TABLE_NAME = fk.ParentTable AND c.COLUMN_NAME = fk.ParentColumn
-                        WHERE t.TABLE_TYPE = 'BASE TABLE'
-                        ORDER BY t.TABLE_NAME, c.ORDINAL_POSITION";
-
-                using (SqlCommand command = new SqlCommand(query, connection))
+                using (SqlCommand command = new SqlCommand(TableStructureQuery, connection))
                 {
                     using (SqlDataReader reader = await command.ExecuteReaderAsync())
                     {
@@ -102,12 +106,12 @@ namespace DatabaseAnalyzer.Extractors
                 }
             }
 
-            return tables.Values.ToList();
+            Tables = tables.Values.ToList();
         }
 
-        public async Task<DataTable> GetData(string connectionString, string sqlQuery)
+        public override async Task<DataTable> GetData(string sqlQuery)
         {
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = new SqlConnection(ConnectionString))
             {
                 var dataTable = new DataTable();
                 await connection.OpenAsync();

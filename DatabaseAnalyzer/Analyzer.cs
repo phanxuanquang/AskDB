@@ -12,39 +12,10 @@ namespace DatabaseAnalyzer
         public const byte MaxTotalTables = 100;
         public const short MaxTotalColumns = 500;
         public static string ApiKey = string.Empty;
-        public static string ConnectionString = string.Empty;
-        public static DatabaseType DatabaseType = DatabaseType.MSSQL;
-        public static List<Table> Tables = new List<Table>();
         public static bool IsActivated = false;
-
-
-        public static async Task<List<Table>> GetTables(DatabaseType databaseType, string connectionString)
-        {
-            IDatabaseExtractor schemaExtractor;
-            List<Table> tables;
-
-            switch (databaseType)
-            {
-                case DatabaseType.MSSQL:
-                    schemaExtractor = new SqlServerExtractor();
-                    break;
-                case DatabaseType.PostgreSQL:
-                    schemaExtractor = new PostgreSqlExtractor();
-                    break;
-                case DatabaseType.SQLite:
-                    schemaExtractor = new SqliteExtractor();
-                    break;
-                case DatabaseType.MySQL:
-                    schemaExtractor = new MySqlExtractor();
-                    break;
-                default:
-                    throw new NotSupportedException("Not Supported");
-            }
-
-            tables = await schemaExtractor.GetTables(connectionString);
-
-            return tables.OrderBy(t => t.Name).ToList();
-        }
+        public static List<Table> SelectedTables = new List<Table>();
+        public static List<string> Keywords = new List<string>();
+        public static DatabaseExtractor DatabaseExtractor;
 
         public static string TablesAsString(List<Table> tables)
         {

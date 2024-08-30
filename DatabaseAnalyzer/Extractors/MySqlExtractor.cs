@@ -6,23 +6,27 @@ using System.Data;
 
 namespace DatabaseAnalyzer.Extractors
 {
-    public class MySqlExtractor : IDatabaseExtractor
+    public class MySqlExtractor : DatabaseExtractor
     {
-        public async Task<List<Table>> GetTables(string connectionString)
+        public MySqlExtractor(string connectionString) : base(connectionString)
         {
-            using (var connection = new MySqlConnection(connectionString))
-            {
-                await connection.OpenAsync();
-
-                string query = @"
+            DatabaseType = DatabaseType.MySQL;
+            TableStructureQuery = @"
                     SELECT table_name, column_name, data_type, character_maximum_length, is_nullable, column_default 
                     FROM information_schema.columns 
                     WHERE table_schema = DATABASE() 
                     ORDER BY table_name, ordinal_position";
+        }
+
+        public override async Task ExtractTables()
+        {
+            using (var connection = new MySqlConnection(ConnectionString))
+            {
+                await connection.OpenAsync();
 
                 var tables = new ConcurrentDictionary<string, Table>();
 
-                var rows = await connection.QueryAsync<dynamic>(query);
+                var rows = await connection.QueryAsync<dynamic>(TableStructureQuery);
                 foreach (var row in rows)
                 {
                     string tableName = row.table_name;
@@ -50,13 +54,13 @@ namespace DatabaseAnalyzer.Extractors
                         });
                 }
 
-                return tables.Values.ToList();
+                Tables = tables.Values.ToList();
             }
         }
 
-        public async Task<DataTable> GetData(string connectionString, string sqlQuery)
+        public override async Task<DataTable> GetData(string sqlQuery)
         {
-            using (var connection = new MySqlConnection(connectionString))
+            using (var connection = new MySqlConnection(ConnectionString))
             {
                 var dataTable = new DataTable();
                 await connection.OpenAsync();

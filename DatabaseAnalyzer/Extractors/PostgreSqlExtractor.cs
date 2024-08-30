@@ -6,43 +6,44 @@ using System.Data;
 
 namespace DatabaseAnalyzer.Extractors
 {
-    public class PostgreSqlExtractor : IDatabaseExtractor
+    public class PostgreSqlExtractor : DatabaseExtractor
     {
-        public async Task<List<Table>> GetTables(string connectionString)
+        public PostgreSqlExtractor(string connectionString) : base(connectionString)
         {
-            using (var connection = new NpgsqlConnection(connectionString))
+            DatabaseType = DatabaseType.PostgreSQL;
+            TableStructureQuery = @"
+                 SELECT table_name, column_name, data_type, character_maximum_length, is_nullable, column_default 
+                 FROM information_schema.columns 
+                 WHERE table_schema = 'public' 
+                 ORDER BY table_name, ordinal_position";
+        }
+
+        public override async Task ExtractTables()
+        {
+            using (var connection = new NpgsqlConnection(ConnectionString))
             {
                 await connection.OpenAsync();
 
-                string query = @"
-                    SELECT table_name, column_name, data_type, character_maximum_length, is_nullable, column_default 
-                    FROM information_schema.columns 
-                    WHERE table_schema = 'public' 
-                    ORDER BY table_name, ordinal_position";
-
                 var tables = new ConcurrentDictionary<string, Table>();
+                var rows = await connection.QueryAsync<dynamic>(TableStructureQuery);
 
-                var rows = await connection.QueryAsync<dynamic>(query);
                 foreach (var row in rows)
                 {
-                    string tableName = row.table_name;
-                    string columnName = row.column_name;
-                    string dataType = row.data_type;
-                    int? maxLength = row.character_maximum_length;
-                    bool isNullable = row.is_nullable == "YES";
-                    string defaultValue = row.column_default;
-
                     var column = new Column
                     {
-                        Name = columnName,
-                        DataType = dataType,
-                        MaxLength = maxLength,
-                        IsNullable = isNullable,
-                        DefaultValue = defaultValue
+                        Name = row.column_name,
+                        DataType = row.data_type,
+                        MaxLength = row.character_maximum_length,
+                        IsNullable = row.is_nullable == "YES",
+                        DefaultValue = row.column_default
                     };
 
-                    tables.AddOrUpdate(tableName,
-                        new Table { Name = tableName, Columns = new List<Column> { column } },
+                    tables.AddOrUpdate((string)row.table_name,
+                        new Table
+                        {
+                            Name = (string)row.table_name,
+                            Columns = new List<Column> { column }
+                        },
                         (_, table) =>
                         {
                             table.Columns.Add(column);
@@ -50,13 +51,13 @@ namespace DatabaseAnalyzer.Extractors
                         });
                 }
 
-                return tables.Values.ToList();
+                Tables = tables.Values.ToList();
             }
         }
 
-        public async Task<DataTable> GetData(string connectionString, string sqlQuery)
+        public override async Task<DataTable> GetData(string sqlQuery)
         {
-            using (var connection = new NpgsqlConnection(connectionString))
+            using (var connection = new NpgsqlConnection(ConnectionString))
             {
                 var dataTable = new DataTable();
                 await connection.OpenAsync();

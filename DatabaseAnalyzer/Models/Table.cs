@@ -4,7 +4,7 @@ namespace DatabaseAnalyzer.Models
 {
     public class Table
     {
-        public required string Name { get; set; }
+        public string Name { get; set; }
         public List<Column> Columns { get; set; } = new List<Column>();
 
         public override string ToString()

@@ -6,28 +6,32 @@ using System.Data;
 
 namespace DatabaseAnalyzer.Extractors
 {
-    public class SqliteExtractor : IDatabaseExtractor
+    public class SqliteExtractor : DatabaseExtractor
     {
-        private sealed class ColumnInfor
+        internal class ColumnInfor
         {
-            public int Cid { get; set; }
-            public string Name { get; set; }
-            public string Type { get; set; }
-            public bool NotNull { get; set; }
-            public string? DefaultValue { get; set; }
-            public int? Pk { get; set; }
+            internal int Cid { get; set; }
+            internal required string Name { get; set; }
+            internal required string Type { get; set; }
+            internal bool NotNull { get; set; }
+            internal string? DefaultValue { get; set; }
+            internal int? Pk { get; set; }
         }
 
-        public async Task<List<Table>> GetTables(string connectionString)
+        public SqliteExtractor(string connectionString) : base(connectionString)
         {
-            using (var connection = new SqliteConnection(connectionString))
+            DatabaseType = DatabaseType.SQLite;
+            TableStructureQuery = @"SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'";
+        }
+
+        public override async Task ExtractTables()
+        {
+            using (var connection = new SqliteConnection(ConnectionString))
             {
                 await connection.OpenAsync();
 
-                string query = @"SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'";
-
                 var tables = new ConcurrentDictionary<string, Table>();
-                var tableNames = await connection.QueryAsync<string>(query);
+                var tableNames = await connection.QueryAsync<string>(TableStructureQuery);
 
                 foreach (var tableName in tableNames)
                 {
@@ -49,13 +53,13 @@ namespace DatabaseAnalyzer.Extractors
                     tables.TryAdd(tableName, table);
                 }
 
-                return tables.Values.ToList();
+                Tables = tables.Values.ToList();
             }
         }
 
-        public async Task<DataTable> GetData(string connectionString, string sqlQuery)
+        public override async Task<DataTable> GetData(string sqlQuery)
         {
-            using (var connection = new SqliteConnection(connectionString))
+            using (var connection = new SqliteConnection(ConnectionString))
             {
                 var dataTable = new DataTable();
                 await connection.OpenAsync();

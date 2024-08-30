@@ -1,30 +1,25 @@
 ﻿using DatabaseAnalyzer;
-using DatabaseAnalyzer.Extractors;
-using DatabaseAnalyzer.Models;
 using Helper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Pickers;
 using Windows.System;
 using WinRT.Interop;
 using Cache = Helper.Cache;
-using Table = DatabaseAnalyzer.Models.Table;
 
 namespace AskDB.App
 {
     public sealed partial class MainPage : Page
     {
         private DataTable DataTable = new DataTable();
-        private List<Table> Tables = new List<Table>();
         private string SqlQuery;
-        private List<string> Keywords = new List<string>();
 
         public MainPage()
         {
@@ -46,7 +41,7 @@ namespace AskDB.App
         {
             try
             {
-                await LoadTables();
+                LoadTables();
                 await LoadKeywords();
             }
             catch (Exception ex)
@@ -69,7 +64,7 @@ namespace AskDB.App
                 }
 
                 var lastWord = StringEngineer.GetLastWord(sender.Text);
-                var suggestions = Keywords.Where(k => k.ToUpper().StartsWith(lastWord.ToUpper())).Take(10).OrderBy(k => k).Select(t => StringEngineer.ReplaceLastOccurrence(sender.Text, lastWord, t)).ToList();
+                var suggestions = Analyzer.Keywords.Where(k => k.ToUpper().StartsWith(lastWord.ToUpper())).Take(10).OrderBy(k => k).Select(t => StringEngineer.ReplaceLastOccurrence(sender.Text, lastWord, t)).ToList();
                 sender.ItemsSource = suggestions;
             }
         }
@@ -93,7 +88,7 @@ namespace AskDB.App
 
                 if (!string.IsNullOrEmpty(lastWord))
                 {
-                    var suggestion = Keywords.FirstOrDefault(k => k.ToUpper().StartsWith(lastWord.ToUpper()));
+                    var suggestion = Analyzer.Keywords.FirstOrDefault(k => k.ToUpper().StartsWith(lastWord.ToUpper()));
 
                     if (suggestion != null)
                     {
@@ -120,32 +115,12 @@ namespace AskDB.App
 
             try
             {
-                IDatabaseExtractor extractor;
-
-                switch (Analyzer.DatabaseType)
-                {
-                    case DatabaseType.PostgreSQL:
-                        extractor = new PostgreSqlExtractor();
-                        break;
-                    case DatabaseType.MySQL:
-                        extractor = new MySqlExtractor();
-                        break;
-                    case DatabaseType.SQLite:
-                        extractor = new SqliteExtractor();
-                        break;
-                    default:
-                        extractor = new SqlServerExtractor();
-                        break;
-                }
-
-                var isQuerySql = await TryExecuteDirectSql(extractor);
+                var isQuerySql = await TryExecuteDirectSql();
 
                 if (!isQuerySql)
                 {
-                    await ExecuteAnalyzedQuery(extractor);
+                    await ExecuteAnalyzedQuery();
                 }
-
-                UpdateOutputGrid();
             }
             catch (Exception ex)
             {
@@ -153,6 +128,7 @@ namespace AskDB.App
             }
             finally
             {
+                UpdateOutputGrid();
                 SetLoadingState(false);
             }
         }
@@ -172,6 +148,11 @@ namespace AskDB.App
             if (result == ContentDialogResult.Primary)
             {
                 await Cache.SetContent(SqlQuery);
+
+                var dataPackage = new DataPackage();
+                dataPackage.SetText(SqlQuery);
+                Clipboard.SetContent(dataPackage);
+                Clipboard.Flush();
             }
         }
         private async void ExportButton_Click(object sender, RoutedEventArgs e)
@@ -207,13 +188,11 @@ namespace AskDB.App
         #endregion
 
         #region Helpers
-        private async Task LoadTables()
+        private void LoadTables()
         {
-            Tables = await Analyzer.GetTables(Analyzer.DatabaseType, Analyzer.ConnectionString);
+            tablesListView.ItemsSource = Analyzer.DatabaseExtractor.Tables.Select(t => t.Name);
 
-            tablesListView.ItemsSource = Tables.Select(t => t.Name);
-
-            foreach (var t in Analyzer.Tables)
+            foreach (var t in Analyzer.SelectedTables)
             {
                 tablesListView.SelectedItems.Add(t.Name);
             }
@@ -221,26 +200,24 @@ namespace AskDB.App
 
         private async Task LoadKeywords()
         {
-            var sqlKeywords = await StringEngineer.GetWords(@$"Assets\SqlKeywords\{Analyzer.DatabaseType.ToString()}.txt");
+            var sqlKeywords = await StringEngineer.GetWords(@$"Assets\SqlKeywords\{Analyzer.DatabaseExtractor.DatabaseType.ToString()}.txt");
             var commonKeywords = await StringEngineer.GetWords(@"Assets\PopularWords.txt");
-            var tableNames = Analyzer.Tables.Select(t => t.Name);
-            var columnNames = Analyzer.Tables.SelectMany(table => table.Columns.Select(column => column.Name));
-            var clipboardContent = await Cache.GetContent();
+            var tableNames = Analyzer.SelectedTables.Select(t => t.Name);
+            var columnNames = Analyzer.SelectedTables.SelectMany(table => table.Columns.Select(column => column.Name));
 
-            Keywords.AddRange(sqlKeywords);
-            Keywords.AddRange(commonKeywords);
-            Keywords.AddRange(tableNames);
-            Keywords.AddRange(columnNames);
-            Keywords.AddRange(clipboardContent);
+            Analyzer.Keywords.AddRange(sqlKeywords);
+            Analyzer.Keywords.AddRange(commonKeywords);
+            Analyzer.Keywords.AddRange(tableNames);
+            Analyzer.Keywords.AddRange(columnNames);
 
-            Keywords = Keywords.Distinct().OrderBy(x => x).ToList();
+            Analyzer.Keywords = Analyzer.Keywords.Distinct().OrderBy(x => x).ToList();
         }
 
-        private async Task<bool> TryExecuteDirectSql(IDatabaseExtractor extractor)
+        private async Task<bool> TryExecuteDirectSql()
         {
             try
             {
-                DataTable = await extractor.GetData(Analyzer.ConnectionString, queryBox.Text);
+                DataTable = await Analyzer.DatabaseExtractor.GetData(queryBox.Text);
                 exportButton.Visibility = Visibility.Visible;
                 return true;
             }
@@ -250,10 +227,10 @@ namespace AskDB.App
             }
         }
 
-        private async Task ExecuteAnalyzedQuery(IDatabaseExtractor extractor)
+        private async Task ExecuteAnalyzedQuery()
         {
-            Analyzer.Tables = Tables.Where(t => tablesListView.SelectedItems.Contains(t.Name)).ToList();
-            var sqlCommand = await Analyzer.GetSql(Analyzer.ApiKey, Analyzer.Tables, queryBox.Text, Analyzer.DatabaseType);
+            Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => tablesListView.SelectedItems.Contains(t.Name)).ToList();
+            var sqlCommand = await Analyzer.GetSql(Analyzer.ApiKey, Analyzer.SelectedTables, queryBox.Text, Analyzer.DatabaseExtractor.DatabaseType);
 
             if (!sqlCommand.IsSql)
             {
@@ -267,7 +244,7 @@ namespace AskDB.App
                 };
 
                 await dialog.ShowAsync();
-
+                DataTable = null;
                 return;
             }
 
@@ -275,7 +252,7 @@ namespace AskDB.App
 
             try
             {
-                DataTable = await extractor.GetData(Analyzer.ConnectionString, sqlCommand.Output);
+                DataTable = await Analyzer.DatabaseExtractor.GetData(sqlCommand.Output);
                 SetButtonVisibility(true);
             }
             catch (Exception ex)
@@ -292,6 +269,7 @@ namespace AskDB.App
                 await dialog.ShowAsync();
 
                 SetButtonVisibility(false);
+                DataTable = null;
             }
         }
 
@@ -312,20 +290,24 @@ namespace AskDB.App
         private void UpdateOutputGrid()
         {
             outputGridView.Columns.Clear();
-            for (int i = 0; i < DataTable.Columns.Count; i++)
+
+            if (DataTable != null)
             {
-                outputGridView.Columns.Add(new CommunityToolkit.WinUI.UI.Controls.DataGridTextColumn()
+                for (int i = 0; i < DataTable.Columns.Count; i++)
                 {
-                    Header = DataTable.Columns[i].ColumnName,
-                    Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
-                });
+                    outputGridView.Columns.Add(new CommunityToolkit.WinUI.UI.Controls.DataGridTextColumn()
+                    {
+                        Header = DataTable.Columns[i].ColumnName,
+                        Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
+                    });
+                }
+
+                var collectionObjects = new System.Collections.ObjectModel.ObservableCollection<object>(
+                    DataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray)
+                );
+
+                outputGridView.ItemsSource = collectionObjects;
             }
-
-            var collectionObjects = new System.Collections.ObjectModel.ObservableCollection<object>(
-                DataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray)
-            );
-
-            outputGridView.ItemsSource = collectionObjects;
         }
 
         private void SetLoadingState(bool isLoading)
@@ -342,5 +324,4 @@ namespace AskDB.App
         }
         #endregion
     }
-
 }

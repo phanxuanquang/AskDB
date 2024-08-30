@@ -6,7 +6,7 @@
 
         public static async Task<List<string>> GetContent()
         {
-            return await StringEngineer.GetWords(CacheFilePath);
+            return await StringEngineer.GetWords(CacheFilePath, true);
         }
 
         public static async Task SetContent(string line)
@@ -15,15 +15,10 @@
             {
                 if (!File.Exists(CacheFilePath))
                 {
-                    using (FileStream fs = File.Create(CacheFilePath))
-                    {
-                        await sw.WriteLineAsync(line.Trim());
-                    }
+                    File.Create(CacheFilePath);
                 }
-                else
-                {
-                    await sw.WriteLineAsync(line.Trim());
-                }
+
+                await sw.WriteLineAsync(StringCipher.Encode(line.Trim()));
             }
         }
     }

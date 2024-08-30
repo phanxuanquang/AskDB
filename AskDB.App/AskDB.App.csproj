@@ -34,13 +34,11 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
-    <Content Remove="Assets\PopularWords.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Remove="Assets\SqlKeywords\MSSQL.txt" />
+    <None Remove="Assets\PopularWords.txt" />
     <None Remove="Assets\SqlKeywords\MySQL.txt" />
     <None Remove="Assets\SqlKeywords\PostgreSQL.txt" />
     <None Remove="Assets\SqlKeywords\SQLite.txt" />
+    <None Remove="Assets\SqlKeywords\SqlServer.txt" />
     <None Remove="DbConnectPage.xaml" />
     <None Remove="MainPage.xaml" />
   </ItemGroup>
@@ -75,7 +73,10 @@
     <ProjectReference Include="..\Helper\Helper.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Content Update="Assets\SqlKeywords\MSSQL.txt">
+    <Content Update="Assets\PopularWords.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Assets\SqlKeywords\SqlServer.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Update="Assets\SqlKeywords\MySQL.txt">

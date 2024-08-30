@@ -31,13 +31,11 @@ namespace Helper
 
             foreach (DataRow row in table.Rows)
             {
-                string[] fields = row.ItemArray.Select(field => field.ToString()).ToArray();
+                var fields = row.ItemArray.Select(field => field?.ToString()).ToArray();
                 sb.AppendLine(string.Join(",", fields));
             }
 
             File.WriteAllText(outputFilePath, sb.ToString());
         }
-
-
     }
 }
