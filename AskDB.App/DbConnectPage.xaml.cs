@@ -191,14 +191,6 @@ namespace AskDB.App
 
                 await Analyzer.DatabaseExtractor.ExtractTables();
 
-
-            }
-            catch (Exception ex)
-            {
-                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
-            }
-            finally
-            {
                 if (Analyzer.DatabaseExtractor.Tables.Count == 0)
                 {
                     await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, "Cannot find any tables in this database", "Not Found");
@@ -212,7 +204,13 @@ namespace AskDB.App
                     step2Expander.IsExpanded = step2Expander.IsEnabled = false;
                     step3Expander.IsExpanded = step3Expander.IsEnabled = true;
                 }
-
+            }
+            catch (Exception ex)
+            {
+                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
+            }
+            finally
+            {
                 WinUiHelper.SetLoading(false, sender as Button, dbInputLoadingOverlay, dbInputPanel);
             }
         }
