@@ -26,6 +26,14 @@ namespace AskDB.App
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
             Window = new MainWindow();
+
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(Window);
+            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+            var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
+
+            var iconPath = "Assets/icon.ico";
+            appWindow.SetIcon(iconPath);
+
             Window.Activate();
         }
 

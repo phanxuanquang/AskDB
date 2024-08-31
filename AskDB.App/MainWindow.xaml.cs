@@ -14,7 +14,6 @@ namespace AskDB.App
         {
             this.InitializeComponent();
 
-            this.AppWindow.TitleBar.IconShowOptions = Microsoft.UI.Windowing.IconShowOptions.HideIconAndSystemMenu;
             this.AppWindow.Title = "AskDB - by Phan Xuan Quang";
 
             MainFrame.Navigate(typeof(DbConnectPage));

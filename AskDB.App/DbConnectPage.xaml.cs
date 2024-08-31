@@ -138,7 +138,6 @@ namespace AskDB.App
                 await ValidateApiKey(sender as Button);
                 await Cache.SetContent(apiKeyBox.Text);
                 UpdateUIAfterApiValidation();
-                connectDbButton.Focus(FocusState.Programmatic);
             }
             catch
             {

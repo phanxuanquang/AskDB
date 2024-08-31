@@ -55,7 +55,7 @@ namespace AskDB.App
                 SendButton_Click(sender, e);
                 autoSuggestBox.Focus(FocusState.Programmatic);
             }
-            else
+            else if (e.Key != VirtualKey.Up && e.Key != VirtualKey.Down)
             {
                 var lastWord = StringEngineer.GetLastWord(query);
                 if (e.Key == VirtualKey.Tab)
