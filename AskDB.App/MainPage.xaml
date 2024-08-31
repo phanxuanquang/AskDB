@@ -41,6 +41,7 @@
                     </Expander.Header>
                     <Expander.Content>
                         <StackPanel>
+                            <CheckBox Content="Select all tables" x:Name="selectAllCheckbox"/>
                             <ListView 
                                 x:Name="tablesListView" 
                                 SelectionMode="Multiple" 
@@ -85,7 +86,7 @@
                             </Button.Resources>
                         </Button>
                     </StackPanel>
-                    <controls:DataGrid x:Name="outputGridView" MaxHeight="800" IsReadOnly="True" AutoGenerateColumns="False" VerticalAlignment="Top" Margin="0,0,0,20"/>
+                    <controls:DataGrid x:Name="resultTable" MaxHeight="800" IsReadOnly="True" AutoGenerateColumns="False" VerticalAlignment="Top" Margin="0,0,0,20"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <HyperlinkButton Background="{StaticResource AcrylicInAppFillColorBaseBrush}" Content="Find the project on GitHub" NavigateUri="https://github.com/phanxuanquang/AskDB" Margin="0,0,10,0"/>

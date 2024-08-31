@@ -9,7 +9,6 @@ using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Data;
 using System.Linq;
-using System.Threading.Tasks;
 using Windows.System;
 
 
@@ -25,8 +24,13 @@ namespace AskDB.App
             tablesListView.SelectionChanged += TablesListView_SelectionChanged;
             dbTypeCombobox.SelectionChanged += DbTypeCombobox_SelectionChanged;
 
-            apiKeyBox.KeyUp += ApiKeyBox_KeyUp;
-            connectionStringBox.KeyUp += ConnectionStringBox_KeyUp;
+            selectAllCheckbox.Click += SelectAllCheckbox_Click;
+
+            apiKeyBox.TextChanged += ApiKeyBox_TextChanged;
+            apiKeyBox.KeyDown += ApiKeyBox_KeyDown;
+
+            connectionStringBox.TextChanged += ConnectionStringBox_TextChanged;
+            connectionStringBox.KeyDown += ConnectionStringBox_KeyDown;
 
             connectGeminiButton.Click += ConnectGeminiButton_Click;
             connectDbButton.Click += ConnectDbButton_Click;
@@ -34,74 +38,81 @@ namespace AskDB.App
             startBtn.Click += StartButton_Click;
         }
 
-        private void ApiKeyBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        private void ConnectionStringBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
         {
-            var autoSuggestBox = sender as AutoSuggestBox;
+            connectDbButton.IsEnabled = true;
 
-            if (!Generator.CanBeGeminiApiKey(autoSuggestBox.Text))
+            if (e.Key == VirtualKey.Enter)
             {
-                connectGeminiButton.IsEnabled = false;
-                autoSuggestBox.ItemsSource = null;
-                return;
-            }
-
-            if (e.Key != VirtualKey.Enter && e.Key != VirtualKey.Tab)
-            {
-                autoSuggestBox.ItemsSource = Cache.Data.Where(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
-                connectGeminiButton.IsEnabled = true;
-            }
-            else if (e.Key == VirtualKey.Enter)
-            {
-                ConnectGeminiButton_Click(connectGeminiButton, e);
-                connectGeminiButton.IsEnabled = true;
+                ConnectDbButton_Click(sender, e);
+                e.Handled = true;
             }
             else if (e.Key == VirtualKey.Tab)
             {
-                autoSuggestBox.Focus(FocusState.Programmatic);
-                var suggestion = Cache.Data.Find(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
-
+                var autoSuggestBox = sender as AutoSuggestBox;
+                var suggestion = Cache.Data.Find(k => k.Contains(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
                 if (suggestion != null)
                 {
                     autoSuggestBox.Text = suggestion;
+                    autoSuggestBox.Focus(FocusState.Programmatic);
+                }
+                e.Handled = true;
+            }
+        }
+        private void ConnectionStringBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                if (Generator.CanBeGeminiApiKey(sender.Text) || string.IsNullOrEmpty(sender.Text))
+                {
+                    sender.ItemsSource = null;
+                    connectDbButton.IsEnabled = false;
+                    return;
                 }
 
-                connectGeminiButton.IsEnabled = true;
+                sender.ItemsSource = Cache.Data
+                       .Where(k => k.Contains(sender.Text, StringComparison.OrdinalIgnoreCase))
+                       .Take(10)
+                       .OrderBy(k => k);
             }
         }
 
-        private void ConnectionStringBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        private void ApiKeyBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
         {
-            var autoSuggestBox = sender as AutoSuggestBox;
+            connectGeminiButton.IsEnabled = true;
 
-            if (Generator.CanBeGeminiApiKey(autoSuggestBox.Text) || string.IsNullOrEmpty(autoSuggestBox.Text))
+            if (e.Key == VirtualKey.Enter)
             {
-                connectGeminiButton.IsEnabled = false;
-                autoSuggestBox.ItemsSource = null;
-                return;
-            }
-
-            if (e.Key != VirtualKey.Enter && e.Key != VirtualKey.Tab)
-            {
-                autoSuggestBox.ItemsSource = Cache.Data.Where(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
-                connectGeminiButton.IsEnabled = true;
-            }
-            else if (e.Key == VirtualKey.Enter)
-            {
-                ConnectDbButton_Click(connectDbButton, e);
-                connectGeminiButton.IsEnabled = true;
-
+                ConnectGeminiButton_Click(sender, e);
+                e.Handled = true;
             }
             else if (e.Key == VirtualKey.Tab)
             {
-                autoSuggestBox.Focus(FocusState.Programmatic);
+                var autoSuggestBox = sender as AutoSuggestBox;
                 var suggestion = Cache.Data.Find(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
-
                 if (suggestion != null)
                 {
                     autoSuggestBox.Text = suggestion;
+                    autoSuggestBox.Focus(FocusState.Programmatic);
+                }
+                e.Handled = true;
+            }
+        }
+        private void ApiKeyBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                if (!Generator.CanBeGeminiApiKey(sender.Text) || string.IsNullOrEmpty(sender.Text))
+                {
+                    sender.ItemsSource = null;
+                    connectGeminiButton.IsEnabled = false;
+                    return;
                 }
 
-                connectGeminiButton.IsEnabled = true;
+                sender.ItemsSource = Cache.Data
+                       .Where(k => k.StartsWith(sender.Text, StringComparison.OrdinalIgnoreCase))
+                       .Take(10)
+                       .OrderBy(k => k);
             }
         }
 
@@ -130,60 +141,94 @@ namespace AskDB.App
         {
             Frame.Navigate(typeof(MainPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
         }
-
         private async void ConnectGeminiButton_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                await ValidateApiKey(sender as Button);
-                await Cache.SetContent(apiKeyBox.Text);
-                UpdateUIAfterApiValidation();
-            }
-            catch
-            {
-                await ShowErrorDialog("Invalid API Key. Please try again.");
-            }
-        }
+            WinUiHelper.SetLoading(true, sender as Button, apiKeyInputLoadingOverlay, apiInputPanel);
+            tutorialButton.Visibility = Visibility.Collapsed;
 
+            var isValidApiKey = await Generator.IsValidApiKey(apiKeyBox.Text);
+
+            if (isValidApiKey)
+            {
+                await Cache.SetContent(apiKeyBox.Text);
+                step1Expander.IsExpanded = false;
+                step1Expander.IsEnabled = true;
+                step2Expander.IsExpanded = step2Expander.IsEnabled = true;
+                Generator.ApiKey = apiKeyBox.Text;
+            }
+            else
+            {
+                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, "Invalid API Key. Please try again.");
+            }
+
+            WinUiHelper.SetLoading(false, sender as Button, apiKeyInputLoadingOverlay, apiInputPanel);
+            tutorialButton.Visibility = Visibility.Visible;
+        }
         private async void ConnectDbButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                await ConnectToDatabase(sender as Button);
+                WinUiHelper.SetLoading(true, sender as Button, dbInputLoadingOverlay, dbInputPanel);
+                var selectedType = (DatabaseType)dbTypeCombobox.SelectedItem;
 
+                switch (selectedType)
+                {
+                    case DatabaseType.SqlServer:
+                        Analyzer.DatabaseExtractor = new SqlServerExtractor(connectionStringBox.Text.Trim());
+                        break;
+                    case DatabaseType.PostgreSQL:
+                        Analyzer.DatabaseExtractor = new PostgreSqlExtractor(connectionStringBox.Text.Trim());
+                        break;
+                    case DatabaseType.SQLite:
+                        Analyzer.DatabaseExtractor = new SqliteExtractor(connectionStringBox.Text.Trim());
+                        break;
+                    case DatabaseType.MySQL:
+                        Analyzer.DatabaseExtractor = new MySqlExtractor(connectionStringBox.Text.Trim());
+                        break;
+                    default:
+                        throw new NotSupportedException("Not Supported");
+                }
+
+                await Analyzer.DatabaseExtractor.ExtractTables();
+
+
+            }
+            catch (Exception ex)
+            {
+                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
+            }
+            finally
+            {
                 if (Analyzer.DatabaseExtractor.Tables.Count == 0)
                 {
-                    SetDatabaseLoadingState(false, sender as Button);
-
-                    await ShowErrorDialog("Empty database.");
+                    await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, "Cannot find any tables in this database", "Not Found");
+                    WinUiHelper.SetLoading(false, sender as Button, dbInputLoadingOverlay, dbInputPanel);
                 }
                 else
                 {
                     await Cache.SetContent(connectionStringBox.Text);
-                    UpdateUIAfterDatabaseConnection();
+
+                    tablesListView.ItemsSource = Analyzer.DatabaseExtractor.Tables.Select(t => t.Name);
+                    step2Expander.IsExpanded = step2Expander.IsEnabled = false;
+                    step3Expander.IsExpanded = step3Expander.IsEnabled = true;
                 }
-            }
-            catch (Exception ex)
-            {
-                await ShowErrorDialog(ex.Message);
-            }
-            finally
-            {
-                SetDatabaseLoadingState(false, sender as Button);
+
+                WinUiHelper.SetLoading(false, sender as Button, dbInputLoadingOverlay, dbInputPanel);
             }
         }
 
         private async void DbConnectPage_Loaded(object sender, RoutedEventArgs e)
         {
-            LoadDatabaseTypes();
+            dbTypeCombobox.ItemsSource = Enum.GetValues(typeof(DatabaseType));
             Cache.Data = (await Cache.GetContent()).Distinct().OrderBy(x => x).ToList();
 
             if (Analyzer.IsActivated)
             {
-                LoadSavedSettings();
+                apiKeyBox.Text = Generator.ApiKey;
+                connectionStringBox.Text = Analyzer.DatabaseExtractor.ConnectionString;
+                dbTypeCombobox.SelectedItem = Analyzer.DatabaseExtractor.DatabaseType;
+                step2Expander.IsEnabled = forwardButton.IsEnabled = connectDbButton.IsEnabled = connectGeminiButton.IsEnabled = true;
             }
-
-            apiKeyBox.Focus(FocusState.Programmatic);
         }
 
         private void TablesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -191,137 +236,36 @@ namespace AskDB.App
             startBtn.IsEnabled = tablesListView.SelectedItems.Count > 0;
         }
 
+        private void SelectAllCheckbox_Click(object sender, RoutedEventArgs e)
+        {
+            var checkBox = sender as CheckBox;
+
+            if (checkBox.IsChecked == true)
+            {
+                foreach (var item in tablesListView.Items)
+                {
+                    tablesListView.SelectedItems.Add(item);
+                }
+            }
+            else
+            {
+                tablesListView.SelectedItems.Clear();
+            }
+        }
         private async void StartButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                SaveSelectedTables();
+                var selectedTableNames = tablesListView.SelectedItems.Cast<string>();
+                Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
+
                 Analyzer.IsActivated = true;
                 Frame.Navigate(typeof(MainPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
             }
             catch (Exception ex)
             {
-                await ShowErrorDialog(ex.Message);
+                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
             }
-        }
-
-        private async Task ShowErrorDialog(string message)
-        {
-            ContentDialog dialog = new ContentDialog
-            {
-                XamlRoot = RootGrid.XamlRoot,
-                Title = "Error",
-                Content = message,
-                PrimaryButtonText = "OK",
-                DefaultButton = ContentDialogButton.Primary
-            };
-
-            await dialog.ShowAsync();
-        }
-
-        private async Task ValidateApiKey(Button sender)
-        {
-            SetApiKeyLoadingState(true, sender);
-            try
-            {
-                await Generator.GenerateContent(apiKeyBox.Text, "Say 'Hello World' to me!", false, CreativityLevel.Low);
-            }
-            finally
-            {
-                SetApiKeyLoadingState(false, sender);
-            }
-        }
-
-        private void UpdateUIAfterApiValidation()
-        {
-            step1Expander.IsExpanded = false;
-            step1Expander.IsEnabled = true;
-            step2Expander.IsExpanded = step2Expander.IsEnabled = true;
-            Generator.ApiKey = apiKeyBox.Text;
-        }
-
-        private bool ValidateDatabaseInput()
-        {
-            if (dbTypeCombobox.SelectedIndex == -1)
-            {
-                ShowErrorDialog("Please choose your database type.").Wait();
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(connectionStringBox.Text))
-            {
-                ShowErrorDialog("Please input the connection string to connect to your database.").Wait();
-                return false;
-            }
-
-            return true;
-        }
-
-        private async Task ConnectToDatabase(Button sender)
-        {
-            SetDatabaseLoadingState(true, sender);
-            var selectedType = (DatabaseType)dbTypeCombobox.SelectedItem;
-
-            switch (selectedType)
-            {
-                case DatabaseType.SqlServer:
-                    Analyzer.DatabaseExtractor = new SqlServerExtractor(connectionStringBox.Text.Trim());
-                    break;
-                case DatabaseType.PostgreSQL:
-                    Analyzer.DatabaseExtractor = new PostgreSqlExtractor(connectionStringBox.Text.Trim());
-                    break;
-                case DatabaseType.SQLite:
-                    Analyzer.DatabaseExtractor = new SqliteExtractor(connectionStringBox.Text.Trim());
-                    break;
-                case DatabaseType.MySQL:
-                    Analyzer.DatabaseExtractor = new MySqlExtractor(connectionStringBox.Text.Trim());
-                    break;
-                default:
-                    throw new NotSupportedException("Not Supported");
-            }
-
-            await Analyzer.DatabaseExtractor.ExtractTables();
-
-            tablesListView.ItemsSource = Analyzer.DatabaseExtractor.Tables.Select(t => t.Name);
-        }
-
-        private void UpdateUIAfterDatabaseConnection()
-        {
-            step2Expander.IsExpanded = step2Expander.IsEnabled = false;
-            step3Expander.IsExpanded = step3Expander.IsEnabled = true;
-        }
-
-        private void LoadDatabaseTypes()
-        {
-            dbTypeCombobox.ItemsSource = Enum.GetValues(typeof(DatabaseType));
-        }
-
-        private void LoadSavedSettings()
-        {
-            apiKeyBox.Text = Generator.ApiKey;
-            connectionStringBox.Text = Analyzer.DatabaseExtractor.ConnectionString;
-            dbTypeCombobox.SelectedItem = Analyzer.DatabaseExtractor.DatabaseType;
-            step2Expander.IsEnabled = forwardButton.IsEnabled = connectDbButton.IsEnabled = connectGeminiButton.IsEnabled = true;
-        }
-
-        private void SaveSelectedTables()
-        {
-            var selectedTableNames = tablesListView.SelectedItems.Cast<string>();
-            Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
-        }
-
-        private void SetApiKeyLoadingState(bool isLoading, Button sender)
-        {
-            apiInputPanel.Visibility = tutorialButton.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
-            apiKeyInputLoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
-            sender.IsEnabled = !isLoading;
-        }
-
-        private void SetDatabaseLoadingState(bool isLoading, Button sender)
-        {
-            dbInputLoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
-            sender.IsEnabled = !isLoading;
-            dbInputPanel.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using DatabaseAnalyzer;
+using DatabaseAnalyzer.Models;
 using GenAI;
 using Helper;
 using Microsoft.UI.Xaml;
@@ -19,8 +20,8 @@ namespace AskDB.App
 {
     public sealed partial class MainPage : Page
     {
-        private DataTable DataTable = new DataTable();
-        private string SqlQuery;
+        private DataTable _resultDataTable = new DataTable();
+        private string _sqlQuery;
 
         public MainPage()
         {
@@ -28,56 +29,15 @@ namespace AskDB.App
 
             Loaded += MainPage_Loaded;
 
-            queryBox.KeyUp += QueryBox_KeyUp;
+            queryBox.KeyDown += QueryBox_KeyDown;
+            queryBox.TextChanged += QueryBox_TextChanged;
+
+            selectAllCheckbox.Click += SelectAllCheckbox_Click;
 
             sendButton.Click += SendButton_Click;
             showSqlButton.Click += ShowSqlButton_Click;
             exportButton.Click += ExportButton_Click;
             backButton.Click += BackButton_Click;
-        }
-
-        private void QueryBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
-        {
-            var autoSuggestBox = sender as AutoSuggestBox;
-            var query = autoSuggestBox.Text;
-
-            if (Generator.CanBeGeminiApiKey(query) || string.IsNullOrEmpty(query))
-            {
-                autoSuggestBox.ItemsSource = null;
-                sendButton.IsEnabled = false;
-                return;
-            }
-
-            sendButton.IsEnabled = true;
-
-            if (e.Key == VirtualKey.Enter)
-            {
-                SendButton_Click(sender, e);
-                autoSuggestBox.Focus(FocusState.Programmatic);
-            }
-            else if (e.Key != VirtualKey.Up && e.Key != VirtualKey.Down)
-            {
-                var lastWord = StringEngineer.GetLastWord(query);
-                if (e.Key == VirtualKey.Tab)
-                {
-                    autoSuggestBox.Focus(FocusState.Programmatic);
-                    var suggestion = Cache.Data.Find(k => k.ToUpper().StartsWith(lastWord.ToUpper()));
-
-                    if (suggestion != null)
-                    {
-                        autoSuggestBox.ItemsSource = suggestion;
-                        autoSuggestBox.Text = StringEngineer.ReplaceLastOccurrence(query, lastWord, suggestion);
-                    }
-                }
-                else
-                {
-                    autoSuggestBox.ItemsSource = Cache.Data
-                        .Where(k => k.ToUpper().StartsWith(lastWord.ToUpper()))
-                        .Take(10)
-                        .OrderBy(k => k)
-                        .Select(t => StringEngineer.ReplaceLastOccurrence(autoSuggestBox.Text, lastWord, t));
-                }
-            }
         }
 
         #region Events
@@ -90,33 +50,114 @@ namespace AskDB.App
             }
             catch (Exception ex)
             {
-                var result = await ShowErrorDialog(ex.Message);
+                var result = await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
                 if (result == ContentDialogResult.Primary)
                 {
                     Frame.Navigate(typeof(DbConnectPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
                 }
             }
         }
+
+        private void QueryBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            sendButton.IsEnabled = true;
+
+            if (e.Key == VirtualKey.Enter)
+            {
+                SendButton_Click(sender, e);
+                e.Handled = true;
+            }
+            else if (e.Key == VirtualKey.Tab)
+            {
+                var autoSuggestBox = sender as AutoSuggestBox;
+                var suggestion = Cache.Data.Find(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
+                if (suggestion != null)
+                {
+                    autoSuggestBox.Text = suggestion;
+                    autoSuggestBox.Focus(FocusState.Programmatic);
+                }
+                e.Handled = true;
+            }
+        }
+        private void QueryBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                if (Generator.CanBeGeminiApiKey(sender.Text) || string.IsNullOrEmpty(sender.Text))
+                {
+                    sender.ItemsSource = null;
+                    sendButton.IsEnabled = false;
+                    return;
+                }
+
+                var lastWord = StringEngineer.GetLastWord(sender.Text);
+
+                sender.ItemsSource = Cache.Data
+                       .Where(k => k.StartsWith(lastWord, StringComparison.OrdinalIgnoreCase))
+                       .Take(10)
+                       .OrderBy(k => k)
+                       .Select(t => StringEngineer.ReplaceLastWord(sender.Text, lastWord, t));
+            }
+        }
+
+        private void SelectAllCheckbox_Click(object sender, RoutedEventArgs e)
+        {
+            var checkBox = sender as CheckBox;
+
+            if (checkBox.IsChecked == true)
+            {
+                foreach (var item in tablesListView.Items)
+                {
+                    tablesListView.SelectedItems.Add(item);
+                }
+            }
+            else
+            {
+                tablesListView.SelectedItems.Clear();
+            }
+        }
+
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
+            if (!Analyzer.IsSqlSafe(queryBox.Text))
+            {
+                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, "You must not execute this dangerous command.", "Forbidden");
+                return;
+            }
+
             SetLoadingState(true);
 
             try
             {
-                var isQuerySql = await TryExecuteDirectSql();
-
-                if (!isQuerySql)
-                {
-                    await ExecuteAnalyzedQuery();
-                }
+                _resultDataTable = await Analyzer.DatabaseExtractor.GetData(queryBox.Text);
+                SetButtonVisibility(true);
             }
-            catch (Exception ex)
+            catch
             {
-                await ShowErrorDialog(ex.Message);
+                await ExecuteAnalyzedQuery(queryBox.Text);
             }
             finally
             {
-                UpdateOutputGrid();
+                resultTable.Columns.Clear();
+
+                if (_resultDataTable != null)
+                {
+                    for (int i = 0; i < _resultDataTable.Columns.Count; i++)
+                    {
+                        resultTable.Columns.Add(new CommunityToolkit.WinUI.UI.Controls.DataGridTextColumn()
+                        {
+                            Header = _resultDataTable.Columns[i].ColumnName,
+                            Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
+                        });
+                    }
+
+                    var collectionObjects = new System.Collections.ObjectModel.ObservableCollection<object>(
+                        _resultDataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray)
+                    );
+
+                    resultTable.ItemsSource = collectionObjects;
+                }
+
                 SetLoadingState(false);
             }
         }
@@ -129,16 +170,16 @@ namespace AskDB.App
                 PrimaryButtonText = "Copy",
                 CloseButtonText = "Close",
                 DefaultButton = ContentDialogButton.Primary,
-                Content = SqlQuery
+                Content = _sqlQuery
             };
 
             var result = await dialog.ShowAsync();
             if (result == ContentDialogResult.Primary)
             {
-                await Cache.SetContent(SqlQuery);
+                await Cache.SetContent(_sqlQuery);
 
                 var dataPackage = new DataPackage();
-                dataPackage.SetText(SqlQuery);
+                dataPackage.SetText(_sqlQuery);
                 Clipboard.SetContent(dataPackage);
                 Clipboard.Flush();
             }
@@ -161,12 +202,12 @@ namespace AskDB.App
 
                 if (file != null)
                 {
-                    Extractor.ExportData(DataTable, file.Path);
+                    Extractor.ExportData(_resultDataTable, file.Path);
                 }
             }
             catch (Exception ex)
             {
-                await ShowErrorDialog(ex.Message);
+                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
             }
         }
         private void BackButton_Click(object sender, RoutedEventArgs e)
@@ -184,12 +225,16 @@ namespace AskDB.App
             {
                 tablesListView.SelectedItems.Add(t.Name);
             }
-        }
 
+            if (Analyzer.SelectedTables.Count == Analyzer.DatabaseExtractor.Tables.Count)
+            {
+                selectAllCheckbox.IsChecked = true;
+            }
+        }
         private async Task LoadKeywords()
         {
-            var sqlKeywords = await StringEngineer.GetWords(@$"Assets\SqlKeywords\{Analyzer.DatabaseExtractor.DatabaseType.ToString()}.txt");
-            var commonKeywords = await StringEngineer.GetWords(@"Assets\PopularWords.txt");
+            var sqlKeywords = await StringEngineer.GetLines(@$"Assets\SqlKeywords\{Analyzer.DatabaseExtractor.DatabaseType.ToString()}.txt");
+            var commonKeywords = await StringEngineer.GetLines(@"Assets\PopularWords.txt");
             var tableNames = Analyzer.SelectedTables.Select(t => t.Name);
             var columnNames = Analyzer.SelectedTables.SelectMany(table => table.Columns.Select(column => column.Name));
             var removedKeywords = commonKeywords.Where(c => c.Length < 2);
@@ -202,100 +247,49 @@ namespace AskDB.App
             Cache.Data = Cache.Data.AsParallel().Distinct().OrderBy(x => x).ToList();
         }
 
-        private async Task<bool> TryExecuteDirectSql()
+        private async Task ExecuteAnalyzedQuery(string query)
         {
+            var sqlCommand = new SqlCommander();
+
             try
             {
-                DataTable = await Analyzer.DatabaseExtractor.GetData(queryBox.Text);
-                exportButton.Visibility = Visibility.Visible;
-                return true;
+                Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => tablesListView.SelectedItems.Contains(t.Name)).ToList();
+                sqlCommand = await Analyzer.GetSql(Generator.ApiKey, Analyzer.SelectedTables, query, Analyzer.DatabaseExtractor.DatabaseType);
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
-            }
-        }
-
-        private async Task ExecuteAnalyzedQuery()
-        {
-            Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => tablesListView.SelectedItems.Contains(t.Name)).ToList();
-            var sqlCommand = await Analyzer.GetSql(Generator.ApiKey, Analyzer.SelectedTables, queryBox.Text, Analyzer.DatabaseExtractor.DatabaseType);
-
-            if (!sqlCommand.IsSql)
-            {
-                var dialog = new ContentDialog
-                {
-                    XamlRoot = RootGrid.XamlRoot,
-                    Title = "Not an SQL command",
-                    PrimaryButtonText = "OK",
-                    DefaultButton = ContentDialogButton.Primary,
-                    Content = sqlCommand.Output
-                };
-
-                await dialog.ShowAsync();
-                DataTable = null;
+                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
+                _resultDataTable = null;
                 return;
             }
 
-            SqlQuery = sqlCommand.Output;
+            if (!sqlCommand.IsSql)
+            {
+                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, sqlCommand.Output, "Invalid SQL Command");
+                _resultDataTable = null;
+                return;
+            }
+
+            if (!Analyzer.IsSqlSafe(sqlCommand.Output))
+            {
+                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, "You must not execute this dangerous command.", "Forbidden");
+                _resultDataTable = null;
+                return;
+            }
+
+            _sqlQuery = sqlCommand.Output;
 
             try
             {
-                DataTable = await Analyzer.DatabaseExtractor.GetData(sqlCommand.Output);
+                _resultDataTable = await Analyzer.DatabaseExtractor.GetData(sqlCommand.Output);
                 SetButtonVisibility(true);
             }
             catch (Exception ex)
             {
-                var dialog = new ContentDialog
-                {
-                    XamlRoot = RootGrid.XamlRoot,
-                    Title = "SQL Error",
-                    PrimaryButtonText = "OK",
-                    DefaultButton = ContentDialogButton.Primary,
-                    Content = $"SQL Command: {sqlCommand.Output}\n\n{ex.Message}"
-                };
-
-                await dialog.ShowAsync();
+                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, $"SQL Command: {sqlCommand.Output}\n\n{ex.Message}");
 
                 SetButtonVisibility(false);
-                DataTable = null;
-            }
-        }
-
-        private async Task<ContentDialogResult> ShowErrorDialog(string message)
-        {
-            var dialog = new ContentDialog
-            {
-                XamlRoot = RootGrid.XamlRoot,
-                Title = "Error",
-                PrimaryButtonText = "OK",
-                DefaultButton = ContentDialogButton.Primary,
-                Content = message
-            };
-
-            return await dialog.ShowAsync();
-        }
-
-        private void UpdateOutputGrid()
-        {
-            outputGridView.Columns.Clear();
-
-            if (DataTable != null)
-            {
-                for (int i = 0; i < DataTable.Columns.Count; i++)
-                {
-                    outputGridView.Columns.Add(new CommunityToolkit.WinUI.UI.Controls.DataGridTextColumn()
-                    {
-                        Header = DataTable.Columns[i].ColumnName,
-                        Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
-                    });
-                }
-
-                var collectionObjects = new System.Collections.ObjectModel.ObservableCollection<object>(
-                    DataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray)
-                );
-
-                outputGridView.ItemsSource = collectionObjects;
+                _resultDataTable = null;
             }
         }
 
@@ -305,7 +299,6 @@ namespace AskDB.App
             mainPanel.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
             selectTableExpander.IsExpanded = false;
         }
-
         private void SetButtonVisibility(bool isVisible)
         {
             exportButton.Visibility = showSqlButton.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;

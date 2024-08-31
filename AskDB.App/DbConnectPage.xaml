@@ -79,6 +79,7 @@
                     </Expander.Header>
                     <Expander.Content>
                         <StackPanel>
+                            <CheckBox Content="Select all tables" x:Name="selectAllCheckbox"/>
                             <ListView 
                                 x:Name="tablesListView" 
                                 SelectionMode="Multiple" 

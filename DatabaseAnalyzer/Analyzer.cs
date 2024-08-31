@@ -54,5 +54,47 @@ namespace DatabaseAnalyzer
             var response = await Generator.GenerateContent(apiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
             return JsonConvert.DeserializeObject<SqlCommander>(response);
         }
+
+        public static bool IsSqlSafe(string sqlCommand)
+        {
+            var unsafeKeywords = new string[]
+            {
+                "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE",
+                "CREATE", "EXEC", "EXECUTE", "SP_EXECUTESQL", "XPCMDSHELL",
+                "SYSCOLUMNS", "SYSOBJECTS", "SYSUSERS", "GRANT", "REVOKE",
+                "DENY", "ADD", "SET", "INTO", "OPENROWSET", "OPENQUERY",
+                "OPENDATASOURCE", "BACKUP", "RESTORE", "RECONFIGURE",
+                "SHUTDOWN", "KILL", "DBCC", "BULK INSERT", "UPDATETEXT",
+                "WRITETEXT", "LOCK", "CHECKPOINT", "PARTITION", "REINDEX",
+                "REVERT", "ROLLBACK", "SAVE", "SECURITYAUDIT", "TRIGGER",
+                "FUNC", "PROCEDURE", "VIEW", "INDEX", "CONSTRAINT", "SCHEMA",
+                "DATABASE", "TABLE", "TRANSACTION", "USE", "OPEN", "FETCH",
+                "DEALLOCATE", "DECLARE", "RAISERROR", "DISABLE", "ENABLE",
+                "ASMRESTORE", "ASSEMBLYPROPERTY", "ADDMEMBER", "DROPFACET",
+                "ADDROLE", "ADDLOGIN", "ADDUSER", "CHANGETRACKING",
+                "CONTAINS", "CONTAINSTABLE", "EVENTDATA", "FILETABLE",
+                "FREETEXTTABLE", "FULLTEXTCATALOGPROPERTY", "FULLTEXTSERVICEPROPERTY",
+                "IDENTITY", "IDENTITYCOL", "IDENT_CURRENT", "IDENT_INCR",
+                "IDENT_SEED", "FORMSOF", "SEMANTICSIMILARITYTABLE",
+                "SEMANTICKEYPHRASETABLE", "PERMISSIONS", "PWDENCRYPT",
+                "PWDCOMPARE", "FORMATMESSAGE", "OPENXML", "PIVOT",
+                "READTEXT", "ROWVERSION", "TABLESAMPLE", "TEXTPTR",
+                "TEXTSIZE", "UPSERT", "MERGE", "REPLACE", "FUNC", "PROCEDURE",
+                "VIEW", "INDEX", "CONSTRAINT", "SCHEMA", "DATABASE", "TABLE"
+            };
+
+            var words = StringEngineer.GetWords(sqlCommand);
+
+            foreach (var word in words)
+            {
+                if (unsafeKeywords.Contains(word.ToUpper()))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
     }
 }

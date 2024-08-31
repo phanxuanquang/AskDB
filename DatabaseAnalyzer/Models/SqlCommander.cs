@@ -2,7 +2,7 @@
 {
     public class SqlCommander
     {
-        public required string Output { get; set; }
+        public string Output { get; set; }
         public bool IsSql { get; set; }
     }
 }

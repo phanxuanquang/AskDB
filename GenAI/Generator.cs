@@ -74,22 +74,25 @@ namespace GenAI
 
         public static bool CanBeGeminiApiKey(string apiKey)
         {
-            if (string.IsNullOrEmpty(apiKey) || string.IsNullOrWhiteSpace(apiKey))
-            {
-                return false;
-            }
-
-            if (ApiKeyPrefix.StartsWith(apiKey.Trim(), StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            if (apiKey.Trim().StartsWith(ApiKeyPrefix, StringComparison.OrdinalIgnoreCase))
+            if (ApiKeyPrefix.StartsWith(apiKey, StringComparison.OrdinalIgnoreCase) || apiKey.StartsWith(ApiKeyPrefix, StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
 
             return false;
+        }
+
+        public static async Task<bool> IsValidApiKey(string apiKey)
+        {
+            try
+            {
+                await GenerateContent(apiKey.Trim(), "Say 'Hello World' to me!", false, CreativityLevel.Low);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
