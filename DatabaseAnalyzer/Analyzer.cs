@@ -11,10 +11,8 @@ namespace DatabaseAnalyzer
     {
         public const byte MaxTotalTables = 100;
         public const short MaxTotalColumns = 500;
-        public static string ApiKey = string.Empty;
         public static bool IsActivated = false;
         public static List<Table> SelectedTables = new List<Table>();
-        public static List<string> Keywords = new List<string>();
         public static DatabaseExtractor DatabaseExtractor;
 
         public static string TablesAsString(List<Table> tables)

@@ -3,6 +3,7 @@
     public static class Cache
     {
         private const string CacheFilePath = @"Assets\Cache.txt";
+        public static List<string> Data = new List<string>();
 
         public static async Task<List<string>> GetContent()
         {

@@ -47,10 +47,10 @@
                             </StackPanel>
                             <StackPanel x:Name="apiInputPanel" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
                                 <AutoSuggestBox x:Name="apiKeyBox" PlaceholderText="Enter the Gemini API Key" AutomationProperties.Name="simple text editor" MinWidth="830" Margin="0,0,10,0"/>
-                                <Button x:Name="getApiKeyButton" HorizontalAlignment="Center" Style="{StaticResource DefaultButtonStyle}" Content="Get API Key" Height="35"/>
+                                <HyperlinkButton x:Name="getApiKeyButton" HorizontalAlignment="Center" Background="{StaticResource AcrylicInAppFillColorBaseBrush}"  NavigateUri="https://aistudio.google.com/app/apikey" Content="Get API Key" Height="35"/>
                         </StackPanel>
                             <HyperlinkButton x:Name="tutorialButton" Content="I don't know how to get the API key" NavigateUri="https://www.youtube.com/embed/z8-S9P2SFU8" Padding="5,0,0,0"/>
-                            <Button x:Name="connectGeminiButton" Style="{StaticResource AccentButtonStyle}" Content="Connect" Height="35" HorizontalAlignment="Center"/>
+                            <Button x:Name="connectGeminiButton" IsEnabled="False" Style="{StaticResource AccentButtonStyle}" Content="Connect" Height="35" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Expander.Content>
                 </Expander>
@@ -68,7 +68,7 @@
                                 <ComboBox  x:Name="dbTypeCombobox" PlaceholderText="Choose your database type" Width="230" Margin="0,0,10,0" Height="35"/>
                                 <AutoSuggestBox x:Name="connectionStringBox" PlaceholderText="Enter the connection string . . ." AutomationProperties.Name="simple text editor" MinWidth="700"/>
                             </StackPanel>
-                            <Button x:Name="connectDbButton" Style="{StaticResource AccentButtonStyle}" Content="Connect" Height="35" HorizontalAlignment="Center"/>
+                            <Button x:Name="connectDbButton" IsEnabled="False" Style="{StaticResource AccentButtonStyle}" Content="Connect" Height="35" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Expander.Content>
                 </Expander>

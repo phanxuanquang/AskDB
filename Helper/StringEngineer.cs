@@ -39,7 +39,7 @@ namespace Helper
 
         public static string ReplaceLastOccurrence(string text, string oldString, string newString)
         {
-            int place = text.ToUpper().LastIndexOf(oldString.ToUpper());
+            int place = text.LastIndexOf(oldString, StringComparison.OrdinalIgnoreCase);
 
             if (place == -1)
             {

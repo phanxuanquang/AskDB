@@ -61,7 +61,7 @@
                 <StackPanel x:Name="mainPanel">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
                         <AutoSuggestBox x:Name="queryBox" HorizontalAlignment="Stretch" PlaceholderText="Enter your question or the SQL query . . ." AutomationProperties.Name="simple text editor" MinWidth="1000" Margin="0,0,10,0"/>
-                        <Button x:Name="sendButton" Style="{StaticResource AccentButtonStyle}" Width="60" Height="35" Margin="0,0,10,0">
+                        <Button x:Name="sendButton" IsEnabled="False" Style="{StaticResource AccentButtonStyle}" Width="60" Height="35" Margin="0,0,10,0">
                             <SymbolIcon Symbol="Send"/>
                         </Button>
                         <Button x:Name="exportButton" Style="{StaticResource DefaultButtonStyle}" Width="60" Height="35" Visibility="Collapsed" Margin="0,0,10,0" >
@@ -86,6 +86,10 @@
                         </Button>
                     </StackPanel>
                     <controls:DataGrid x:Name="outputGridView" MaxHeight="800" IsReadOnly="True" AutoGenerateColumns="False" VerticalAlignment="Top" Margin="0,0,0,20"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <HyperlinkButton Background="{StaticResource AcrylicInAppFillColorBaseBrush}" Content="Find the project on GitHub" NavigateUri="https://github.com/phanxuanquang/AskDB" Margin="0,0,10,0"/>
+                    <HyperlinkButton Background="{StaticResource AcrylicInAppFillColorBaseBrush}" Content="Buy me a coffee" NavigateUri="https://i.imgur.com/XYXfisQ.jpeg" />
                 </StackPanel>
             </StackPanel>
         </Border>

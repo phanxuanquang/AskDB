@@ -1,4 +1,5 @@
 ﻿using DatabaseAnalyzer;
+using GenAI;
 using Helper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -27,13 +28,56 @@ namespace AskDB.App
 
             Loaded += MainPage_Loaded;
 
-            queryBox.TextChanged += QueryBox_TextChanged;
-            queryBox.KeyDown += QueryBox_KeyDown;
+            queryBox.KeyUp += QueryBox_KeyUp;
 
             sendButton.Click += SendButton_Click;
             showSqlButton.Click += ShowSqlButton_Click;
             exportButton.Click += ExportButton_Click;
             backButton.Click += BackButton_Click;
+        }
+
+        private void QueryBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            var autoSuggestBox = sender as AutoSuggestBox;
+            var query = autoSuggestBox.Text;
+
+            if (Generator.CanBeGeminiApiKey(query) || string.IsNullOrEmpty(query))
+            {
+                autoSuggestBox.ItemsSource = null;
+                sendButton.IsEnabled = false;
+                return;
+            }
+
+            sendButton.IsEnabled = true;
+
+            if (e.Key == VirtualKey.Enter)
+            {
+                SendButton_Click(sender, e);
+                autoSuggestBox.Focus(FocusState.Programmatic);
+            }
+            else
+            {
+                var lastWord = StringEngineer.GetLastWord(query);
+                if (e.Key == VirtualKey.Tab)
+                {
+                    autoSuggestBox.Focus(FocusState.Programmatic);
+                    var suggestion = Cache.Data.Find(k => k.ToUpper().StartsWith(lastWord.ToUpper()));
+
+                    if (suggestion != null)
+                    {
+                        autoSuggestBox.ItemsSource = suggestion;
+                        autoSuggestBox.Text = StringEngineer.ReplaceLastOccurrence(query, lastWord, suggestion);
+                    }
+                }
+                else
+                {
+                    autoSuggestBox.ItemsSource = Cache.Data
+                        .Where(k => k.ToUpper().StartsWith(lastWord.ToUpper()))
+                        .Take(10)
+                        .OrderBy(k => k)
+                        .Select(t => StringEngineer.ReplaceLastOccurrence(autoSuggestBox.Text, lastWord, t));
+                }
+            }
         }
 
         #region Events
@@ -53,68 +97,8 @@ namespace AskDB.App
                 }
             }
         }
-
-        private void QueryBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
-        {
-            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
-            {
-                if (string.IsNullOrEmpty(sender.Text))
-                {
-                    return;
-                }
-
-                var lastWord = StringEngineer.GetLastWord(sender.Text);
-
-                sender.ItemsSource = Analyzer.Keywords
-                    .Where(k => k.ToUpper().StartsWith(lastWord.ToUpper()))
-                    .Take(10)
-                    .OrderBy(k => k)
-                    .Select(t => StringEngineer.ReplaceLastOccurrence(sender.Text, lastWord, t));
-            }
-        }
-        private void QueryBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
-        {
-            if (string.IsNullOrEmpty((sender as AutoSuggestBox).Text))
-            {
-                return;
-            }
-
-            if (e.Key == VirtualKey.Enter)
-            {
-                SendButton_Click(sender, e);
-                e.Handled = true;
-            }
-            else if (e.Key == VirtualKey.Tab)
-            {
-                var autoSuggestBox = sender as AutoSuggestBox;
-                var query = autoSuggestBox.Text;
-                var lastWord = StringEngineer.GetLastWord(query);
-
-                if (!string.IsNullOrEmpty(lastWord))
-                {
-                    var suggestion = Analyzer.Keywords.FirstOrDefault(k => k.ToUpper().StartsWith(lastWord.ToUpper()));
-
-                    if (suggestion != null)
-                    {
-                        autoSuggestBox.Text = StringEngineer.ReplaceLastOccurrence(query, lastWord, suggestion);
-
-                        autoSuggestBox.Focus(FocusState.Programmatic);
-
-                        e.Handled = true;
-                    }
-
-                    e.Handled = true;
-                }
-            }
-        }
-
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(queryBox.Text))
-            {
-                return;
-            }
-
             SetLoadingState(true);
 
             try
@@ -208,13 +192,14 @@ namespace AskDB.App
             var commonKeywords = await StringEngineer.GetWords(@"Assets\PopularWords.txt");
             var tableNames = Analyzer.SelectedTables.Select(t => t.Name);
             var columnNames = Analyzer.SelectedTables.SelectMany(table => table.Columns.Select(column => column.Name));
+            var removedKeywords = commonKeywords.Where(c => c.Length < 2);
 
-            Analyzer.Keywords.AddRange(sqlKeywords);
-            Analyzer.Keywords.AddRange(commonKeywords);
-            Analyzer.Keywords.AddRange(tableNames);
-            Analyzer.Keywords.AddRange(columnNames);
+            Cache.Data.AddRange(sqlKeywords);
+            Cache.Data.AddRange(commonKeywords.Except(removedKeywords));
+            Cache.Data.AddRange(tableNames);
+            Cache.Data.AddRange(columnNames);
 
-            Analyzer.Keywords = Analyzer.Keywords.AsParallel().Distinct().OrderBy(x => x).ToList();
+            Cache.Data = Cache.Data.AsParallel().Distinct().OrderBy(x => x).ToList();
         }
 
         private async Task<bool> TryExecuteDirectSql()
@@ -234,7 +219,7 @@ namespace AskDB.App
         private async Task ExecuteAnalyzedQuery()
         {
             Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => tablesListView.SelectedItems.Contains(t.Name)).ToList();
-            var sqlCommand = await Analyzer.GetSql(Analyzer.ApiKey, Analyzer.SelectedTables, queryBox.Text, Analyzer.DatabaseExtractor.DatabaseType);
+            var sqlCommand = await Analyzer.GetSql(Generator.ApiKey, Analyzer.SelectedTables, queryBox.Text, Analyzer.DatabaseExtractor.DatabaseType);
 
             if (!sqlCommand.IsSql)
             {

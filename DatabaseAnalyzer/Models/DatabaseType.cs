@@ -10,10 +10,10 @@ namespace DatabaseAnalyzer.Models
         [Description("Host=localhost;Username=postgres;Password=YourPassword;Database=YourDatabaseName")]
         PostgreSQL = 1,
 
-        [Description("MySQL")]
+        [Description("SslMode=Preferred;Server=localhost;User=root;Password=;Database=YourDatabaseName;")]
         MySQL = 2,
 
-        [Description("Data Source=path\\to\\your\\database.db")]
+        [Description("Data Source=path\\to\\YourDatabaseName.db")]
         SQLite = 3,
     }
 }

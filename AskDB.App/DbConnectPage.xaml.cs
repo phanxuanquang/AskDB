@@ -8,7 +8,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Data;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.System;
@@ -24,142 +23,106 @@ namespace AskDB.App
             this.Loaded += DbConnectPage_Loaded;
 
             tablesListView.SelectionChanged += TablesListView_SelectionChanged;
-
             dbTypeCombobox.SelectionChanged += DbTypeCombobox_SelectionChanged;
 
-            apiKeyBox.KeyDown += ApiKeyBox_KeyDown;
-            apiKeyBox.TextChanged += ApiKeyBox_TextChanged;
-            connectionStringBox.KeyDown += ConnectionStringBox_KeyDown;
-            connectionStringBox.TextChanged += ConnectionStringBox_TextChanged;
+            apiKeyBox.KeyUp += ApiKeyBox_KeyUp;
+            connectionStringBox.KeyUp += ConnectionStringBox_KeyUp;
 
             connectGeminiButton.Click += ConnectGeminiButton_Click;
             connectDbButton.Click += ConnectDbButton_Click;
-            getApiKeyButton.Click += GetApiKeyButton_Click;
             forwardButton.Click += ForwardButton_Click;
             startBtn.Click += StartButton_Click;
+        }
+
+        private void ApiKeyBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            var autoSuggestBox = sender as AutoSuggestBox;
+
+            if (!Generator.CanBeGeminiApiKey(autoSuggestBox.Text))
+            {
+                connectGeminiButton.IsEnabled = false;
+                autoSuggestBox.ItemsSource = null;
+                return;
+            }
+
+            if (e.Key != VirtualKey.Enter && e.Key != VirtualKey.Tab)
+            {
+                autoSuggestBox.ItemsSource = Cache.Data.Where(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
+                connectGeminiButton.IsEnabled = true;
+            }
+            else if (e.Key == VirtualKey.Enter)
+            {
+                ConnectGeminiButton_Click(connectGeminiButton, e);
+                connectGeminiButton.IsEnabled = true;
+            }
+            else if (e.Key == VirtualKey.Tab)
+            {
+                autoSuggestBox.Focus(FocusState.Programmatic);
+                var suggestion = Cache.Data.Find(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
+
+                if (suggestion != null)
+                {
+                    autoSuggestBox.Text = suggestion;
+                }
+
+                connectGeminiButton.IsEnabled = true;
+            }
+        }
+
+        private void ConnectionStringBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            var autoSuggestBox = sender as AutoSuggestBox;
+
+            if (Generator.CanBeGeminiApiKey(autoSuggestBox.Text) || string.IsNullOrEmpty(autoSuggestBox.Text))
+            {
+                connectGeminiButton.IsEnabled = false;
+                autoSuggestBox.ItemsSource = null;
+                return;
+            }
+
+            if (e.Key != VirtualKey.Enter && e.Key != VirtualKey.Tab)
+            {
+                autoSuggestBox.ItemsSource = Cache.Data.Where(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
+                connectGeminiButton.IsEnabled = true;
+            }
+            else if (e.Key == VirtualKey.Enter)
+            {
+                ConnectDbButton_Click(connectDbButton, e);
+                connectGeminiButton.IsEnabled = true;
+
+            }
+            else if (e.Key == VirtualKey.Tab)
+            {
+                autoSuggestBox.Focus(FocusState.Programmatic);
+                var suggestion = Cache.Data.Find(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
+
+                if (suggestion != null)
+                {
+                    autoSuggestBox.Text = suggestion;
+                }
+
+                connectGeminiButton.IsEnabled = true;
+            }
         }
 
         private void DbTypeCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (dbTypeCombobox.SelectedIndex != -1)
             {
-                connectionStringBox.Text = string.Empty;
-                connectionStringBox.ItemsSource = connectionStringBox.PlaceholderText = Extractor.GetEnumDescription((DatabaseType)dbTypeCombobox.SelectedItem);
-            }
-        }
+                var defaultConnectionString = Extractor.GetEnumDescription((DatabaseType)dbTypeCombobox.SelectedItem);
 
-        private async void GetApiKeyButton_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                Process.Start(new ProcessStartInfo("https://aistudio.google.com/app/apikey") { UseShellExecute = true });
-            }
-            catch (Exception ex)
-            {
-                await ShowErrorDialog(ex.Message);
-            }
-        }
-        private void ApiKeyBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
-        {
-            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
-            {
-                if (string.IsNullOrEmpty(sender.Text))
+                connectionStringBox.PlaceholderText = defaultConnectionString;
+
+                if (!Cache.Data.Contains(defaultConnectionString))
                 {
-                    return;
+                    Cache.Data.Add(defaultConnectionString);
                 }
 
-                var suggestions = Analyzer.Keywords
-                    .Where(k => k.ToUpper().StartsWith(sender.Text.ToUpper())).Take(10).OrderBy(k => k)
-                    .Select(t => StringEngineer.ReplaceLastOccurrence(sender.Text, sender.Text, t));
-
-                sender.ItemsSource = suggestions;
+                connectDbButton.IsEnabled = true;
             }
-        }
-        private void ApiKeyBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
-        {
-            if (string.IsNullOrEmpty((sender as AutoSuggestBox).Text))
+            else
             {
-                return;
-            }
-
-            if (e.Key == VirtualKey.Enter)
-            {
-                ConnectGeminiButton_Click(sender, e);
-                e.Handled = true;
-            }
-            else if (e.Key == VirtualKey.Tab)
-            {
-                var autoSuggestBox = sender as AutoSuggestBox;
-                var query = autoSuggestBox.Text;
-                var lastWord = StringEngineer.GetLastWord(query);
-
-                if (!string.IsNullOrEmpty(lastWord))
-                {
-                    var suggestion = Analyzer.Keywords.FirstOrDefault(k => k.ToUpper().StartsWith(lastWord.ToUpper()));
-
-                    if (suggestion != null)
-                    {
-                        autoSuggestBox.Text = StringEngineer.ReplaceLastOccurrence(query, lastWord, suggestion);
-
-                        autoSuggestBox.Focus(FocusState.Programmatic);
-
-                        e.Handled = true;
-                    } 
-                }
-
-                e.Handled = true;
-            }
-        }
-
-        private void ConnectionStringBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
-        {
-            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
-            {
-                if (string.IsNullOrEmpty(sender.Text))
-                {
-                    return;
-                }
-
-                sender.ItemsSource = Analyzer.Keywords
-                    .Where(k => k.ToUpper().StartsWith(sender.Text.ToUpper()))
-                    .Take(10)
-                    .OrderBy(k => k)
-                    .Select(t => StringEngineer.ReplaceLastOccurrence(sender.Text, sender.Text, t));
-            }
-        }
-        private void ConnectionStringBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
-        {
-            if (string.IsNullOrEmpty((sender as AutoSuggestBox).Text))
-            {
-                return;
-            }
-
-            if (e.Key == VirtualKey.Enter)
-            {
-                ConnectDbButton_Click(sender, e);
-                e.Handled = true;
-            }
-            else if (e.Key == VirtualKey.Tab)
-            {
-                var autoSuggestBox = sender as AutoSuggestBox;
-                var query = autoSuggestBox.Text.Trim();
-                var lastWord = StringEngineer.GetLastWord(query);
-
-                if (!string.IsNullOrEmpty(lastWord))
-                {
-                    var suggestion = Analyzer.Keywords.Find(k => k.ToUpper().StartsWith(lastWord.ToUpper()));
-
-                    if (suggestion != null)
-                    {
-                        autoSuggestBox.Text = StringEngineer.ReplaceLastOccurrence(query, lastWord, suggestion);
-
-                        autoSuggestBox.Focus(FocusState.Programmatic);
-
-                        e.Handled = true;
-                    }
-
-                    e.Handled = true;
-                }
+                connectGeminiButton.IsEnabled = false;
             }
         }
 
@@ -170,17 +133,12 @@ namespace AskDB.App
 
         private async void ConnectGeminiButton_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(apiKeyBox.Text))
-            {
-                await ShowErrorDialog("You have not entered your API Key yet.");
-                return;
-            }
-
             try
             {
                 await ValidateApiKey(sender as Button);
                 await Cache.SetContent(apiKeyBox.Text);
                 UpdateUIAfterApiValidation();
+                connectDbButton.Focus(FocusState.Programmatic);
             }
             catch
             {
@@ -190,11 +148,6 @@ namespace AskDB.App
 
         private async void ConnectDbButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!ValidateDatabaseInput())
-            {
-                return;
-            }
-
             try
             {
                 await ConnectToDatabase(sender as Button);
@@ -224,12 +177,14 @@ namespace AskDB.App
         private async void DbConnectPage_Loaded(object sender, RoutedEventArgs e)
         {
             LoadDatabaseTypes();
-            Analyzer.Keywords = (await Cache.GetContent()).Distinct().OrderBy(x => x).ToList();
+            Cache.Data = (await Cache.GetContent()).Distinct().OrderBy(x => x).ToList();
 
             if (Analyzer.IsActivated)
             {
                 LoadSavedSettings();
             }
+
+            apiKeyBox.Focus(FocusState.Programmatic);
         }
 
         private void TablesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -283,7 +238,7 @@ namespace AskDB.App
             step1Expander.IsExpanded = false;
             step1Expander.IsEnabled = true;
             step2Expander.IsExpanded = step2Expander.IsEnabled = true;
-            Analyzer.ApiKey = apiKeyBox.Text;
+            Generator.ApiKey = apiKeyBox.Text;
         }
 
         private bool ValidateDatabaseInput()
@@ -344,11 +299,10 @@ namespace AskDB.App
 
         private void LoadSavedSettings()
         {
-            apiKeyBox.Text = Analyzer.ApiKey;
+            apiKeyBox.Text = Generator.ApiKey;
             connectionStringBox.Text = Analyzer.DatabaseExtractor.ConnectionString;
             dbTypeCombobox.SelectedItem = Analyzer.DatabaseExtractor.DatabaseType;
-            step2Expander.IsEnabled = true;
-            forwardButton.IsEnabled = true;
+            step2Expander.IsEnabled = forwardButton.IsEnabled = connectDbButton.IsEnabled = connectGeminiButton.IsEnabled = true;
         }
 
         private void SaveSelectedTables()

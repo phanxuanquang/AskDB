@@ -6,6 +6,9 @@ namespace GenAI
 {
     public static class Generator
     {
+        public const string ApiKeySite = "https://aistudio.google.com/app/apikey";
+        public const string ApiKeyPrefix = "AIzaSy";
+        public static string ApiKey;
         public static async Task<string> GenerateContent(string apiKey, string query, bool useJson = false, CreativityLevel creativityLevel = CreativityLevel.Medium, GenerativeModel model = GenerativeModel.Gemini_15_Flash)
         {
             var client = new HttpClient();
@@ -67,6 +70,26 @@ namespace GenAI
             var responseDTO = JsonConvert.DeserializeObject<ApiResponseDto.Response>(responseData);
 
             return responseDTO.Candidates[0].Content.Parts[0].Text;
+        }
+
+        public static bool CanBeGeminiApiKey(string apiKey)
+        {
+            if (string.IsNullOrEmpty(apiKey) || string.IsNullOrWhiteSpace(apiKey))
+            {
+                return false;
+            }
+
+            if (ApiKeyPrefix.StartsWith(apiKey.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (apiKey.Trim().StartsWith(ApiKeyPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }
