@@ -5,7 +5,7 @@ namespace Helper
 {
     public static class StringCipher
     {
-        private static readonly string key = "phanxuanquang-AskDB-2024";
+        private const string key = "phanxuanquang-AskDB-2024";
 
         public static string Encode(string plainText)
         {
