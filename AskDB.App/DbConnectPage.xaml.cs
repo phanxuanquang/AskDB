@@ -42,6 +42,13 @@ namespace AskDB.App
         {
             connectDbButton.IsEnabled = true;
 
+            if (StringEngineer.IsNull((sender as AutoSuggestBox).Text))
+            {
+                (sender as AutoSuggestBox).ItemsSource = null;
+                connectDbButton.IsEnabled = false;
+                return;
+            }
+
             if (e.Key == VirtualKey.Enter)
             {
                 ConnectDbButton_Click(sender, e);
@@ -50,7 +57,8 @@ namespace AskDB.App
             else if (e.Key == VirtualKey.Tab)
             {
                 var autoSuggestBox = sender as AutoSuggestBox;
-                var suggestion = Cache.Data.Find(k => k.Contains(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
+                var suggestion = Cache.Data.FirstOrDefault(k => k.Contains(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase) && !Generator.CanBeGeminiApiKey(autoSuggestBox.Text));
+
                 if (suggestion != null)
                 {
                     autoSuggestBox.Text = suggestion;
@@ -63,23 +71,28 @@ namespace AskDB.App
         {
             if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
             {
-                if (Generator.CanBeGeminiApiKey(sender.Text) || string.IsNullOrEmpty(sender.Text))
+                if (StringEngineer.IsNull(sender.Text))
                 {
                     sender.ItemsSource = null;
                     connectDbButton.IsEnabled = false;
                     return;
                 }
 
-                sender.ItemsSource = Cache.Data
-                       .Where(k => k.Contains(sender.Text, StringComparison.OrdinalIgnoreCase))
-                       .Take(10)
-                       .OrderBy(k => k);
+                var source = Cache.Get(k => k.Contains(sender.Text, StringComparison.OrdinalIgnoreCase) && !Generator.CanBeGeminiApiKey(sender.Text));
+                sender.ItemsSource = source;
             }
         }
 
         private void ApiKeyBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
         {
             connectGeminiButton.IsEnabled = true;
+
+            if (StringEngineer.IsNull((sender as AutoSuggestBox).Text))
+            {
+                (sender as AutoSuggestBox).ItemsSource = null;
+                connectGeminiButton.IsEnabled = false;
+                return;
+            }
 
             if (e.Key == VirtualKey.Enter)
             {
@@ -89,7 +102,7 @@ namespace AskDB.App
             else if (e.Key == VirtualKey.Tab)
             {
                 var autoSuggestBox = sender as AutoSuggestBox;
-                var suggestion = Cache.Data.Find(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
+                var suggestion = Cache.Data.FirstOrDefault(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase) && Generator.CanBeGeminiApiKey(k));
                 if (suggestion != null)
                 {
                     autoSuggestBox.Text = suggestion;
@@ -102,17 +115,15 @@ namespace AskDB.App
         {
             if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
             {
-                if (!Generator.CanBeGeminiApiKey(sender.Text) || string.IsNullOrEmpty(sender.Text))
+                if (StringEngineer.IsNull(sender.Text))
                 {
                     sender.ItemsSource = null;
                     connectGeminiButton.IsEnabled = false;
                     return;
                 }
 
-                sender.ItemsSource = Cache.Data
-                       .Where(k => k.StartsWith(sender.Text, StringComparison.OrdinalIgnoreCase))
-                       .Take(10)
-                       .OrderBy(k => k);
+                var source = Cache.Get(k => k.StartsWith(sender.Text, StringComparison.OrdinalIgnoreCase) && Generator.CanBeGeminiApiKey(k));
+                sender.ItemsSource = source;
             }
         }
 
@@ -123,11 +134,7 @@ namespace AskDB.App
                 var defaultConnectionString = Extractor.GetEnumDescription((DatabaseType)dbTypeCombobox.SelectedItem);
 
                 connectionStringBox.PlaceholderText = defaultConnectionString;
-
-                if (!Cache.Data.Contains(defaultConnectionString))
-                {
-                    Cache.Data.Add(defaultConnectionString);
-                }
+                Cache.Data.Add(defaultConnectionString);
 
                 connectDbButton.IsEnabled = true;
             }
@@ -150,7 +157,7 @@ namespace AskDB.App
 
             if (isValidApiKey)
             {
-                await Cache.SetContent(apiKeyBox.Text);
+                await Cache.Set(apiKeyBox.Text);
                 step1Expander.IsExpanded = false;
                 step1Expander.IsEnabled = true;
                 step2Expander.IsExpanded = step2Expander.IsEnabled = true;
@@ -198,7 +205,7 @@ namespace AskDB.App
                 }
                 else
                 {
-                    await Cache.SetContent(connectionStringBox.Text);
+                    await Cache.Set(connectionStringBox.Text);
 
                     tablesListView.ItemsSource = Analyzer.DatabaseExtractor.Tables.Select(t => t.Name);
                     step2Expander.IsExpanded = step2Expander.IsEnabled = false;
@@ -218,7 +225,7 @@ namespace AskDB.App
         private async void DbConnectPage_Loaded(object sender, RoutedEventArgs e)
         {
             dbTypeCombobox.ItemsSource = Enum.GetValues(typeof(DatabaseType));
-            Cache.Data = (await Cache.GetContent()).Distinct().OrderBy(x => x).ToList();
+            await Cache.Init();
 
             if (Analyzer.IsActivated)
             {
@@ -252,11 +259,11 @@ namespace AskDB.App
         }
         private async void StartButton_Click(object sender, RoutedEventArgs e)
         {
+
             try
             {
                 var selectedTableNames = tablesListView.SelectedItems.Cast<string>();
                 Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
-
                 Analyzer.IsActivated = true;
                 Frame.Navigate(typeof(MainPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
             }

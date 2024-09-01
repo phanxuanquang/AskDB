@@ -21,7 +21,7 @@ namespace DatabaseAnalyzer
             return string.Join(string.Empty, schemas).Trim();
         }
 
-        public static async Task<SqlCommander> GetSql(string apiKey, List<Table> tables, string question, DatabaseType type)
+        public static async Task<SqlCommander> GetSql(string apiKey, string question, DatabaseType type)
         {
             var promptBuilder = new StringBuilder();
             var databaseType = Extractor.GetEnumDescription(type);
@@ -47,12 +47,36 @@ namespace DatabaseAnalyzer
             promptBuilder.AppendLine("}");
             promptBuilder.AppendLine("Now, let's get started.");
             promptBuilder.AppendLine("This is the table schemas of my database:");
-            promptBuilder.AppendLine(TablesAsString(tables).Trim());
+            promptBuilder.AppendLine(TablesAsString(SelectedTables).Trim());
             promptBuilder.AppendLine($"My input: {question}");
             promptBuilder.AppendLine("Your response:");
 
             var response = await Generator.GenerateContent(apiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
             return JsonConvert.DeserializeObject<SqlCommander>(response);
+        }
+
+        public static async Task<List<string>> GetSuggestedSqlQueries(string apiKey, DatabaseType type, short totalQueries)
+        {
+            var promptBuilder = new StringBuilder();
+            var databaseType = Extractor.GetEnumDescription(type);
+
+            promptBuilder.AppendLine($"You are a Database Administrator with over 20 years of experience working with {databaseType} databases on large scale projects.");
+            promptBuilder.AppendLine("I am someone who knows nothing about SQL.");
+            promptBuilder.AppendLine($"I will provide you with the table structure of my database. Please help to suggest at least {totalQueries} common {databaseType} data queries related to my database structure.");
+            promptBuilder.AppendLine("Your response must be a List<string> in C# programming language.");
+            promptBuilder.AppendLine("To help you understand my command and do the task more effectively, here is an example:");
+            promptBuilder.AppendLine("Your response:");
+            promptBuilder.AppendLine("[");
+            promptBuilder.AppendLine("    SELECT * FROM Table1 WHERE Condition,");
+            promptBuilder.AppendLine("    SELECT COUNT(*) FROM Table2 WHERE Condition,");
+            promptBuilder.AppendLine("    SELECT DISTINCT(*) FROM Table3 WHERE Condition OrderBy Id DESC,");
+            promptBuilder.AppendLine("]");
+            promptBuilder.AppendLine("Now, let's get started. This is the table schemas of my database:");
+            promptBuilder.AppendLine(TablesAsString(SelectedTables).Trim());
+            promptBuilder.AppendLine("Your response:");
+
+            var response = await Generator.GenerateContent(apiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
+            return JsonConvert.DeserializeObject<List<string>>(response).OrderBy(k => k).ToList();
         }
 
         public static bool IsSqlSafe(string sqlCommand)

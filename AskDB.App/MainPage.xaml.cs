@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
@@ -45,8 +46,15 @@ namespace AskDB.App
         {
             try
             {
+                SetLoadingState(true);
                 LoadTables();
                 await LoadKeywords();
+                await LoadSuggestedQueries();
+
+                Cache.Data = await Task.Run(() =>
+                {
+                    return Cache.Data.OrderBy(s => s.Length).AsParallel().ToHashSet();
+                });
             }
             catch (Exception ex)
             {
@@ -56,12 +64,22 @@ namespace AskDB.App
                     Frame.Navigate(typeof(DbConnectPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
                 }
             }
+            finally
+            {
+                SetLoadingState(false);
+            }
         }
 
         private void QueryBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
         {
             sendButton.IsEnabled = true;
 
+            if (StringEngineer.IsNull((sender as AutoSuggestBox).Text))
+            {
+                (sender as AutoSuggestBox).ItemsSource = null;
+                sendButton.IsEnabled = false;
+                return;
+            }
             if (e.Key == VirtualKey.Enter)
             {
                 SendButton_Click(sender, e);
@@ -70,7 +88,7 @@ namespace AskDB.App
             else if (e.Key == VirtualKey.Tab)
             {
                 var autoSuggestBox = sender as AutoSuggestBox;
-                var suggestion = Cache.Data.Find(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
+                var suggestion = Cache.Data.FirstOrDefault(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
                 if (suggestion != null)
                 {
                     autoSuggestBox.Text = suggestion;
@@ -83,20 +101,8 @@ namespace AskDB.App
         {
             if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
             {
-                if (Generator.CanBeGeminiApiKey(sender.Text) || string.IsNullOrEmpty(sender.Text))
-                {
-                    sender.ItemsSource = null;
-                    sendButton.IsEnabled = false;
-                    return;
-                }
-
-                var lastWord = StringEngineer.GetLastWord(sender.Text);
-
-                sender.ItemsSource = Cache.Data
-                       .Where(k => k.StartsWith(lastWord, StringComparison.OrdinalIgnoreCase))
-                       .Take(10)
-                       .OrderBy(k => k)
-                       .Select(t => StringEngineer.ReplaceLastWord(sender.Text, lastWord, t));
+                var source = Cache.Get(k => !StringEngineer.IsNull(k) && k.StartsWith(sender.Text, StringComparison.OrdinalIgnoreCase) && !Generator.CanBeGeminiApiKey(k));
+                sender.ItemsSource = source;
             }
         }
 
@@ -130,6 +136,7 @@ namespace AskDB.App
             try
             {
                 _resultDataTable = await Analyzer.DatabaseExtractor.GetData(queryBox.Text);
+                await Cache.Set(queryBox.Text);
                 SetButtonVisibility(true);
             }
             catch
@@ -176,7 +183,7 @@ namespace AskDB.App
             var result = await dialog.ShowAsync();
             if (result == ContentDialogResult.Primary)
             {
-                await Cache.SetContent(_sqlQuery);
+                await Cache.Set(_sqlQuery);
 
                 var dataPackage = new DataPackage();
                 dataPackage.SetText(_sqlQuery);
@@ -239,13 +246,17 @@ namespace AskDB.App
             var columnNames = Analyzer.SelectedTables.SelectMany(table => table.Columns.Select(column => column.Name));
             var removedKeywords = commonKeywords.Where(c => c.Length < 2);
 
-            Cache.Data.AddRange(sqlKeywords);
-            Cache.Data.AddRange(commonKeywords.Except(removedKeywords));
-            Cache.Data.AddRange(tableNames);
-            Cache.Data.AddRange(columnNames);
-
-            Cache.Data = Cache.Data.AsParallel().Distinct().OrderBy(x => x).ToList();
+            await Cache.Set(sqlKeywords);
+            await Cache.Set(commonKeywords.Except(removedKeywords));
+            await Cache.Set(tableNames);
+            await Cache.Set(columnNames);
         }
+
+        private async Task LoadSuggestedQueries()
+        {
+            var suggestedQueries = await Analyzer.GetSuggestedSqlQueries(Generator.ApiKey, Analyzer.DatabaseExtractor.DatabaseType, 30);
+            await Cache.Set(suggestedQueries);
+        } 
 
         private async Task ExecuteAnalyzedQuery(string query)
         {
@@ -254,7 +265,7 @@ namespace AskDB.App
             try
             {
                 Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => tablesListView.SelectedItems.Contains(t.Name)).ToList();
-                sqlCommand = await Analyzer.GetSql(Generator.ApiKey, Analyzer.SelectedTables, query, Analyzer.DatabaseExtractor.DatabaseType);
+                sqlCommand = await Analyzer.GetSql(Generator.ApiKey, query, Analyzer.DatabaseExtractor.DatabaseType);
             }
             catch (Exception ex)
             {
@@ -282,6 +293,7 @@ namespace AskDB.App
             try
             {
                 _resultDataTable = await Analyzer.DatabaseExtractor.GetData(sqlCommand.Output);
+                await Cache.Set(sqlCommand.Output);
                 SetButtonVisibility(true);
             }
             catch (Exception ex)
@@ -295,6 +307,7 @@ namespace AskDB.App
 
         private void SetLoadingState(bool isLoading)
         {
+            selectTableExpander.IsEnabled = sendButton.IsEnabled = !isLoading;
             LoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
             mainPanel.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
             selectTableExpander.IsExpanded = false;

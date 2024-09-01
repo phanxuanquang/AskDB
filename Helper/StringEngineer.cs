@@ -10,6 +10,11 @@ namespace Helper
             {
                 var lines = await File.ReadAllLinesAsync(path);
 
+                if(lines.Length == 0)
+                {
+                    return new List<string>();
+                }
+
                 if (useDecoding)
                 {
                     return lines.Select(StringCipher.Decode).ToList();
@@ -25,6 +30,11 @@ namespace Helper
 
         public static List<string> GetWords(string sentence)
         {
+            if (IsNull(sentence))
+            {
+                return new List<string>();
+            }
+
             char[] splitChars = { ' ', ',', '.', '!', '?', ';', ':', '-', '_', '(', ')', '[', ']', '{', '}', '\"', '\'', '\\', '/' };
             string[] wordsArray = sentence.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
 
@@ -35,7 +45,7 @@ namespace Helper
 
         public static string GetLastWord(string sentence)
         {
-            if (string.IsNullOrWhiteSpace(sentence))
+            if (IsNull(sentence))
             {
                 return string.Empty;
             }
@@ -56,6 +66,16 @@ namespace Helper
             }
 
             return text.Remove(place, oldString.Length).Insert(place, newString);
+        }
+
+        public static bool IsNull(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text) || string.IsNullOrEmpty(text))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

@@ -1,38 +1,67 @@
-﻿namespace Helper
+﻿using static System.Runtime.InteropServices.JavaScript.JSType;
+
+namespace Helper
 {
     public static class Cache
     {
         private const string _cacheFilePath = @"Assets\Cache.txt";
-        public static List<string> Data = new List<string>();
+        public const short MaxResults = 10;
+        public static HashSet<string> Data = new HashSet<string>();
 
-        public static async Task<List<string>> GetContent()
+        public static async Task Init()
         {
-            return await StringEngineer.GetLines(_cacheFilePath, true);
+            var cacheFileData = await StringEngineer.GetLines(_cacheFilePath, true);
+            await Set(cacheFileData);
         }
 
-        public static async Task SetContent(string line)
+        public static async Task Set<T>(T input)
         {
-            if (!File.Exists(_cacheFilePath))
+            if (object.Equals(input, default(T)))
             {
-                File.Create(_cacheFilePath);
+                return;
             }
 
-            using (var streamReader = new StreamReader(_cacheFilePath))
+            if (input is string data)
             {
-                string currentLine;
-                while ((currentLine = await streamReader.ReadLineAsync()) != null)
+                if (!File.Exists(_cacheFilePath))
                 {
-                    if (currentLine.Equals(line, StringComparison.OrdinalIgnoreCase))
+                    await File.Create(_cacheFilePath).DisposeAsync();
+                }
+
+                data = data.Trim();
+
+                using (var streamReader = new StreamReader(_cacheFilePath))
+                {
+                    string currentLine;
+                    while ((currentLine = await streamReader.ReadLineAsync()) != null)
                     {
-                        return;
+                        if (currentLine.Equals(data, StringComparison.OrdinalIgnoreCase) || currentLine.Contains(data, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return;
+                        }
                     }
                 }
-            }
 
-            using (StreamWriter sw = new StreamWriter(_cacheFilePath, append: true))
-            {
-                await sw.WriteLineAsync(StringCipher.Encode(line.Trim()));
+                using (StreamWriter sw = new StreamWriter(_cacheFilePath, append: true))
+                {
+                    await sw.WriteLineAsync(StringCipher.Encode(data.Trim()));
+                }
+
+                Data.Add(data);
             }
+            else if (input is IEnumerable<string> items)
+            {
+                Data.UnionWith(items);
+            }
+        }
+
+        public static IEnumerable<string> Get(Func<string, bool> predicate)
+        {
+            return Data.Where(predicate)
+                .OrderByDescending(item => item.All(char.IsUpper))
+                .ThenBy(item => item)
+                .Distinct()
+                .Take(MaxResults);
         }
     }
 }
