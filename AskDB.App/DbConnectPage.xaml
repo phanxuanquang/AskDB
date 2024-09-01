@@ -19,7 +19,7 @@
         Padding="40"
         MinWidth="600">
 
-            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" IsTabStop="False">
                 <Grid Margin="0,0,0,20" MinWidth="1000">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -36,7 +36,7 @@
                     </Button>
                 </Grid>
 
-                <Expander x:Name="step1Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsExpanded="True">
+                <Expander x:Name="step1Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsExpanded="True" IsTabStop="False">
                     <Expander.Header>
                         <ContentControl FontWeight="SemiBold">Step 1 - Connect to Gemini</ContentControl>
                     </Expander.Header>
@@ -55,7 +55,7 @@
                     </Expander.Content>
                 </Expander>
 
-                <Expander x:Name="step2Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsEnabled="False">
+                <Expander x:Name="step2Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsEnabled="False" IsTabStop="False">
                     <Expander.Header>
                         <ContentControl FontWeight="SemiBold"> Step 2 - Connect to your SQL database</ContentControl>
                     </Expander.Header>
@@ -73,7 +73,7 @@
                     </Expander.Content>
                 </Expander>
 
-                <Expander x:Name="step3Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsEnabled="False">
+                <Expander x:Name="step3Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsEnabled="False" IsTabStop="False">
                     <Expander.Header>
                         <ContentControl FontWeight="SemiBold">Step 3 - Select tables to ask</ContentControl>
                     </Expander.Header>

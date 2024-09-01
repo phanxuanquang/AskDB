@@ -28,9 +28,11 @@ namespace AskDB.App
 
             apiKeyBox.TextChanged += ApiKeyBox_TextChanged;
             apiKeyBox.KeyDown += ApiKeyBox_KeyDown;
+            apiKeyBox.KeyUp += ApiKeyBox_KeyUp;
 
             connectionStringBox.TextChanged += ConnectionStringBox_TextChanged;
             connectionStringBox.KeyDown += ConnectionStringBox_KeyDown;
+            connectionStringBox.KeyUp += ConnectionStringBox_KeyUp;
 
             connectGeminiButton.Click += ConnectGeminiButton_Click;
             connectDbButton.Click += ConnectDbButton_Click;
@@ -40,23 +42,19 @@ namespace AskDB.App
 
         private void ConnectionStringBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
         {
-            connectDbButton.IsEnabled = true;
-
-            if (StringEngineer.IsNull((sender as AutoSuggestBox).Text))
+            if (e.Key == VirtualKey.Tab)
             {
-                (sender as AutoSuggestBox).ItemsSource = null;
-                connectDbButton.IsEnabled = false;
-                return;
-            }
-
-            if (e.Key == VirtualKey.Enter)
-            {
-                ConnectDbButton_Click(sender, e);
-                e.Handled = true;
-            }
-            else if (e.Key == VirtualKey.Tab)
-            {
+                connectDbButton.IsEnabled = true;
                 var autoSuggestBox = sender as AutoSuggestBox;
+
+                if (StringEngineer.IsNull(autoSuggestBox.Text))
+                {
+                    autoSuggestBox.ItemsSource = null;
+                    connectDbButton.IsEnabled = false;
+                    e.Handled = true;
+                    return;
+                }
+
                 var suggestion = Cache.Data.FirstOrDefault(k => k.Contains(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase) && !Generator.CanBeGeminiApiKey(autoSuggestBox.Text));
 
                 if (suggestion != null)
@@ -64,6 +62,21 @@ namespace AskDB.App
                     autoSuggestBox.Text = suggestion;
                     autoSuggestBox.Focus(FocusState.Programmatic);
                 }
+                e.Handled = true;
+            }
+        }
+        private void ConnectionStringBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (e.Key == VirtualKey.Enter)
+            {
+                if (StringEngineer.IsNull((sender as AutoSuggestBox).Text))
+                {
+                    (sender as AutoSuggestBox).ItemsSource = null;
+                    connectDbButton.IsEnabled = false;
+                    return;
+                }
+
+                ConnectDbButton_Click(connectDbButton, e);
                 e.Handled = true;
             }
         }
@@ -80,34 +93,46 @@ namespace AskDB.App
 
                 var source = Cache.Get(k => k.Contains(sender.Text, StringComparison.OrdinalIgnoreCase) && !Generator.CanBeGeminiApiKey(sender.Text));
                 sender.ItemsSource = source;
+                connectDbButton.IsEnabled = true;
             }
         }
 
         private void ApiKeyBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
         {
-            connectGeminiButton.IsEnabled = true;
-
-            if (StringEngineer.IsNull((sender as AutoSuggestBox).Text))
-            {
-                (sender as AutoSuggestBox).ItemsSource = null;
-                connectGeminiButton.IsEnabled = false;
-                return;
-            }
-
-            if (e.Key == VirtualKey.Enter)
-            {
-                ConnectGeminiButton_Click(sender, e);
-                e.Handled = true;
-            }
-            else if (e.Key == VirtualKey.Tab)
+            if (e.Key == VirtualKey.Tab)
             {
                 var autoSuggestBox = sender as AutoSuggestBox;
-                var suggestion = Cache.Data.FirstOrDefault(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase) && Generator.CanBeGeminiApiKey(k));
+                connectDbButton.IsEnabled = !StringEngineer.IsNull(autoSuggestBox.Text);
+                if (StringEngineer.IsNull(autoSuggestBox.Text))
+                {
+                    autoSuggestBox.ItemsSource = null;
+                    connectDbButton.IsEnabled = false;
+                    e.Handled = true;
+                    return;
+                }
+                var suggestion = Cache.Data.FirstOrDefault(k => !StringEngineer.IsNull(autoSuggestBox.Text) && k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase) && Generator.CanBeGeminiApiKey(k));
                 if (suggestion != null)
                 {
                     autoSuggestBox.Text = suggestion;
                     autoSuggestBox.Focus(FocusState.Programmatic);
                 }
+
+                connectGeminiButton.IsEnabled = !StringEngineer.IsNull(autoSuggestBox.Text);
+                e.Handled = true;
+            }
+        }
+        private void ApiKeyBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (e.Key == VirtualKey.Enter)
+            {
+                if (StringEngineer.IsNull((sender as AutoSuggestBox).Text))
+                {
+                    (sender as AutoSuggestBox).ItemsSource = null;
+                    connectGeminiButton.IsEnabled = false;
+                    return;
+                }
+
+                ConnectGeminiButton_Click(connectGeminiButton, e);
                 e.Handled = true;
             }
         }
@@ -115,6 +140,8 @@ namespace AskDB.App
         {
             if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
             {
+                connectGeminiButton.IsEnabled = true;
+
                 if (StringEngineer.IsNull(sender.Text))
                 {
                     sender.ItemsSource = null;

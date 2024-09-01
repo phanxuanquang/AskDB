@@ -20,7 +20,7 @@
         MinWidth="800">
 
             <StackPanel Orientation="Vertical" >
-                <Grid Margin="0,0,0,20">
+                <Grid Margin="0,0,0,20" IsTabStop="False">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
@@ -35,7 +35,7 @@
                         <SymbolIcon Symbol="Forward"/>
                     </Button>
                 </Grid>
-                <Expander x:Name="selectTableExpander" MinWidth="1070" Margin="0,0,0,20" IsExpanded="False" HorizontalAlignment="Stretch">
+                <Expander x:Name="selectTableExpander" MinWidth="1070" Margin="0,0,0,20" IsExpanded="False" HorizontalAlignment="Stretch" IsTabStop="False">
                     <Expander.Header>
                         <ContentControl FontWeight="SemiBold">Select tables to ask</ContentControl>
                     </Expander.Header>
@@ -55,7 +55,7 @@
                     </Expander.Content>
                 </Expander>
 
-                <StackPanel x:Name="LoadingOverlay" Background="Transparent" Visibility="Collapsed" Margin="0,0,0,20">
+                <StackPanel x:Name="LoadingOverlay" Background="Transparent" Visibility="Collapsed" Margin="0,0,0,20" IsTabStop="False">
                     <ProgressRing IsActive="True" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </StackPanel>
 
@@ -74,7 +74,7 @@
                             <SymbolIcon Symbol="Send"/>
                         </Button>
 
-                        <Button x:Name="exportButton" Style="{StaticResource DefaultButtonStyle}" Width="60" Height="35" Visibility="Collapsed" Grid.Column="2" Margin="0,0,10,0">
+                        <Button x:Name="exportButton" Style="{StaticResource DefaultButtonStyle}" Width="60" Height="35" Visibility="Collapsed" Grid.Column="2">
                             <SymbolIcon Symbol="Download"/>
                             <Button.Resources>
                                 <TeachingTip x:Name="DownloadTip"
@@ -85,7 +85,7 @@
                             </Button.Resources>
                         </Button>
 
-                        <Button x:Name="showSqlButton" Style="{StaticResource DefaultButtonStyle}" Width="60" Height="35" Visibility="Collapsed" Grid.Column="3">
+                        <Button x:Name="showSqlButton" Style="{StaticResource DefaultButtonStyle}" Width="60" Height="35" Visibility="Collapsed" Grid.Column="3" Margin="10,0,0,0">
                             <SymbolIcon Symbol="View"/>
                             <Button.Resources>
                                 <TeachingTip x:Name="ShowSqlTip"

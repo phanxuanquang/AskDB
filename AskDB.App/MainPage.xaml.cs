@@ -31,6 +31,7 @@ namespace AskDB.App
             Loaded += MainPage_Loaded;
 
             queryBox.KeyDown += QueryBox_KeyDown;
+            queryBox.KeyUp += QueryBox_KeyUp;
             queryBox.TextChanged += QueryBox_TextChanged;
 
             selectAllCheckbox.Click += SelectAllCheckbox_Click;
@@ -41,20 +42,39 @@ namespace AskDB.App
             backButton.Click += BackButton_Click;
         }
 
+        private void QueryBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (e.Key == VirtualKey.Enter)
+            {
+                if (StringEngineer.IsNull((sender as AutoSuggestBox).Text))
+                {
+                    (sender as AutoSuggestBox).ItemsSource = null;
+                    sendButton.IsEnabled = false;
+                    return;
+                }
+
+                SendButton_Click(sender, e);
+                e.Handled = true;
+            }
+        }
+
         #region Events
         private async void MainPage_Loaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                SetLoadingState(true);
-                LoadTables();
-                await LoadKeywords();
-                await LoadSuggestedQueries();
-
-                Cache.Data = await Task.Run(() =>
+                if (!Analyzer.IsActivated)
                 {
-                    return Cache.Data.OrderBy(s => s.Length).AsParallel().ToHashSet();
-                });
+                    SetLoadingState(true);
+                    LoadTables();
+                    await LoadKeywords();
+                    await LoadSuggestedQueries();
+
+                    Cache.Data = await Task.Run(() =>
+                    {
+                        return Cache.Data.OrderBy(s => s.Length).AsParallel().ToHashSet();
+                    });
+                }
             }
             catch (Exception ex)
             {
@@ -72,28 +92,25 @@ namespace AskDB.App
 
         private void QueryBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
         {
-            sendButton.IsEnabled = true;
+            if (e.Key == VirtualKey.Tab)
+            {
+                if (StringEngineer.IsNull((sender as AutoSuggestBox).Text))
+                {
+                    (sender as AutoSuggestBox).ItemsSource = null;
+                    sendButton.IsEnabled = false;
+                    e.Handled = true;
+                    return;
+                }
 
-            if (StringEngineer.IsNull((sender as AutoSuggestBox).Text))
-            {
-                (sender as AutoSuggestBox).ItemsSource = null;
-                sendButton.IsEnabled = false;
-                return;
-            }
-            if (e.Key == VirtualKey.Enter)
-            {
-                SendButton_Click(sender, e);
-                e.Handled = true;
-            }
-            else if (e.Key == VirtualKey.Tab)
-            {
                 var autoSuggestBox = sender as AutoSuggestBox;
                 var suggestion = Cache.Data.FirstOrDefault(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
                 if (suggestion != null)
                 {
                     autoSuggestBox.Text = suggestion;
                     autoSuggestBox.Focus(FocusState.Programmatic);
+                    sendButton.IsEnabled = true;
                 }
+
                 e.Handled = true;
             }
         }
@@ -101,6 +118,7 @@ namespace AskDB.App
         {
             if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
             {
+                sendButton.IsEnabled = !StringEngineer.IsNull(queryBox.Text);
                 var source = Cache.Get(k => !StringEngineer.IsNull(k) && k.StartsWith(sender.Text, StringComparison.OrdinalIgnoreCase) && !Generator.CanBeGeminiApiKey(k));
                 sender.ItemsSource = source;
             }
@@ -138,6 +156,7 @@ namespace AskDB.App
                 _resultDataTable = await Analyzer.DatabaseExtractor.GetData(queryBox.Text);
                 await Cache.Set(queryBox.Text);
                 SetButtonVisibility(true);
+                showSqlButton.Visibility = Visibility.Collapsed;
             }
             catch
             {
@@ -198,7 +217,7 @@ namespace AskDB.App
                 var savePicker = new FileSavePicker
                 {
                     SuggestedStartLocation = PickerLocationId.Desktop,
-                    SuggestedFileName = "Exported Data"
+                    SuggestedFileName = DateTime.Now.ToString("yy.MM.dd-HH.mm.ss").Replace(".", string.Empty)
                 };
                 savePicker.FileTypeChoices.Add("CSV", new[] { ".csv" });
 
