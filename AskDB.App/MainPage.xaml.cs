@@ -68,6 +68,7 @@ namespace AskDB.App
 
             try
             {
+                queryBox.Text = string.Empty;
                 SetLoadingState(true);
 
                 await Task.WhenAll(LoadSuggestedQueries(), LoadKeywords());
@@ -353,6 +354,7 @@ namespace AskDB.App
 
         private void SetLoadingState(bool isLoading)
         {
+            backButton.IsEnabled = !isLoading;
             selectTableExpander.IsEnabled = sendButton.IsEnabled = !isLoading;
             LoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
             mainPanel.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
