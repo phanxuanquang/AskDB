@@ -16,6 +16,7 @@ namespace AskDB.App
 {
     public sealed partial class DbConnectPage : Page
     {
+        public static bool IsFirstEnter = true;
         public DbConnectPage()
         {
             this.InitializeComponent();
@@ -47,29 +48,37 @@ namespace AskDB.App
                 connectDbButton.IsEnabled = true;
                 var autoSuggestBox = sender as AutoSuggestBox;
 
-                if (StringEngineer.IsNull(autoSuggestBox.Text))
+                if (dbTypeCombobox.SelectedIndex != -1)
                 {
-                    autoSuggestBox.ItemsSource = null;
-                    connectDbButton.IsEnabled = false;
+                    if (StringTool.IsNull(autoSuggestBox.Text))
+                    {
+                        autoSuggestBox.Text = Extractor.GetEnumDescription((DatabaseType)dbTypeCombobox.SelectedItem);
+                        autoSuggestBox.Focus(FocusState.Programmatic);
+
+                        connectDbButton.IsEnabled = true;
+                    }
+                    else
+                    {
+                        var suggestion = Cache.Data.FirstOrDefault(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase) && !Generator.CanBeGeminiApiKey(autoSuggestBox.Text));
+
+                        if (suggestion != null)
+                        {
+                            autoSuggestBox.Text = suggestion;
+                            autoSuggestBox.Focus(FocusState.Programmatic);
+                            connectDbButton.IsEnabled = true;
+
+                        }
+                    }
+
                     e.Handled = true;
-                    return;
                 }
-
-                var suggestion = Cache.Data.FirstOrDefault(k => k.Contains(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase) && !Generator.CanBeGeminiApiKey(autoSuggestBox.Text));
-
-                if (suggestion != null)
-                {
-                    autoSuggestBox.Text = suggestion;
-                    autoSuggestBox.Focus(FocusState.Programmatic);
-                }
-                e.Handled = true;
             }
         }
         private void ConnectionStringBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
         {
             if (e.Key == VirtualKey.Enter)
             {
-                if (StringEngineer.IsNull((sender as AutoSuggestBox).Text))
+                if (StringTool.IsNull((sender as AutoSuggestBox).Text))
                 {
                     (sender as AutoSuggestBox).ItemsSource = null;
                     connectDbButton.IsEnabled = false;
@@ -82,16 +91,18 @@ namespace AskDB.App
         }
         private void ConnectionStringBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
         {
+            EnableForwardButton(Analyzer.DatabaseExtractor?.ConnectionString, sender.Text.Trim());
+
             if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
             {
-                if (StringEngineer.IsNull(sender.Text))
+                if (StringTool.IsNull(sender.Text))
                 {
                     sender.ItemsSource = null;
                     connectDbButton.IsEnabled = false;
                     return;
                 }
 
-                var source = Cache.Get(k => k.Contains(sender.Text, StringComparison.OrdinalIgnoreCase) && !Generator.CanBeGeminiApiKey(sender.Text));
+                var source = Cache.Get(k => k.StartsWith(sender.Text, StringComparison.OrdinalIgnoreCase) && !Generator.CanBeGeminiApiKey(sender.Text));
                 sender.ItemsSource = source;
                 connectDbButton.IsEnabled = true;
             }
@@ -102,22 +113,22 @@ namespace AskDB.App
             if (e.Key == VirtualKey.Tab)
             {
                 var autoSuggestBox = sender as AutoSuggestBox;
-                connectDbButton.IsEnabled = !StringEngineer.IsNull(autoSuggestBox.Text);
-                if (StringEngineer.IsNull(autoSuggestBox.Text))
+                connectDbButton.IsEnabled = !StringTool.IsNull(autoSuggestBox.Text);
+                if (StringTool.IsNull(autoSuggestBox.Text))
                 {
                     autoSuggestBox.ItemsSource = null;
                     connectDbButton.IsEnabled = false;
                     e.Handled = true;
                     return;
                 }
-                var suggestion = Cache.Data.FirstOrDefault(k => !StringEngineer.IsNull(autoSuggestBox.Text) && k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase) && Generator.CanBeGeminiApiKey(k));
+                var suggestion = Cache.Data.FirstOrDefault(k => !StringTool.IsNull(autoSuggestBox.Text) && k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase) && Generator.CanBeGeminiApiKey(k));
                 if (suggestion != null)
                 {
                     autoSuggestBox.Text = suggestion;
                     autoSuggestBox.Focus(FocusState.Programmatic);
                 }
 
-                connectGeminiButton.IsEnabled = !StringEngineer.IsNull(autoSuggestBox.Text);
+                connectGeminiButton.IsEnabled = !StringTool.IsNull(autoSuggestBox.Text);
                 e.Handled = true;
             }
         }
@@ -125,7 +136,7 @@ namespace AskDB.App
         {
             if (e.Key == VirtualKey.Enter)
             {
-                if (StringEngineer.IsNull((sender as AutoSuggestBox).Text))
+                if (StringTool.IsNull((sender as AutoSuggestBox).Text))
                 {
                     (sender as AutoSuggestBox).ItemsSource = null;
                     connectGeminiButton.IsEnabled = false;
@@ -138,11 +149,12 @@ namespace AskDB.App
         }
         private void ApiKeyBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
         {
+            EnableForwardButton(Generator.ApiKey, sender.Text.Trim());
+
             if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
             {
                 connectGeminiButton.IsEnabled = true;
-
-                if (StringEngineer.IsNull(sender.Text))
+                if (StringTool.IsNull(sender.Text))
                 {
                     sender.ItemsSource = null;
                     connectGeminiButton.IsEnabled = false;
@@ -158,6 +170,8 @@ namespace AskDB.App
         {
             if (dbTypeCombobox.SelectedIndex != -1)
             {
+                //EnableForwardButton(Analyzer.DatabaseExtractor?.DatabaseType.ToString(), dbTypeCombobox.Text);
+
                 var defaultConnectionString = Extractor.GetEnumDescription((DatabaseType)dbTypeCombobox.SelectedItem);
 
                 connectionStringBox.PlaceholderText = defaultConnectionString;
@@ -167,7 +181,7 @@ namespace AskDB.App
             }
             else
             {
-                connectGeminiButton.IsEnabled = false;
+                connectDbButton.IsEnabled = false;
             }
         }
 
@@ -235,8 +249,9 @@ namespace AskDB.App
                     await Cache.Set(connectionStringBox.Text);
 
                     tablesListView.ItemsSource = Analyzer.DatabaseExtractor.Tables.Select(t => t.Name);
-                    step2Expander.IsExpanded = step2Expander.IsEnabled = false;
+                    step2Expander.IsExpanded = false;
                     step3Expander.IsExpanded = step3Expander.IsEnabled = true;
+                    selectAllCheckbox.IsChecked = false;
                 }
             }
             catch (Exception ex)
@@ -251,25 +266,48 @@ namespace AskDB.App
 
         private async void DbConnectPage_Loaded(object sender, RoutedEventArgs e)
         {
-            dbTypeCombobox.ItemsSource = Enum.GetValues(typeof(DatabaseType));
-            await Cache.Init();
-
-            if (Analyzer.IsActivated)
+            try
             {
-                apiKeyBox.Text = Generator.ApiKey;
-                connectionStringBox.Text = Analyzer.DatabaseExtractor.ConnectionString;
-                dbTypeCombobox.SelectedItem = Analyzer.DatabaseExtractor.DatabaseType;
-                step2Expander.IsEnabled = forwardButton.IsEnabled = connectDbButton.IsEnabled = connectGeminiButton.IsEnabled = true;
+                dbTypeCombobox.ItemsSource = Enum.GetValues(typeof(DatabaseType));
+
+                if (IsFirstEnter)
+                {
+                    await Cache.Init();
+                }
+                else
+                {
+                    forwardButton.IsEnabled = true;
+                    step3Expander.IsEnabled = true;
+
+                    step1Expander.IsExpanded = step2Expander.IsExpanded = step3Expander.IsExpanded = true;
+
+                    dbTypeCombobox.SelectedItem = Analyzer.DatabaseExtractor.DatabaseType;
+
+                    connectDbButton.IsEnabled = true;
+                    startBtn.IsEnabled = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
             }
         }
-
         private void TablesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (!IsFirstEnter)
+            {
+                forwardButton.IsEnabled = false;
+            }
+            selectAllCheckbox.IsChecked = tablesListView.SelectedItems.Count == Analyzer.DatabaseExtractor.Tables.Count;
             startBtn.IsEnabled = tablesListView.SelectedItems.Count > 0;
         }
 
         private void SelectAllCheckbox_Click(object sender, RoutedEventArgs e)
         {
+            if (!IsFirstEnter)
+            {
+                forwardButton.IsEnabled = false;
+            }
             var checkBox = sender as CheckBox;
 
             if (checkBox.IsChecked == true)
@@ -286,17 +324,25 @@ namespace AskDB.App
         }
         private async void StartButton_Click(object sender, RoutedEventArgs e)
         {
-
             try
             {
                 var selectedTableNames = tablesListView.SelectedItems.Cast<string>();
                 Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
-                Analyzer.IsActivated = true;
+                MainPage.IsFirstEnter = true;
+                IsFirstEnter = false;
                 Frame.Navigate(typeof(MainPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
             }
             catch (Exception ex)
             {
                 await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
+            }
+        }
+
+        private void EnableForwardButton(string newData, string oldData)
+        {
+            if (!IsFirstEnter)
+            {
+                forwardButton.IsEnabled = !string.IsNullOrEmpty(oldData) && newData.Equals(oldData);
             }
         }
     }

@@ -1,16 +1,19 @@
-﻿using static System.Runtime.InteropServices.JavaScript.JSType;
-
-namespace Helper
+﻿namespace Helper
 {
     public static class Cache
     {
-        private const string _cacheFilePath = @"Assets\Cache.txt";
+        private const string _cacheFileName = "Cache.pxq";
         public const short MaxResults = 10;
         public static HashSet<string> Data = new HashSet<string>();
 
         public static async Task Init()
         {
-            var cacheFileData = await StringEngineer.GetLines(_cacheFilePath, true);
+            if (!File.Exists(_cacheFileName))
+            {
+                await File.Create(_cacheFileName).DisposeAsync();
+            }
+
+            var cacheFileData = await StringTool.GetLines(_cacheFileName, true);
             await Set(cacheFileData);
         }
 
@@ -23,14 +26,14 @@ namespace Helper
 
             if (input is string data)
             {
-                if (!File.Exists(_cacheFilePath))
+                if (!File.Exists(_cacheFileName))
                 {
-                    await File.Create(_cacheFilePath).DisposeAsync();
+                    await File.Create(_cacheFileName).DisposeAsync();
                 }
 
                 data = data.Trim();
 
-                using (var streamReader = new StreamReader(_cacheFilePath))
+                using (var streamReader = new StreamReader(_cacheFileName))
                 {
                     string currentLine;
                     while ((currentLine = await streamReader.ReadLineAsync()) != null)
@@ -42,7 +45,7 @@ namespace Helper
                     }
                 }
 
-                using (StreamWriter sw = new StreamWriter(_cacheFilePath, append: true))
+                using (StreamWriter sw = new StreamWriter(_cacheFileName, append: true))
                 {
                     await sw.WriteLineAsync(StringCipher.Encode(data.Trim()));
                 }

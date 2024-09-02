@@ -1,8 +1,6 @@
-﻿using System.Text.RegularExpressions;
-
-namespace Helper
+﻿namespace Helper
 {
-    public static class StringEngineer
+    public static class StringTool
     {
         public static async Task<List<string>> GetLines(string path, bool useDecoding = false)
         {
@@ -10,14 +8,14 @@ namespace Helper
             {
                 var lines = await File.ReadAllLinesAsync(path);
 
-                if(lines.Length == 0)
+                if (lines.Length == 0)
                 {
                     return new List<string>();
                 }
 
                 if (useDecoding)
                 {
-                    return lines.Select(StringCipher.Decode).ToList();
+                    return lines.AsParallel().Select(StringCipher.Decode).ToList();
                 }
                 else
                 {
@@ -49,9 +47,8 @@ namespace Helper
             {
                 return string.Empty;
             }
-            string cleanedSentence = Regex.Replace(sentence, @"[\p{P}-[.]]+", " ");
 
-            string[] words = cleanedSentence.Trim().Split(' ');
+            var words = sentence.Trim().Split(' ');
 
             return words.Length > 0 ? words[words.Length - 1] : string.Empty;
         }

@@ -7,6 +7,7 @@ namespace AskDB.App
 {
     public static class WinUiHelper
     {
+        public static bool IsMainPageEntered = false;
         public static async Task<ContentDialogResult> ShowErrorDialog(XamlRoot xamlRoot, string message, string title = "Error")
         {
             ContentDialog dialog = new ContentDialog

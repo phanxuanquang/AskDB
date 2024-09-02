@@ -7,7 +7,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,6 +22,7 @@ namespace AskDB.App
     {
         private DataTable _resultDataTable = new DataTable();
         private string _sqlQuery;
+        public static bool IsFirstEnter = true;
 
         public MainPage()
         {
@@ -46,7 +46,7 @@ namespace AskDB.App
         {
             if (e.Key == VirtualKey.Enter)
             {
-                if (StringEngineer.IsNull((sender as AutoSuggestBox).Text))
+                if (StringTool.IsNull((sender as AutoSuggestBox).Text))
                 {
                     (sender as AutoSuggestBox).ItemsSource = null;
                     sendButton.IsEnabled = false;
@@ -61,20 +61,25 @@ namespace AskDB.App
         #region Events
         private async void MainPage_Loaded(object sender, RoutedEventArgs e)
         {
+            if (!IsFirstEnter)
+            {
+                return;
+            }
+
             try
             {
-                if (!Analyzer.IsActivated)
-                {
-                    SetLoadingState(true);
-                    LoadTables();
-                    await LoadKeywords();
-                    await LoadSuggestedQueries();
+                SetLoadingState(true);
 
-                    Cache.Data = await Task.Run(() =>
-                    {
-                        return Cache.Data.OrderBy(s => s.Length).AsParallel().ToHashSet();
-                    });
-                }
+                await Task.WhenAll(LoadSuggestedQueries(), LoadKeywords());
+
+                Cache.Data = await Task.Run(() =>
+                {
+                    return Cache.Data.AsParallel().OrderByDescending(k => k).ToHashSet();
+                });
+
+                LoadTables();
+
+                IsFirstEnter = false;
             }
             catch (Exception ex)
             {
@@ -94,7 +99,7 @@ namespace AskDB.App
         {
             if (e.Key == VirtualKey.Tab)
             {
-                if (StringEngineer.IsNull((sender as AutoSuggestBox).Text))
+                if (StringTool.IsNull((sender as AutoSuggestBox).Text))
                 {
                     (sender as AutoSuggestBox).ItemsSource = null;
                     sendButton.IsEnabled = false;
@@ -118,9 +123,20 @@ namespace AskDB.App
         {
             if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
             {
-                sendButton.IsEnabled = !StringEngineer.IsNull(queryBox.Text);
-                var source = Cache.Get(k => !StringEngineer.IsNull(k) && k.StartsWith(sender.Text, StringComparison.OrdinalIgnoreCase) && !Generator.CanBeGeminiApiKey(k));
-                sender.ItemsSource = source;
+                var query = sender.Text;
+
+                if (!StringTool.IsNull(query))
+                {
+                    var source = Cache.Get(k => k.StartsWith(query.Trim(), StringComparison.OrdinalIgnoreCase)
+                        && !Generator.CanBeGeminiApiKey(k)
+                        && !k.Contains(Generator.ApiKey, StringComparison.OrdinalIgnoreCase)
+                        && !k.Contains(Analyzer.DatabaseExtractor.ConnectionString, StringComparison.OrdinalIgnoreCase)
+                        && !k.Contains(Extractor.GetEnumDescription(Analyzer.DatabaseExtractor.DatabaseType), StringComparison.OrdinalIgnoreCase));
+
+                    sender.ItemsSource = source;
+                }
+
+                sendButton.IsEnabled = !StringTool.IsNull(query);
             }
         }
 
@@ -236,9 +252,16 @@ namespace AskDB.App
                 await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
             }
         }
-        private void BackButton_Click(object sender, RoutedEventArgs e)
+        private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
-            Frame.Navigate(typeof(DbConnectPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
+            try
+            {
+                Frame.Navigate(typeof(DbConnectPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
+            }
+            catch (Exception ex)
+            {
+                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
+            }
         }
         #endregion
 
@@ -259,23 +282,27 @@ namespace AskDB.App
         }
         private async Task LoadKeywords()
         {
-            var sqlKeywords = await StringEngineer.GetLines(@$"Assets\SqlKeywords\{Analyzer.DatabaseExtractor.DatabaseType.ToString()}.txt");
-            var commonKeywords = await StringEngineer.GetLines(@"Assets\PopularWords.txt");
+            var sqlKeywords = await StringTool.GetLines(@$"Assets\SqlKeywords\{Analyzer.DatabaseExtractor.DatabaseType.ToString()}.txt");
             var tableNames = Analyzer.SelectedTables.Select(t => t.Name);
-            var columnNames = Analyzer.SelectedTables.SelectMany(table => table.Columns.Select(column => column.Name));
-            var removedKeywords = commonKeywords.Where(c => c.Length < 2);
+            var columnNames = Analyzer.SelectedTables.AsParallel().SelectMany(table => table.Columns.Select(column => column.Name));
 
             await Cache.Set(sqlKeywords);
-            await Cache.Set(commonKeywords.Except(removedKeywords));
             await Cache.Set(tableNames);
             await Cache.Set(columnNames);
         }
 
         private async Task LoadSuggestedQueries()
         {
-            var suggestedQueries = await Analyzer.GetSuggestedSqlQueries(Generator.ApiKey, Analyzer.DatabaseExtractor.DatabaseType, 30);
-            await Cache.Set(suggestedQueries);
-        } 
+            var sqlQueriesTask = Analyzer.GetSuggestedQueries(Generator.ApiKey, Analyzer.DatabaseExtractor.DatabaseType, true);
+            var englishQueriesTask = Analyzer.GetSuggestedQueries(Generator.ApiKey, Analyzer.DatabaseExtractor.DatabaseType, false);
+
+            await Task.WhenAll(sqlQueriesTask, englishQueriesTask);
+
+            var suggestedSqlQueries = await sqlQueriesTask;
+            var suggestedEnglishQueries = await englishQueriesTask;
+
+            await Task.WhenAll(Cache.Set(suggestedSqlQueries), Cache.Set(suggestedEnglishQueries));
+        }
 
         private async Task ExecuteAnalyzedQuery(string query)
         {

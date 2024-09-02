@@ -11,7 +11,7 @@ namespace DatabaseAnalyzer
     {
         public const byte MaxTotalTables = 100;
         public const short MaxTotalColumns = 500;
-        public static bool IsActivated = false;
+        public const byte MaxTotalQueries = 50;
         public static List<Table> SelectedTables = new List<Table>();
         public static DatabaseExtractor DatabaseExtractor;
 
@@ -55,28 +55,39 @@ namespace DatabaseAnalyzer
             return JsonConvert.DeserializeObject<SqlCommander>(response);
         }
 
-        public static async Task<List<string>> GetSuggestedSqlQueries(string apiKey, DatabaseType type, short totalQueries)
+        public static async Task<List<string>> GetSuggestedQueries(string apiKey, DatabaseType type, bool useSql)
         {
             var promptBuilder = new StringBuilder();
             var databaseType = Extractor.GetEnumDescription(type);
+            var englishQuery = !useSql ? "human language (English)" : databaseType;
 
             promptBuilder.AppendLine($"You are a Database Administrator with over 20 years of experience working with {databaseType} databases on large scale projects.");
             promptBuilder.AppendLine("I am someone who knows nothing about SQL.");
-            promptBuilder.AppendLine($"I will provide you with the table structure of my database. Please help to suggest at least {totalQueries} common {databaseType} data queries related to my database structure.");
+            promptBuilder.AppendLine($"I will provide you with the table structure of my database. You have to suggest at least {MaxTotalQueries} common simple {englishQuery} queries related to my database structure.");
             promptBuilder.AppendLine("Your response must be a List<string> in C# programming language.");
             promptBuilder.AppendLine("To help you understand my command and do the task more effectively, here is an example:");
             promptBuilder.AppendLine("Your response:");
             promptBuilder.AppendLine("[");
-            promptBuilder.AppendLine("    SELECT * FROM Table1 WHERE Condition,");
-            promptBuilder.AppendLine("    SELECT COUNT(*) FROM Table2 WHERE Condition,");
-            promptBuilder.AppendLine("    SELECT DISTINCT(*) FROM Table3 WHERE Condition OrderBy Id DESC,");
+            if (useSql)
+            {
+                promptBuilder.AppendLine($"    SELECT * FROM Table1 WHERE Condition,");
+                promptBuilder.AppendLine($"    SELECT COUNT(*) FROM Table2 WHERE Condition,");
+                promptBuilder.AppendLine($"    SELECT DISTINCT(*) FROM Table3 WHERE Condition OrderBy Id DESC");
+            }
+            else
+            {
+                promptBuilder.AppendLine($"    Give me all items of the ExampleTableName table,");
+                promptBuilder.AppendLine($"    How many ExampleTableName items that <some_conditions>?,");
+                promptBuilder.AppendLine($"    I want to know 10 latest item of the ExampleTableName that <some_conditions>,");
+                promptBuilder.AppendLine($"    Tell me the items of the ExampleTableName that <some_conditions> after <some_date>");
+            }
             promptBuilder.AppendLine("]");
             promptBuilder.AppendLine("Now, let's get started. This is the table schemas of my database:");
             promptBuilder.AppendLine(TablesAsString(SelectedTables).Trim());
             promptBuilder.AppendLine("Your response:");
 
             var response = await Generator.GenerateContent(apiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
-            return JsonConvert.DeserializeObject<List<string>>(response).OrderBy(k => k).ToList();
+            return JsonConvert.DeserializeObject<List<string>>(response);
         }
 
         public static bool IsSqlSafe(string sqlCommand)
@@ -107,7 +118,7 @@ namespace DatabaseAnalyzer
                 "VIEW", "INDEX", "CONSTRAINT", "SCHEMA", "DATABASE", "TABLE"
             };
 
-            var words = StringEngineer.GetWords(sqlCommand);
+            var words = StringTool.GetWords(sqlCommand);
 
             foreach (var word in words)
             {
