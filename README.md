@@ -1,12 +1,12 @@
 # © 2024 Phan Xuan Quang / Adobe Camera Profiles Unlocker
 
 What if you're not a SQL expert? What if you could simply ask your database questions in plain English and get instant answers? 
-![SplashScreen scale-200](https://github.com/user-attachments/assets/62869c52-8887-40e5-a3fb-15d16ee302dc)
-Introducing **AskDB**, the revolutionary application that changes the way you interact with your SQL databases. Designed for both SQL database administrator and those who are new to SQL, AskDB makes querying databases intuitive, effortless, and safe.
+![SplashScreen scale-200](https://i.imgur.com/kO68bFg.png)
+Introducing **AskDB**, the revolutionary application that simplifies the way you interact with your SQL databases, designed for both SQL database administrator and those who are new to SQL, AskDB makes querying databases intuitive, effortless, and safe.
 
 ## :blue_book: Usage Guidance
 
-[![Guidance Video](https://github.com/user-attachments/assets/e235bd84-ce13-4887-954d-a69dc006ab0f)](https://www.youtube.com/embed/AGwTxgod9jQ)
+[![Guidance Video](https://i.imgur.com/DEnWBTg.jpeg)](https://www.youtube.com/embed/AGwTxgod9jQ)
 
 - Step 1: Download and extract the **AskDB.zip** from [**THIS**](https://github.com/phanxuanquang/AskDB/releases/latest) release.
 - Step 2: Run the **AskDB.exe** file (skip the **Unknown Published** warning from Windows if any).
@@ -24,7 +24,7 @@ Introducing **AskDB**, the revolutionary application that changes the way you in
 
 1. **Natural Language Querying**
 
-![image](https://github.com/user-attachments/assets/6bc57cb8-89b6-470f-b247-ca39f288891f)
+![image](https://i.imgur.com/Klito4H.png)
 
 AskDB analyzes your database structure and provides suggestions for both natural language queries and SQL commands.
    - No more struggling with complex SQL syntax
@@ -33,7 +33,7 @@ AskDB analyzes your database structure and provides suggestions for both natural
 
 3. **Seamless Multi-Database Connectivity**
 
-![image](https://github.com/user-attachments/assets/ab2e3b52-1d9c-48a7-9a85-af27c88c98f1)
+![image](https://i.imgur.com/TRAEH89.png)
 
 Whether you're working with SQL Server, MySQL, PostgreSQL, or SQLite, AskDB has got you covered. Switch between databases seamlessly, all within the same intuitive interface.
    - Seamlessly connects with SQL Server, MySQL, PostgreSQL, and SQLite
@@ -41,8 +41,8 @@ Whether you're working with SQL Server, MySQL, PostgreSQL, or SQLite, AskDB has 
 
 5. **Intelligent Query Suggestions**
 
-![image](https://github.com/user-attachments/assets/b3823021-c0b1-4f8d-8164-5297fb480a00)
-![image](https://github.com/user-attachments/assets/66855cef-aaa8-498b-acbe-0ec259af3d69)
+![image](https://i.imgur.com/sCOZY8P.png)
+![image](https://i.imgur.com/iIxOpYE.png)
 
    - Get intelligent query suggestions based on the structure of your selected tables
    - Get query suggestions in both SQL and natural language, customized to your computer's language settings!
@@ -50,7 +50,7 @@ Whether you're working with SQL Server, MySQL, PostgreSQL, or SQLite, AskDB has 
 
 7. **Safety First**
    
-![image](https://github.com/user-attachments/assets/19c946c4-c04e-418b-a043-180093613d18)
+![image](https://i.imgur.com/t0GbrOh.png)
 
 Accidentally trying to drop a table? AskDB has your back. Our intelligent system detects potentially dangerous queries and stops them in their tracks, protecting your valuable data.
    - Built-in safeguards to avoid changes to your database and encripted your cached data
@@ -59,7 +59,7 @@ Accidentally trying to drop a table? AskDB has your back. Our intelligent system
 
 9. **Export with Ease**
     
-![image](https://github.com/user-attachments/assets/6cdf7610-b40f-4d47-b423-6098145bd2bb)
+![image](https://i.imgur.com/poq5bP2.png)
 
    - Transform query results into ready-to-use CSV files with a single click
    - Get the SQL query translated from your natural language query
