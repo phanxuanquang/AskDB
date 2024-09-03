@@ -2,7 +2,7 @@
 {
     public static class Cache
     {
-        private const string _cacheFileName = "Cache.pxq";
+        private const string _cacheFileName = "AskDB.cache";
         public const short MaxResults = 10;
         public static HashSet<string> Data = new HashSet<string>();
 
@@ -11,6 +11,7 @@
             if (!File.Exists(_cacheFileName))
             {
                 await File.Create(_cacheFileName).DisposeAsync();
+                return;
             }
 
             var cacheFileData = await StringTool.GetLines(_cacheFileName, true);
@@ -33,16 +34,9 @@
 
                 data = data.Trim();
 
-                using (var streamReader = new StreamReader(_cacheFileName))
+                if (Data.Contains(data))
                 {
-                    string currentLine;
-                    while ((currentLine = await streamReader.ReadLineAsync()) != null)
-                    {
-                        if (currentLine.Equals(data, StringComparison.OrdinalIgnoreCase) || currentLine.Contains(data, StringComparison.OrdinalIgnoreCase))
-                        {
-                            return;
-                        }
-                    }
+                    return;
                 }
 
                 using (StreamWriter sw = new StreamWriter(_cacheFileName, append: true))

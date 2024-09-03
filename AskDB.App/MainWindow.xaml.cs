@@ -14,7 +14,7 @@ namespace AskDB.App
         {
             this.InitializeComponent();
 
-            this.AppWindow.Title = "AskDB - by Phan Xuan Quang";
+            this.AppWindow.Title = "AskDB";
 
             MainFrame.Navigate(typeof(DbConnectPage));
         }

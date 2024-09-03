@@ -45,11 +45,8 @@
 	</Target>
   <ItemGroup>
     <None Remove="Assets\PopularWords.txt" />
-    <None Remove="Assets\SqlKeywords\MySQL.txt" />
-    <None Remove="Assets\SqlKeywords\PostgreSQL.txt" />
-    <None Remove="Assets\SqlKeywords\SQLite.txt" />
-    <None Remove="Assets\SqlKeywords\SqlServer.txt" />
     <None Remove="DbConnectPage.xaml" />
+    <None Remove="LoadingControl.xaml" />
     <None Remove="MainPage.xaml" />
   </ItemGroup>
 
@@ -86,24 +83,15 @@
     <Content Update="Assets\PopularWords.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Update="Assets\SqlKeywords\SqlServer.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Update="Assets\SqlKeywords\MySQL.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Update="Assets\SqlKeywords\PostgreSQL.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Update="Assets\SqlKeywords\SQLite.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <None Update="Assets\icon.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+    <Page Update="LoadingControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="DbConnectPage.xaml">

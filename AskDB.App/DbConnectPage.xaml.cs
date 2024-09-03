@@ -191,7 +191,7 @@ namespace AskDB.App
         }
         private async void ConnectGeminiButton_Click(object sender, RoutedEventArgs e)
         {
-            WinUiHelper.SetLoading(true, sender as Button, apiKeyInputLoadingOverlay, apiInputPanel);
+            WinUiHelper.SetLoading(true, sender as Button, apiKeyInputLoadingOverlay, apiInputPanel, "Validating your API key . . .");
             tutorialButton.Visibility = Visibility.Collapsed;
 
             var isValidApiKey = await Generator.IsValidApiKey(apiKeyBox.Text);
@@ -216,7 +216,7 @@ namespace AskDB.App
         {
             try
             {
-                WinUiHelper.SetLoading(true, sender as Button, dbInputLoadingOverlay, dbInputPanel);
+                WinUiHelper.SetLoading(true, sender as Button, dbInputLoadingOverlay, dbInputPanel, "Loading database structure . . .");
                 var selectedType = (DatabaseType)dbTypeCombobox.SelectedItem;
 
                 switch (selectedType)

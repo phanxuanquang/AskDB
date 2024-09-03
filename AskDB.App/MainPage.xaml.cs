@@ -35,11 +35,17 @@ namespace AskDB.App
             queryBox.TextChanged += QueryBox_TextChanged;
 
             selectAllCheckbox.Click += SelectAllCheckbox_Click;
+            tablesListView.SelectionChanged += TablesListView_SelectionChanged;
 
             sendButton.Click += SendButton_Click;
             showSqlButton.Click += ShowSqlButton_Click;
             exportButton.Click += ExportButton_Click;
             backButton.Click += BackButton_Click;
+        }
+
+        private void TablesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            selectAllCheckbox.IsChecked = tablesListView.SelectedItems.Count == Analyzer.DatabaseExtractor.Tables.Count;
         }
 
         private void QueryBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
@@ -160,13 +166,16 @@ namespace AskDB.App
 
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
+            SetLoadingState(true);
+
             if (!Analyzer.IsSqlSafe(queryBox.Text))
             {
                 await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, "You must not execute this dangerous command.", "Forbidden");
                 return;
             }
 
-            SetLoadingState(true);
+            var selectedTableNames = tablesListView.SelectedItems.Cast<string>();
+            Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
 
             try
             {
@@ -356,6 +365,7 @@ namespace AskDB.App
         {
             backButton.IsEnabled = !isLoading;
             selectTableExpander.IsEnabled = sendButton.IsEnabled = !isLoading;
+            LoadingOverlay.SetLoading("Analyzing your database . . .", isLoading);
             LoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
             mainPanel.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
             selectTableExpander.IsExpanded = false;

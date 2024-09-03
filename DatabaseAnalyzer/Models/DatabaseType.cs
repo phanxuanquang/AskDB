@@ -4,7 +4,7 @@ namespace DatabaseAnalyzer.Models
 {
     public enum DatabaseType
     {
-        [Description("Integrated Security=True;Server=localhost;Database=master")]
+        [Description("Integrated Security=True;Server=localhost;Database=YourDatabaseName")]
         SqlServer = 0,
 
         [Description("Host=localhost;Username=postgres;Password=YourPassword;Database=YourDatabaseName")]

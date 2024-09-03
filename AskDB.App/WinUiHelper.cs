@@ -22,11 +22,11 @@ namespace AskDB.App
             return await dialog.ShowAsync();
         }
 
-        public static void SetLoading(bool isLoading, Button button, StackPanel overlayPanel, StackPanel mainPanel)
+        public static void SetLoading(bool isLoading, Button button, LoadingControl loadingControl, StackPanel mainPanel, string loadingMessage = "")
         {
-            overlayPanel.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
             mainPanel.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
-            button.IsEnabled = !isLoading;
+            button.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
+            loadingControl.SetLoading(loadingMessage, isLoading);
         }
     }
 }

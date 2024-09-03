@@ -21,6 +21,11 @@
         MinWidth="800">
 
             <StackPanel Orientation="Vertical" >
+                <StackPanel.ChildrenTransitions>
+                    <TransitionCollection>
+                        <EntranceThemeTransition IsStaggeringEnabled="True" />
+                    </TransitionCollection>
+                </StackPanel.ChildrenTransitions>
                 <Grid Margin="0,0,0,20" IsTabStop="False">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -56,11 +61,8 @@
                     </Expander.Content>
                 </Expander>
 
-                <StackPanel x:Name="LoadingOverlay" Background="Transparent" Visibility="Collapsed" Margin="0,0,0,20" IsTabStop="False">
-                    <ProgressRing IsActive="True" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </StackPanel>
-
-                <StackPanel x:Name="mainPanel">
+                <local:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <StackPanel x:Name="mainPanel" Visibility="Collapsed">
                     <Grid Margin="0,0,0,20">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -68,7 +70,6 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-
                         <AutoSuggestBox x:Name="queryBox" HorizontalAlignment="Stretch" PlaceholderText="Enter your question or the SQL query . . ." AutomationProperties.Name="simple text editor" MinWidth="1000" Grid.Column="0" Margin="0,0,10,0"/>
 
                         <Button x:Name="sendButton" IsEnabled="False" Style="{StaticResource AccentButtonStyle}" Width="60" Height="35" Grid.Column="1" Margin="0,0,10,0">

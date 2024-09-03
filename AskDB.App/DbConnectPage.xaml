@@ -21,6 +21,12 @@
         MinWidth="600">
 
             <StackPanel Orientation="Vertical" HorizontalAlignment="Center" IsTabStop="False">
+                <StackPanel.ChildrenTransitions>
+                    <TransitionCollection>
+                        <EntranceThemeTransition IsStaggeringEnabled="True" />
+                    </TransitionCollection>
+                </StackPanel.ChildrenTransitions>
+
                 <Grid Margin="0,0,0,20" MinWidth="1000">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -43,9 +49,7 @@
                     </Expander.Header>
                     <Expander.Content>
                         <StackPanel>
-                            <StackPanel x:Name="apiKeyInputLoadingOverlay" Background="Transparent" Visibility="Collapsed" Margin="0,0,0,20">
-                                <ProgressRing IsActive="True" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </StackPanel>
+                            <local:LoadingControl x:Name="apiKeyInputLoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <StackPanel x:Name="apiInputPanel" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
                                 <AutoSuggestBox x:Name="apiKeyBox" PlaceholderText="Enter the Gemini API Key" AutomationProperties.Name="simple text editor" MinWidth="830" Margin="0,0,10,0"/>
                                 <HyperlinkButton x:Name="getApiKeyButton" HorizontalAlignment="Center" Background="{StaticResource AcrylicInAppFillColorBaseBrush}"  NavigateUri="https://aistudio.google.com/app/apikey" Content="Get API Key" Height="35"/>
@@ -62,9 +66,7 @@
                     </Expander.Header>
                     <Expander.Content>
                         <StackPanel>
-                            <StackPanel x:Name="dbInputLoadingOverlay" Background="Transparent" Visibility="Collapsed" Margin="0,0,0,20">
-                                <ProgressRing IsActive="True" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </StackPanel>
+                            <local:LoadingControl x:Name="dbInputLoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <StackPanel x:Name="dbInputPanel" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
                                 <ComboBox  x:Name="dbTypeCombobox" PlaceholderText="Choose your database type" Width="230" Margin="0,0,10,0" Height="35"/>
                                 <AutoSuggestBox x:Name="connectionStringBox" PlaceholderText="Enter the connection string . . ." AutomationProperties.Name="simple text editor" MinWidth="700"/>
@@ -90,7 +92,13 @@
                                 Width="800"
                                 MaxHeight="300"
                                 HorizontalAlignment="Left"
-                                Margin="0,0,0,10"/>
+                                Margin="0,0,0,10">
+                                <ListView.ItemContainerTransitions>
+                                    <TransitionCollection>
+                                        <ContentThemeTransition />
+                                    </TransitionCollection>
+                                </ListView.ItemContainerTransitions>
+                            </ListView>
                         </StackPanel>
                     </Expander.Content>
                 </Expander>
