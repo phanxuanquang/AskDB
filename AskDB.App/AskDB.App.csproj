@@ -34,7 +34,8 @@
     <PackageIcon>icon.png</PackageIcon>
     <RepositoryUrl>https://github.com/phanxuanquang/AskDB</RepositoryUrl>
     <NeutralLanguage>en-001</NeutralLanguage>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
+    <PublishAot>False</PublishAot>
   </PropertyGroup>
 	<Target Name="RemoveFoldersWithMuiFiles" AfterTargets="Build">
 		<ItemGroup>
