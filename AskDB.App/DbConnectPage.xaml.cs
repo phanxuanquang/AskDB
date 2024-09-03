@@ -170,8 +170,6 @@ namespace AskDB.App
         {
             if (dbTypeCombobox.SelectedIndex != -1)
             {
-                //EnableForwardButton(Analyzer.DatabaseExtractor?.DatabaseType.ToString(), dbTypeCombobox.Text);
-
                 var defaultConnectionString = Extractor.GetEnumDescription((DatabaseType)dbTypeCombobox.SelectedItem);
 
                 connectionStringBox.PlaceholderText = defaultConnectionString;
@@ -273,6 +271,10 @@ namespace AskDB.App
                 if (IsFirstEnter)
                 {
                     await Cache.Init();
+                    var apiKey = Cache.Data.FirstOrDefault(Generator.CanBeGeminiApiKey);
+
+                    apiKeyBox.Text = Cache.Data.FirstOrDefault(Generator.CanBeGeminiApiKey);
+                    connectGeminiButton.IsEnabled = !string.IsNullOrEmpty(apiKey);
                 }
                 else
                 {
@@ -330,7 +332,7 @@ namespace AskDB.App
                 Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
                 MainPage.IsFirstEnter = true;
                 IsFirstEnter = false;
-                Frame.Navigate(typeof(MainPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromRight });
+                Frame.Navigate(typeof(MainPage), null, new EntranceNavigationTransitionInfo());
             }
             catch (Exception ex)
             {

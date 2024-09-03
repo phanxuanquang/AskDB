@@ -43,27 +43,6 @@ namespace AskDB.App
             backButton.Click += BackButton_Click;
         }
 
-        private void TablesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            selectAllCheckbox.IsChecked = tablesListView.SelectedItems.Count == Analyzer.DatabaseExtractor.Tables.Count;
-        }
-
-        private void QueryBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
-        {
-            if (e.Key == VirtualKey.Enter)
-            {
-                if (StringTool.IsNull((sender as AutoSuggestBox).Text))
-                {
-                    (sender as AutoSuggestBox).ItemsSource = null;
-                    sendButton.IsEnabled = false;
-                    return;
-                }
-
-                SendButton_Click(sender, e);
-                e.Handled = true;
-            }
-        }
-
         #region Events
         private async void MainPage_Loaded(object sender, RoutedEventArgs e)
         {
@@ -126,6 +105,21 @@ namespace AskDB.App
                 e.Handled = true;
             }
         }
+        private void QueryBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (e.Key == VirtualKey.Enter)
+            {
+                if (StringTool.IsNull((sender as AutoSuggestBox).Text))
+                {
+                    (sender as AutoSuggestBox).ItemsSource = null;
+                    sendButton.IsEnabled = false;
+                    return;
+                }
+
+                SendButton_Click(sender, e);
+                e.Handled = true;
+            }
+        }
         private void QueryBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
         {
             if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
@@ -163,13 +157,29 @@ namespace AskDB.App
                 tablesListView.SelectedItems.Clear();
             }
         }
+        private void TablesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            selectAllCheckbox.IsChecked = tablesListView.SelectedItems.Count == Analyzer.DatabaseExtractor.Tables.Count;
+        }
 
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
             if (!Analyzer.IsSqlSafe(queryBox.Text))
             {
-                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, "You must not execute this dangerous command.", "Forbidden");
-                return;
+                var warning = new ContentDialog
+                {
+                    XamlRoot = RootGrid.XamlRoot,
+                    Title = "Warning",
+                    Content = "This command can make changes to your database.\nAre you are to execute?",
+                    PrimaryButtonText = "No",
+                    SecondaryButtonText = "Yes",
+                    DefaultButton = ContentDialogButton.Primary
+                };
+
+                if (await warning.ShowAsync() == ContentDialogResult.Primary)
+                {
+                    return;
+                }
             }
 
             SetLoadingState(true);
@@ -179,7 +189,7 @@ namespace AskDB.App
 
             try
             {
-                _resultDataTable = await Analyzer.DatabaseExtractor.GetData(queryBox.Text);
+                _resultDataTable = await Analyzer.DatabaseExtractor.Execute(queryBox.Text);
                 await Cache.Set(queryBox.Text);
                 SetButtonVisibility(true);
                 showSqlButton.Visibility = Visibility.Collapsed;
@@ -300,7 +310,6 @@ namespace AskDB.App
             await Cache.Set(tableNames);
             await Cache.Set(columnNames);
         }
-
         private async Task LoadSuggestedQueries()
         {
             var sqlQueriesTask = Analyzer.GetSuggestedQueries(Generator.ApiKey, Analyzer.DatabaseExtractor.DatabaseType, true);
@@ -316,12 +325,12 @@ namespace AskDB.App
 
         private async Task ExecuteAnalyzedQuery(string query)
         {
-            var sqlCommand = new SqlCommander();
+            var commander = new SqlCommander();
 
             try
             {
                 Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => tablesListView.SelectedItems.Contains(t.Name)).ToList();
-                sqlCommand = await Analyzer.GetSql(Generator.ApiKey, query, Analyzer.DatabaseExtractor.DatabaseType);
+                commander = await Analyzer.GetSql(Generator.ApiKey, query, Analyzer.DatabaseExtractor.DatabaseType);
             }
             catch (Exception ex)
             {
@@ -330,31 +339,42 @@ namespace AskDB.App
                 return;
             }
 
-            if (!sqlCommand.IsSql)
+            if (!commander.IsSql)
             {
-                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, sqlCommand.Output, "Invalid SQL Command");
+                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, commander.Output, "Invalid Query");
                 _resultDataTable = null;
                 return;
             }
 
-            if (!Analyzer.IsSqlSafe(sqlCommand.Output))
+            if (!Analyzer.IsSqlSafe(commander.Output))
             {
-                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, "You must not execute this dangerous command.", "Forbidden");
-                _resultDataTable = null;
-                return;
-            }
+                var warning = new ContentDialog
+                {
+                    XamlRoot = RootGrid.XamlRoot,
+                    Title = "Warning",
+                    Content = "This command can make changes to your database.\nAre you are to execute?",
+                    PrimaryButtonText = "No",
+                    SecondaryButtonText = "Yes",
+                    DefaultButton = ContentDialogButton.Primary
+                };
 
-            _sqlQuery = sqlCommand.Output;
+                if (await warning.ShowAsync() == ContentDialogResult.Primary)
+                {
+                    _resultDataTable = null;
+                    return;
+                }
+            }
 
             try
             {
-                _resultDataTable = await Analyzer.DatabaseExtractor.GetData(sqlCommand.Output);
-                await Cache.Set(sqlCommand.Output);
+                _resultDataTable = await Analyzer.DatabaseExtractor.Execute(commander.Output);
+                await Cache.Set(commander.Output);
+                _sqlQuery = commander.Output;
                 SetButtonVisibility(true);
             }
             catch (Exception ex)
             {
-                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, $"SQL Command: {sqlCommand.Output}\n\n{ex.Message}");
+                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, $"SQL Command: {commander.Output}\n\n{ex.Message}");
 
                 SetButtonVisibility(false);
                 _resultDataTable = null;

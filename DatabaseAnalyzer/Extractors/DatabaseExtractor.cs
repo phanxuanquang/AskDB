@@ -11,6 +11,6 @@ namespace DatabaseAnalyzer.Extractors
         public List<Table> Tables { get; set; } = new List<Table>();
 
         public abstract Task ExtractTables();
-        public abstract Task<DataTable> GetData(string sqlQuery);
+        public abstract Task<DataTable> Execute(string sqlQuery);
     }
 }

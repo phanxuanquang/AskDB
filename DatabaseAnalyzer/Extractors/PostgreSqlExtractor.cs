@@ -55,7 +55,7 @@ namespace DatabaseAnalyzer.Extractors
             }
         }
 
-        public override async Task<DataTable> GetData(string sqlQuery)
+        public override async Task<DataTable> Execute(string sqlQuery)
         {
             using (var connection = new NpgsqlConnection(ConnectionString))
             {
