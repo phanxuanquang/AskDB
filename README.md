@@ -37,7 +37,7 @@ AskDB analyzes your database structure and provides suggestions for both natural
 
 Whether you're working with SQL Server, MySQL, PostgreSQL, or SQLite, AskDB has got you covered. Switch between databases seamlessly, all within the same intuitive interface.
    - Seamlessly connects with SQL Server, MySQL, PostgreSQL, and SQLite
-   - One tool to rule them all – no need for multiple query tools
+   - Be able to analyze up to 500 tables
 
 5. **Intelligent Query Suggestions**
 
