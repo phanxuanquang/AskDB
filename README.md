@@ -5,6 +5,9 @@ What if you're not a SQL expert? What if you could simply ask your database ques
 Introducing **AskDB**, the revolutionary application that changes the way you interact with your SQL databases. Designed for both SQL database administrator and those who are new to SQL, AskDB makes querying databases intuitive, effortless, and safe.
 
 ## :blue_book: Usage Guidance
+
+[![Guidance Video](https://github.com/user-attachments/assets/e235bd84-ce13-4887-954d-a69dc006ab0f)](https://www.youtube.com/embed/AGwTxgod9jQ)
+
 - Step 1: Download and extract the **AskDB.zip** from [**THIS**](https://github.com/phanxuanquang/AskDB/releases/latest) release.
 - Step 2: Run the **AskDB.exe** file (skip the **Unknown Published** warning from Windows if any).
 - Step 3: Follow the instruction to get started.
