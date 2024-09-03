@@ -64,7 +64,7 @@ namespace DatabaseAnalyzer
 
             promptBuilder.AppendLine($"You are a Database Administrator with over 20 years of experience working with {databaseType} databases on large scale projects.");
             promptBuilder.AppendLine("I am someone who knows nothing about SQL.");
-            promptBuilder.AppendLine($"I will provide you with the table structure of my database. You have to suggest at least {MaxTotalQueries} common {englishQuery} queries related to my database structure.");
+            promptBuilder.AppendLine($"I will provide you with the table structure of my database. You have to suggest at least {MaxTotalQueries} common and completely different {englishQuery} queries related to my database structure.");
             promptBuilder.AppendLine("Your response must be a List<string> in C# programming language.");
             promptBuilder.AppendLine("To help you understand my command and do the task more effectively, here is an example:");
             promptBuilder.AppendLine("Your response:");
