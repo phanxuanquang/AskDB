@@ -1,4 +1,4 @@
-# © 2024 Phan Xuan Quang / Adobe Camera Profiles Unlocker
+# © 2024 Phan Xuan Quang / AskDB
 
 What if you're not a SQL expert? What if you could simply ask your database questions in plain English and get instant answers? 
 ![SplashScreen scale-200](https://i.imgur.com/kO68bFg.png)
