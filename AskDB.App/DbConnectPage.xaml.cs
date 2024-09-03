@@ -217,24 +217,14 @@ namespace AskDB.App
                 WinUiHelper.SetLoading(true, sender as Button, dbInputLoadingOverlay, dbInputPanel, "Loading database structure . . .");
                 var selectedType = (DatabaseType)dbTypeCombobox.SelectedItem;
 
-                switch (selectedType)
+                Analyzer.DatabaseExtractor = selectedType switch
                 {
-                    case DatabaseType.SqlServer:
-                        Analyzer.DatabaseExtractor = new SqlServerExtractor(connectionStringBox.Text.Trim());
-                        break;
-                    case DatabaseType.PostgreSQL:
-                        Analyzer.DatabaseExtractor = new PostgreSqlExtractor(connectionStringBox.Text.Trim());
-                        break;
-                    case DatabaseType.SQLite:
-                        Analyzer.DatabaseExtractor = new SqliteExtractor(connectionStringBox.Text.Trim());
-                        break;
-                    case DatabaseType.MySQL:
-                        Analyzer.DatabaseExtractor = new MySqlExtractor(connectionStringBox.Text.Trim());
-                        break;
-                    default:
-                        throw new NotSupportedException("Not Supported");
-                }
-
+                    DatabaseType.SqlServer => new SqlServerExtractor(connectionStringBox.Text.Trim()),
+                    DatabaseType.PostgreSQL => new PostgreSqlExtractor(connectionStringBox.Text.Trim()),
+                    DatabaseType.SQLite => new SqliteExtractor(connectionStringBox.Text.Trim()),
+                    DatabaseType.MySQL => new MySqlExtractor(connectionStringBox.Text.Trim()),
+                    _ => throw new NotSupportedException("Not Supported"),
+                };
                 await Analyzer.DatabaseExtractor.ExtractTables();
 
                 if (Analyzer.DatabaseExtractor.Tables.Count == 0)
@@ -301,7 +291,7 @@ namespace AskDB.App
                 forwardButton.IsEnabled = false;
             }
             selectAllCheckbox.IsChecked = tablesListView.SelectedItems.Count == Analyzer.DatabaseExtractor.Tables.Count;
-            startBtn.IsEnabled = tablesListView.SelectedItems.Count > 0;
+            startBtn.IsEnabled = tablesListView.SelectedItems.Count > 0 && tablesListView.SelectedItems.Count <= Analyzer.MaxTotalTables;
         }
 
         private void SelectAllCheckbox_Click(object sender, RoutedEventArgs e)

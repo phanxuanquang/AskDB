@@ -20,7 +20,7 @@ namespace AskDB.App
 {
     public sealed partial class MainPage : Page
     {
-        private DataTable _resultDataTable = new DataTable();
+        private DataTable _resultDataTable = new();
         private string _sqlQuery;
         public static bool IsFirstEnter = true;
 
@@ -255,7 +255,7 @@ namespace AskDB.App
                     SuggestedStartLocation = PickerLocationId.Desktop,
                     SuggestedFileName = DateTime.Now.ToString("yy.MM.dd-HH.mm.ss").Replace(".", string.Empty)
                 };
-                savePicker.FileTypeChoices.Add("CSV", new[] { ".csv" });
+                savePicker.FileTypeChoices.Add("CSV", [".csv"]);
 
                 nint windowHandle = WindowNative.GetWindowHandle(App.Window);
                 InitializeWithWindow.Initialize(savePicker, windowHandle);
@@ -302,7 +302,7 @@ namespace AskDB.App
         }
         private async Task LoadKeywords()
         {
-            var sqlKeywords = await StringTool.GetLines(@$"Assets\SqlKeywords\{Analyzer.DatabaseExtractor.DatabaseType.ToString()}.txt");
+            var sqlKeywords = await StringTool.GetLines(@$"Assets\SqlKeywords\{Analyzer.DatabaseExtractor.DatabaseType}.txt");
             var tableNames = Analyzer.SelectedTables.Select(t => t.Name);
             var columnNames = Analyzer.SelectedTables.AsParallel().SelectMany(table => table.Columns.Select(column => column.Name));
 
