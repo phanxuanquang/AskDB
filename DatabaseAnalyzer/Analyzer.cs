@@ -3,6 +3,7 @@ using DatabaseAnalyzer.Models;
 using GenAI;
 using Helper;
 using Newtonsoft.Json;
+using System.Globalization;
 using System.Text;
 
 namespace DatabaseAnalyzer
@@ -11,7 +12,7 @@ namespace DatabaseAnalyzer
     {
         public const byte MaxTotalTables = 100;
         public const short MaxTotalColumns = 500;
-        public const byte MaxTotalQueries = 100;
+        public const byte MaxTotalQueries = 50;
         public static List<Table> SelectedTables = new List<Table>();
         public static DatabaseExtractor DatabaseExtractor;
 
@@ -59,11 +60,11 @@ namespace DatabaseAnalyzer
         {
             var promptBuilder = new StringBuilder();
             var databaseType = Extractor.GetEnumDescription(type);
-            var englishQuery = !useSql ? "human language (English)" : databaseType;
+            var englishQuery = !useSql ? $"human language ({CultureInfo.CurrentCulture.EnglishName.Split(' ')[0]})" : databaseType;
 
             promptBuilder.AppendLine($"You are a Database Administrator with over 20 years of experience working with {databaseType} databases on large scale projects.");
             promptBuilder.AppendLine("I am someone who knows nothing about SQL.");
-            promptBuilder.AppendLine($"I will provide you with the table structure of my database. You have to suggest at least {MaxTotalQueries} common simple {englishQuery} queries related to my database structure.");
+            promptBuilder.AppendLine($"I will provide you with the table structure of my database. You have to suggest at least {MaxTotalQueries} common {englishQuery} queries related to my database structure.");
             promptBuilder.AppendLine("Your response must be a List<string> in C# programming language.");
             promptBuilder.AppendLine("To help you understand my command and do the task more effectively, here is an example:");
             promptBuilder.AppendLine("Your response:");

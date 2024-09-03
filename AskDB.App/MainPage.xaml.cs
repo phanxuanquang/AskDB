@@ -134,7 +134,7 @@ namespace AskDB.App
 
                 if (!StringTool.IsNull(query))
                 {
-                    var source = Cache.Get(k => k.StartsWith(query.Trim(), StringComparison.OrdinalIgnoreCase)
+                    var source = Cache.Get(k => k.Contains(query, StringComparison.OrdinalIgnoreCase)
                         && !Generator.CanBeGeminiApiKey(k)
                         && !k.Contains(Generator.ApiKey, StringComparison.OrdinalIgnoreCase)
                         && !k.Contains(Analyzer.DatabaseExtractor.ConnectionString, StringComparison.OrdinalIgnoreCase)
@@ -166,13 +166,13 @@ namespace AskDB.App
 
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
-            SetLoadingState(true);
-
             if (!Analyzer.IsSqlSafe(queryBox.Text))
             {
                 await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, "You must not execute this dangerous command.", "Forbidden");
                 return;
             }
+
+            SetLoadingState(true);
 
             var selectedTableNames = tablesListView.SelectedItems.Cast<string>();
             Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();

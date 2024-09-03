@@ -61,8 +61,8 @@
                     </Expander.Content>
                 </Expander>
 
-                <local:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <StackPanel x:Name="mainPanel" Visibility="Collapsed">
+                <local:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20"/>
+                <StackPanel x:Name="mainPanel" Visibility="Collapsed" Margin="0,0,0,10">
                     <Grid Margin="0,0,0,20">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
