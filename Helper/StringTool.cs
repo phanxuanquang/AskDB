@@ -1,4 +1,6 @@
-﻿namespace Helper
+﻿using Markdig;
+
+namespace Helper
 {
     public static class StringTool
     {
@@ -49,6 +51,11 @@
             }
 
             return false;
+        }
+
+        public static string AsPlainText(string markdown)
+        {
+            return Markdown.ToPlainText(markdown).Trim();
         }
     }
 }

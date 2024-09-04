@@ -204,7 +204,7 @@ namespace AskDB.App
             }
             else
             {
-                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, "Invalid API Key. Please try again.");
+                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Invalid API Key. Please try again.");
             }
 
             WinUiHelper.SetLoading(false, sender as Button, apiKeyInputLoadingOverlay, apiInputPanel);
@@ -230,7 +230,7 @@ namespace AskDB.App
 
                 if (Analyzer.DatabaseExtractor.Tables.Count == 0)
                 {
-                    await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, "Cannot find any tables in this database", "Not Found");
+                    await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Cannot find any tables in this database", "Not Found");
                     WinUiHelper.SetLoading(false, sender as Button, dbInputLoadingOverlay, dbInputPanel);
                 }
                 else
@@ -245,7 +245,7 @@ namespace AskDB.App
             }
             catch (Exception ex)
             {
-                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
+                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, ex.Message);
             }
             finally
             {
@@ -282,7 +282,7 @@ namespace AskDB.App
             }
             catch (Exception ex)
             {
-                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
+                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, ex.Message);
             }
         }
         private void TablesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -327,7 +327,7 @@ namespace AskDB.App
             }
             catch (Exception ex)
             {
-                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
+                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, ex.Message);
             }
         }
 

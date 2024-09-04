@@ -40,6 +40,7 @@ namespace AskDB.App
             sendButton.Click += SendButton_Click;
             showSqlButton.Click += ShowSqlButton_Click;
             exportButton.Click += ExportButton_Click;
+            showInsightButton.Click += ShowInsightButton_Click;
             backButton.Click += BackButton_Click;
         }
 
@@ -58,8 +59,8 @@ namespace AskDB.App
 
                 await Analyzer.PrepareSampleData(10);
 
-                var sqlQueriesTask = Analyzer.GetSuggestedQueries(Generator.ApiKey, Analyzer.DatabaseExtractor.DatabaseType, true);
-                var englishQueriesTask = Analyzer.GetSuggestedQueries(Generator.ApiKey, Analyzer.DatabaseExtractor.DatabaseType, false);
+                var sqlQueriesTask = Analyzer.GetSuggestedQueries(true);
+                var englishQueriesTask = Analyzer.GetSuggestedQueries(false);
 
                 await Task.WhenAll(Cache.Set(await sqlQueriesTask), Cache.Set(await englishQueriesTask));
 
@@ -71,7 +72,7 @@ namespace AskDB.App
             }
             catch (Exception ex)
             {
-                var result = await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
+                var result = await WinUiHelper.ShowDialog(RootGrid.XamlRoot, ex.Message);
                 if (result == ContentDialogResult.Primary)
                 {
                     Frame.Navigate(typeof(DbConnectPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
@@ -272,7 +273,45 @@ namespace AskDB.App
             }
             catch (Exception ex)
             {
-                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
+                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, ex.Message);
+            }
+        }
+        private async void ShowInsightButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_resultDataTable != null && _resultDataTable.Rows.Count != 0)
+            {
+                var showInsight = new ContentDialog
+                {
+                    XamlRoot = RootGrid.XamlRoot,
+                    Title = "Quick Insight",
+                    Content = "AskDB will analyze your data to provide some quick insights. This action also reveals your data to AskDB.\n\nAre you sure to continue?",
+                    PrimaryButtonText = "Yes",
+                    CloseButtonText = "No",
+                    DefaultButton = ContentDialogButton.Primary
+                };
+
+                if (await showInsight.ShowAsync() == ContentDialogResult.Primary)
+                {
+                    SetLoadingState(true, "Analyzing your data");
+                    try
+                    {
+                        var insight = await Analyzer.GetQuickInsight(queryBox.Text.Trim(), _resultDataTable);
+                        await WinUiHelper.ShowDialog(RootGrid.XamlRoot, insight, "Quick Insight");
+                    }
+                    catch (Exception ex)
+                    {
+                        await WinUiHelper.ShowDialog(RootGrid.XamlRoot, ex.Message, "Error");
+                    }
+                    finally
+                    {
+                        SetLoadingState(false, string.Empty);
+                    }
+
+                }
+            }
+            else
+            {
+                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "There is not any data to analyze.", "Data Not Found");
             }
         }
         private async void BackButton_Click(object sender, RoutedEventArgs e)
@@ -283,7 +322,7 @@ namespace AskDB.App
             }
             catch (Exception ex)
             {
-                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
+                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, ex.Message);
             }
         }
         #endregion
@@ -311,19 +350,19 @@ namespace AskDB.App
             try
             {
                 Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => tablesListView.SelectedItems.Contains(t.Name)).ToList();
-                commander = await Analyzer.GetSql(Generator.ApiKey, query, Analyzer.DatabaseExtractor.DatabaseType);
+                commander = await Analyzer.GetSql(query);
             }
             catch (Exception ex)
             {
-                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, ex.Message);
-                _resultDataTable = null;
+                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, ex.Message);
+                SetButtonVisibility(false);
                 return;
             }
 
             if (!commander.IsSql)
             {
-                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, commander.Output, "Invalid Query");
-                _resultDataTable = null;
+                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, commander.Output, "Invalid Query");
+                SetButtonVisibility(false);
                 return;
             }
 
@@ -355,10 +394,9 @@ namespace AskDB.App
             }
             catch (Exception ex)
             {
-                await WinUiHelper.ShowErrorDialog(RootGrid.XamlRoot, $"SQL Command: {commander.Output}\n\n{ex.Message}");
+                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, $"SQL Command: {commander.Output}\n\n{ex.Message}");
 
                 SetButtonVisibility(false);
-                _resultDataTable = null;
             }
         }
 
@@ -373,8 +411,12 @@ namespace AskDB.App
         }
         private void SetButtonVisibility(bool isVisible)
         {
-            exportButton.Visibility = showSqlButton.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
-            exportButton.IsEnabled = showSqlButton.IsEnabled = isVisible;
+            exportButton.Visibility = showInsightButton.Visibility = showSqlButton.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+            exportButton.IsEnabled = showInsightButton.IsEnabled = showSqlButton.IsEnabled = isVisible;
+            if (!isVisible)
+            {
+                _resultDataTable = null;
+            }
         }
         #endregion
     }
