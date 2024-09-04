@@ -56,12 +56,12 @@ namespace AskDB.App
                 queryBox.Text = string.Empty;
                 SetLoadingState(true);
 
-                await Task.WhenAll(LoadSuggestedQueries(), LoadKeywords());
+                var sqlQueriesTask = Analyzer.GetSuggestedQueries(Generator.ApiKey, Analyzer.DatabaseExtractor.DatabaseType, true);
+                var englishQueriesTask = Analyzer.GetSuggestedQueries(Generator.ApiKey, Analyzer.DatabaseExtractor.DatabaseType, false);
 
-                Cache.Data = await Task.Run(() =>
-                {
-                    return Cache.Data.AsParallel().OrderByDescending(k => k).ToHashSet();
-                });
+                await Task.WhenAll(Cache.Set(await sqlQueriesTask), Cache.Set(await englishQueriesTask));
+
+                Cache.Data = Cache.Data.AsParallel().OrderByDescending(k => k).ToHashSet();
 
                 LoadTables();
 
@@ -300,28 +300,6 @@ namespace AskDB.App
                 selectAllCheckbox.IsChecked = true;
             }
         }
-        private async Task LoadKeywords()
-        {
-            var sqlKeywords = await StringTool.GetLines(@$"Assets\SqlKeywords\{Analyzer.DatabaseExtractor.DatabaseType}.txt");
-            var tableNames = Analyzer.SelectedTables.Select(t => t.Name);
-            var columnNames = Analyzer.SelectedTables.AsParallel().SelectMany(table => table.Columns.Select(column => column.Name));
-
-            await Cache.Set(sqlKeywords);
-            await Cache.Set(tableNames);
-            await Cache.Set(columnNames);
-        }
-        private async Task LoadSuggestedQueries()
-        {
-            var sqlQueriesTask = Analyzer.GetSuggestedQueries(Generator.ApiKey, Analyzer.DatabaseExtractor.DatabaseType, true);
-            var englishQueriesTask = Analyzer.GetSuggestedQueries(Generator.ApiKey, Analyzer.DatabaseExtractor.DatabaseType, false);
-
-            await Task.WhenAll(sqlQueriesTask, englishQueriesTask);
-
-            var suggestedSqlQueries = await sqlQueriesTask;
-            var suggestedEnglishQueries = await englishQueriesTask;
-
-            await Task.WhenAll(Cache.Set(suggestedSqlQueries), Cache.Set(suggestedEnglishQueries));
-        }
 
         private async Task ExecuteAnalyzedQuery(string query)
         {
@@ -352,7 +330,7 @@ namespace AskDB.App
                 {
                     XamlRoot = RootGrid.XamlRoot,
                     Title = "Warning",
-                    Content = "This command can make changes to your database.\nAre you are to execute?",
+                    Content = "This command can make changes to your database.\nAre you sure to execute?",
                     PrimaryButtonText = "No",
                     SecondaryButtonText = "Yes",
                     DefaultButton = ContentDialogButton.Primary

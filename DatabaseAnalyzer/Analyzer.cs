@@ -11,7 +11,7 @@ namespace DatabaseAnalyzer
     public static class Analyzer
     {
         public const short MaxTotalTables = 500;
-        public const byte MaxTotalQueries = 30;
+        public const byte MaxTotalQueries = 50;
         public static List<Table> SelectedTables = new();
         public static DatabaseExtractor DatabaseExtractor;
 
@@ -92,30 +92,21 @@ namespace DatabaseAnalyzer
 
         public static bool IsSqlSafe(string sqlCommand)
         {
-            var unsafeKeywords = new string[]
-            {
-                "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE",
-                "CREATE", "EXEC", "EXECUTE", "SP_EXECUTESQL", "XPCMDSHELL",
-                "SYSCOLUMNS", "SYSOBJECTS", "SYSUSERS", "GRANT", "REVOKE",
-                "DENY", "ADD", "SET", "INTO", "OPENROWSET", "OPENQUERY",
-                "OPENDATASOURCE", "BACKUP", "RESTORE", "RECONFIGURE",
-                "SHUTDOWN", "KILL", "DBCC", "BULK INSERT", "UPDATETEXT",
-                "WRITETEXT", "LOCK", "CHECKPOINT", "PARTITION", "REINDEX",
-                "REVERT", "ROLLBACK", "SAVE", "SECURITYAUDIT", "TRIGGER",
-                "FUNC", "PROCEDURE", "VIEW", "INDEX", "CONSTRAINT", "SCHEMA",
-                "DATABASE", "TABLE", "TRANSACTION", "USE", "OPEN", "FETCH",
-                "DEALLOCATE", "DECLARE", "RAISERROR", "DISABLE", "ENABLE",
-                "ASMRESTORE", "ASSEMBLYPROPERTY", "ADDMEMBER", "DROPFACET",
-                "ADDROLE", "ADDLOGIN", "ADDUSER", "CHANGETRACKING",
-                "CONTAINS", "CONTAINSTABLE", "EVENTDATA", "FILETABLE",
-                "FREETEXTTABLE", "FULLTEXTCATALOGPROPERTY", "FULLTEXTSERVICEPROPERTY",
-                "IDENTITY", "IDENTITYCOL", "IDENT_CURRENT", "IDENT_INCR",
-                "IDENT_SEED", "FORMSOF", "SEMANTICSIMILARITYTABLE",
-                "SEMANTICKEYPHRASETABLE", "PERMISSIONS", "PWDENCRYPT",
-                "PWDCOMPARE", "FORMATMESSAGE", "OPENXML", "PIVOT",
-                "READTEXT", "ROWVERSION", "TABLESAMPLE", "TEXTPTR",
-                "TEXTSIZE", "UPSERT", "MERGE", "REPLACE", "FUNC", "PROCEDURE",
-                "VIEW", "INDEX", "CONSTRAINT", "SCHEMA", "DATABASE", "TABLE"
+            string[] unsafeKeywords = {
+                "INSERT", "UPDATE", "DELETE", "ALTER", "CREATE", "DROP", "TRUNCATE", "MERGE", "REPLACE", "ADD",
+                "MODIFY", "RENAME", "GRANT", "REVOKE", "COMMIT", "ROLLBACK", "SAVEPOINT", "SET", "USE", "LOCK",
+                "UNLOCK", "EXPLAIN", "ANALYZE", "OPTIMIZE", "CHECK", "CASCADE", "REFERENCES", "REINDEX", "VACUUM",
+                "ENABLE", "DISABLE", "ATTACH", "DETACH", "REPAIR", "REBUILD", "INITIATE", "EXTEND", "SHRINK", "TRANSFER",
+                "DISTRIBUTE", "ARCHIVE", "PARTITION", "ADD CONSTRAINT", "DROP CONSTRAINT", "RENAME COLUMN", "ALTER COLUMN",
+                "SET DEFAULT", "UNSET DEFAULT", "CONVERT TO", "ALTER INDEX", "CREATE TABLE", "CREATE INDEX", "CREATE VIEW",
+                "CREATE PROCEDURE", "CREATE FUNCTION", "CREATE TRIGGER", "CREATE SEQUENCE", "ALTER TABLE", "ALTER VIEW",
+                "ALTER PROCEDURE", "ALTER FUNCTION", "ALTER TRIGGER", "ALTER SEQUENCE", "DROP TABLE", "DROP INDEX", "DROP VIEW",
+                "DROP PROCEDURE", "DROP FUNCTION", "DROP TRIGGER", "DROP SEQUENCE", "TRUNCATE TABLE", "SET IDENTITY_INSERT",
+                "RENAME TABLE", "RENAME INDEX", "RENAME VIEW", "RENAME PROCEDURE", "RENAME FUNCTION", "RENAME TRIGGER",
+                "RENAME SEQUENCE", "SET TRANSACTION ISOLATION LEVEL", "BEGIN TRANSACTION", "END TRANSACTION", "BEGIN WORK",
+                "END WORK", "CREATE SCHEMA", "DROP SCHEMA", "ALTER SCHEMA", "CREATE USER", "DROP USER", "ALTER USER",
+                "CREATE ROLE", "DROP ROLE", "ALTER ROLE", "REVOKE ALL PRIVILEGES", "GRANT ALL PRIVILEGES", "DENY", "REVOKE",
+                "CHECK CONSTRAINT", "DISABLE TRIGGER", "ENABLE TRIGGER"
             };
 
             var words = StringTool.GetWords(sqlCommand);
