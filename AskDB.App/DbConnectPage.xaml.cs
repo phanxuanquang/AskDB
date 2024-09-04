@@ -226,6 +226,7 @@ namespace AskDB.App
                     _ => throw new NotSupportedException("Not Supported"),
                 };
                 await Analyzer.DatabaseExtractor.ExtractTables();
+                Analyzer.DatabaseExtractor.Tables = Analyzer.DatabaseExtractor.Tables.OrderBy(t => t.Name).ToList();
 
                 if (Analyzer.DatabaseExtractor.Tables.Count == 0)
                 {

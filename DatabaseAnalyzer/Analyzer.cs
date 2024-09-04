@@ -11,7 +11,7 @@ namespace DatabaseAnalyzer
     public static class Analyzer
     {
         public const short MaxTotalTables = 500;
-        public const byte MaxTotalQueries = 50;
+        public const byte MaxTotalQueries = 30;
         public static List<Table> SelectedTables = new();
         public static DatabaseExtractor DatabaseExtractor;
 
@@ -130,6 +130,5 @@ namespace DatabaseAnalyzer
 
             return true;
         }
-
     }
 }
