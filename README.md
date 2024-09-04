@@ -1,6 +1,6 @@
 # © 2024 Phan Xuan Quang / AskDB
 
-What if you're not a SQL expert? What if you could simply ask your database questions in plain English and get instant answers? 
+What if you're not a SQL expert but a person who need to do ad-hoc data queries but are not technical enough to write SQL queries? What if you could simply ask your database questions in plain English and get instant answers? 
 ![SplashScreen scale-200](https://i.imgur.com/kO68bFg.png)
 Introducing **AskDB**, the revolutionary application that simplifies the way you interact with your SQL databases, designed for both SQL database administrator and those who are new to SQL, AskDB makes querying databases intuitive, effortless, and safe.
 
@@ -53,9 +53,9 @@ Whether you're working with SQL Server, MySQL, PostgreSQL, or SQLite, AskDB has 
 ![image](https://i.imgur.com/t0GbrOh.png)
 
 Accidentally trying to drop a table? AskDB has your back. Our intelligent system detects potentially dangerous queries and stops them in their tracks, protecting your valuable data.
-   - Built-in safeguards to avoid changes to your database and encripted your cached data
+   - The credentials such as API keys, connection strings, your querying history are stored on your local machine in an encrypted format.
+   - For the queries which may make changes to the database, AskDB will ask for your confirmation for the execution.
    - Automatic detection and cancellation of potentially harmful queries
-   - Peace of mind for database administrators and company stakeholders
 
 9. **Export with Ease**
     
