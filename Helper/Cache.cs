@@ -34,14 +34,14 @@
 
                 data = data.Trim();
 
-                if (Data.Contains(data))
+                if (Data.Any(d => d.Equals(data, StringComparison.OrdinalIgnoreCase)))
                 {
                     return;
                 }
 
                 using (StreamWriter sw = new StreamWriter(_cacheFileName, append: true))
                 {
-                    await sw.WriteLineAsync(StringCipher.Encode(data.Trim()));
+                    await sw.WriteLineAsync(StringCipher.Encode(data));
                 }
 
                 Data.Add(data);
@@ -54,11 +54,7 @@
 
         public static IEnumerable<string> Get(Func<string, bool> predicate)
         {
-            return Data.Where(predicate)
-                .OrderByDescending(item => item.All(char.IsUpper))
-                .ThenBy(item => item)
-                .Distinct()
-                .Take(MaxResults);
+            return Data.Where(predicate).OrderBy(k => k).Distinct().Take(MaxResults);
         }
     }
 }

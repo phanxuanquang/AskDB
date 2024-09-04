@@ -41,30 +41,6 @@
             return wordsList;
         }
 
-        public static string GetLastWord(string sentence)
-        {
-            if (IsNull(sentence))
-            {
-                return string.Empty;
-            }
-
-            var words = sentence.Trim().Split(' ');
-
-            return words.Length > 0 ? words[words.Length - 1] : string.Empty;
-        }
-
-        public static string ReplaceLastWord(string text, string oldString, string newString)
-        {
-            int place = text.LastIndexOf(oldString, StringComparison.OrdinalIgnoreCase);
-
-            if (place == -1)
-            {
-                return text;
-            }
-
-            return text.Remove(place, oldString.Length).Insert(place, newString);
-        }
-
         public static bool IsNull(string text)
         {
             if (string.IsNullOrWhiteSpace(text) || string.IsNullOrEmpty(text))

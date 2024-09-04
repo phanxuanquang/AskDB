@@ -54,7 +54,9 @@ namespace AskDB.App
             try
             {
                 queryBox.Text = string.Empty;
-                SetLoadingState(true);
+                SetLoadingState(true, "Analyzing your database structure");
+
+                await Analyzer.PrepareSampleData(10);
 
                 var sqlQueriesTask = Analyzer.GetSuggestedQueries(Generator.ApiKey, Analyzer.DatabaseExtractor.DatabaseType, true);
                 var englishQueriesTask = Analyzer.GetSuggestedQueries(Generator.ApiKey, Analyzer.DatabaseExtractor.DatabaseType, false);
@@ -77,7 +79,7 @@ namespace AskDB.App
             }
             finally
             {
-                SetLoadingState(false);
+                SetLoadingState(false, string.Empty);
             }
         }
 
@@ -164,7 +166,9 @@ namespace AskDB.App
 
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!Analyzer.IsSqlSafe(queryBox.Text))
+            SetLoadingState(true, "Executing your query");
+
+            if (!await Analyzer.IsSqlSafe(queryBox.Text))
             {
                 var warning = new ContentDialog
                 {
@@ -178,11 +182,10 @@ namespace AskDB.App
 
                 if (await warning.ShowAsync() == ContentDialogResult.Primary)
                 {
+                    SetLoadingState(false, string.Empty);
                     return;
                 }
             }
-
-            SetLoadingState(true);
 
             var selectedTableNames = tablesListView.SelectedItems.Cast<string>();
             Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
@@ -220,7 +223,7 @@ namespace AskDB.App
                     resultTable.ItemsSource = collectionObjects;
                 }
 
-                SetLoadingState(false);
+                SetLoadingState(false, string.Empty);
             }
         }
         private async void ShowSqlButton_Click(object sender, RoutedEventArgs e)
@@ -324,7 +327,7 @@ namespace AskDB.App
                 return;
             }
 
-            if (!Analyzer.IsSqlSafe(commander.Output))
+            if (!await Analyzer.IsSqlSafe(commander.Output))
             {
                 var warning = new ContentDialog
                 {
@@ -359,11 +362,11 @@ namespace AskDB.App
             }
         }
 
-        private void SetLoadingState(bool isLoading)
+        private void SetLoadingState(bool isLoading, string message)
         {
             backButton.IsEnabled = !isLoading;
             selectTableExpander.IsEnabled = sendButton.IsEnabled = !isLoading;
-            LoadingOverlay.SetLoading("Analyzing your database . . .", isLoading);
+            LoadingOverlay.SetLoading(message, isLoading);
             LoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
             mainPanel.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
             selectTableExpander.IsExpanded = false;
