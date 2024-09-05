@@ -117,7 +117,7 @@ namespace DatabaseAnalyzer
             promptBuilder.AppendLine(SampleData);
             promptBuilder.AppendLine("Your response:");
 
-            var response = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Pro);
+            var response = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
             return JsonConvert.DeserializeObject<List<string>>(response);
         }
 
@@ -136,7 +136,7 @@ namespace DatabaseAnalyzer
             promptBuilder.AppendLine(data);
             promptBuilder.AppendLine("Your insight from my data and my query:");
 
-            var result = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), false, CreativityLevel.High, GenerativeModel.Gemini_15_Pro);
+            var result = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), false, CreativityLevel.High, GenerativeModel.Gemini_15_Flash);
             return StringTool.AsPlainText(result);
         }
 
