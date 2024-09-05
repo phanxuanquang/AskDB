@@ -8,6 +8,14 @@
 
 Introducing **AskDB**, the revolutionary application that simplifies the way you interact with your SQL databases, designed for both SQL database administrator, those who are new to SQL, and those who want to do data analysis, AskDB makes querying databases intuitive, effortless, and safe.
 
+## 💼 Who Benefits from AskDB
+
+- **Business Analysts**: Get the data you need without waiting for the IT department.
+- **Data Scientists**: Quickly explore and understand new databases without mastering each one's SQL flavor.
+- **Managers**: Make data-driven decisions by easily querying your company's databases.
+- **Developers**: Boost your productivity with AI-assisted query writing and database exploration.
+- **Database Administrators**: Empower your team while maintaining control and safety.
+  
 ## :blue_book: Usage Guidance
 
 [![Guidance Video](https://i.imgur.com/DEnWBTg.jpeg)](https://www.youtube.com/embed/AGwTxgod9jQ)
@@ -16,13 +24,6 @@ Introducing **AskDB**, the revolutionary application that simplifies the way you
 - Step 2: Run the **AskDB.exe** file (skip the **Unknown Published** warning from Windows if any).
 - Step 3: Follow the instruction to get started.
 - Step 4: Ask AskDB everything about your SQL database.
-
-## 💼 Who Benefits from AskDB
-- **Business Analysts**: Get the data you need without waiting for the IT department.
-- **Data Scientists**: Quickly explore and understand new databases without mastering each one's SQL flavor.
-- **Managers**: Make data-driven decisions by easily querying your company's databases.
-- **Developers**: Boost your productivity with AI-assisted query writing and database exploration.
-- **Database Administrators**: Empower your team while maintaining control and safety.
 
 ## 🌟 How AskDB Helps You
 
