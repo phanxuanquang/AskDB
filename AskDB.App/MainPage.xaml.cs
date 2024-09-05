@@ -59,27 +59,21 @@ namespace AskDB.App
 
                 await Analyzer.PrepareSampleData(10);
 
-                var sqlQueriesTask = Analyzer.GetSuggestedQueries(true);
-                var englishQueriesTask = Analyzer.GetSuggestedQueries(false);
+                var sqlQueries = await Analyzer.GetSuggestedQueries(true);
+                await Cache.Set(sqlQueries);
 
-                await Task.WhenAll(Cache.Set(await sqlQueriesTask), Cache.Set(await englishQueriesTask));
-
-                Cache.Data = Cache.Data.AsParallel().OrderByDescending(k => k).ToHashSet();
-
-                LoadTables();
-
-                IsFirstEnter = false;
+                var englishQueries = await Analyzer.GetSuggestedQueries(false);
+                await Cache.Set(englishQueries);
             }
-            catch (Exception ex)
+            catch
             {
-                var result = await WinUiHelper.ShowDialog(RootGrid.XamlRoot, ex.Message);
-                if (result == ContentDialogResult.Primary)
-                {
-                    Frame.Navigate(typeof(DbConnectPage), null, new SlideNavigationTransitionInfo { Effect = SlideNavigationTransitionEffect.FromLeft });
-                }
+                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Cannot load all suggested queries.", "Warning");
             }
             finally
             {
+                Cache.Data = Cache.Data.AsParallel().OrderByDescending(k => k).ToHashSet();
+                LoadTables();
+                IsFirstEnter = false;
                 SetLoadingState(false, string.Empty);
             }
         }

@@ -331,6 +331,25 @@ namespace AskDB.App
             try
             {
                 var selectedTableNames = tablesListView.SelectedItems.Cast<string>();
+
+                if (selectedTableNames.Count() > 10)
+                {
+                    var dkm = new ContentDialog
+                    {
+                        XamlRoot = RootGrid.XamlRoot,
+                        Title = "Warning",
+                        Content = "Selecting too many tables may lead to inappropriate query suggestions, increasing analysis time, decreasing result quality, and unexpected processing errors.\n\nFor the best result, you should not select more than 10 tables, and make sure that you only select the necessary tables.",
+                        PrimaryButtonText = "Cancel",
+                        SecondaryButtonText = "Continue",
+                        DefaultButton = ContentDialogButton.Primary
+                    };
+
+                    if (await dkm.ShowAsync() == ContentDialogResult.Primary)
+                    {
+                        return;
+                    }
+                }
+
                 Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
                 MainPage.IsFirstEnter = true;
                 IsFirstEnter = false;

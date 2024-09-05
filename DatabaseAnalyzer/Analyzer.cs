@@ -12,7 +12,7 @@ namespace DatabaseAnalyzer
     public static class Analyzer
     {
         public const short MaxTotalTables = 500;
-        public const short MaxTotalColumns = 5000;
+        public const short MaxTotalColumns = 10000;
         public const byte MaxTotalQueries = 50;
         public static List<Table> SelectedTables = new();
         public static DatabaseExtractor DatabaseExtractor;

@@ -101,7 +101,7 @@
                         </StackPanel>
                     </Expander.Content>
                 </Expander>
-                <Button x:Name="startBtn" IsEnabled="False" HorizontalAlignment="Center" Style="{StaticResource AccentButtonStyle}" Content="START" FontWeight="SemiBold" Height="35" Width="100" Click="StartButton_Click"/>
+                <Button x:Name="startBtn" IsEnabled="False" HorizontalAlignment="Center" Style="{StaticResource AccentButtonStyle}" Content="START" FontWeight="SemiBold" Height="35" Width="100"/>
             </StackPanel>
 
         </Border>
