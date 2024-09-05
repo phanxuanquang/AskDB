@@ -1,6 +1,6 @@
 # © 2024 Phan Xuan Quang / AskDB
 
-- What if you're not a SQL expert but a person who need to do ad-hoc data queries but are not technical enough to write SQL queries? 
+- What if you're a person who need to do ad-hoc data queries but are not technical enough to write SQL queries? 
 - What if you could simply ask your database questions in plain English and get instant answers?
 - What if you even don't know what to do with your raw data?
   
