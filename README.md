@@ -22,16 +22,24 @@ Introducing **AskDB**, the revolutionary application that simplifies the way you
 
 ## 🌟 How AskDB Helps You
 
-1. **Natural Language Querying**
+**Natural Language Querying**
 
 ![image](https://i.imgur.com/Klito4H.png)
 
 AskDB analyzes your database structure and provides suggestions for both natural language queries and SQL commands.
    - No more struggling with complex SQL syntax
    - Simply describe what you want to know, and AskDB will help to get the results.
+   - Perfect for the ones who don't know what to query
+
+**Instant Insight From Your Data**
+
+![image](https://i.imgur.com/Ov1iIBE.png)
+
+AskDB can analyzes your output data and give some quick insight to help you with the decision making.
+   - Get the instant insight from your data with only one click
    - Perfect for managers, analysts, and anyone who needs quick data insights
 
-3. **Seamless Multi-Database Connectivity**
+**Seamless Multi-Database Connectivity**
 
 ![image](https://i.imgur.com/TRAEH89.png)
 
@@ -39,7 +47,7 @@ Whether you're working with SQL Server, MySQL, PostgreSQL, or SQLite, AskDB has 
    - Seamlessly connects with SQL Server, MySQL, PostgreSQL, and SQLite
    - Be able to analyze up to 500 tables
 
-5. **Intelligent Query Suggestions**
+**Intelligent Query Suggestions**
 
 ![image](https://i.imgur.com/sCOZY8P.png)
 ![image](https://i.imgur.com/iIxOpYE.png)
@@ -48,7 +56,7 @@ Whether you're working with SQL Server, MySQL, PostgreSQL, or SQLite, AskDB has 
    - Get query suggestions in both SQL and natural language, customized to your computer's language settings!
    - Remember what you inputed for faster typing and effectively querying
 
-7. **Safety First**
+**Safety First**
    
 ![image](https://i.imgur.com/t0GbrOh.png)
 
@@ -57,7 +65,7 @@ Accidentally trying to drop a table? AskDB has your back. Our intelligent system
    - For the queries which may make changes to the database, AskDB will ask for your confirmation for the execution.
    - Automatic detection and cancellation of potentially harmful queries
 
-9. **Export with Ease**
+**Export with Ease**
     
 ![image](https://i.imgur.com/poq5bP2.png)
 
