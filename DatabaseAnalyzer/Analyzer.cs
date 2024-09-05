@@ -12,6 +12,7 @@ namespace DatabaseAnalyzer
     public static class Analyzer
     {
         public const short MaxTotalTables = 500;
+        public const short MaxTotalColumns = 5000;
         public const byte MaxTotalQueries = 50;
         public static List<Table> SelectedTables = new();
         public static DatabaseExtractor DatabaseExtractor;
@@ -93,8 +94,7 @@ namespace DatabaseAnalyzer
             promptBuilder.AppendLine("I am someone who knows nothing about SQL.");
             promptBuilder.AppendLine($"I will provide you with the table structure of my database with some sample data. You have to suggest at least {MaxTotalQueries} common and completely different {englishQuery} queries related to my database structure.");
             promptBuilder.AppendLine("Your response must be a List<string> in C# programming language.");
-            promptBuilder.AppendLine("To help you understand my command and do the task more effectively, here is an example:");
-            promptBuilder.AppendLine("Your response:");
+            promptBuilder.AppendLine("In order to help you understand my command and do the task more effectively, here is an example for your response:");
             promptBuilder.AppendLine("[");
             if (useSql)
             {
@@ -117,7 +117,7 @@ namespace DatabaseAnalyzer
             promptBuilder.AppendLine(SampleData);
             promptBuilder.AppendLine("Your response:");
 
-            var response = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
+            var response = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Pro);
             return JsonConvert.DeserializeObject<List<string>>(response);
         }
 
@@ -129,12 +129,14 @@ namespace DatabaseAnalyzer
             promptBuilder.AppendLine("You are a Senior Data Analyst and a Data Scientist with over 20 years of experience working in large-scaled projects.");
             promptBuilder.AppendLine("I am a CEO and I need you to provide some quick insight from my provided data, which is very helpful for my decision.");
             promptBuilder.AppendLine("I will provide you with my query (can be SQL or natural language) and my data, please help me to analyze and then provide some useful insight. Your analysis must be easy to understand for even non-tech people like me, have less than 250 words, and be wrapped into only one paragraph.");
-            promptBuilder.AppendLine($"My query: {query}");
+            promptBuilder.AppendLine("In order to help you understand my command and do the task more effectively, here is the table schemas of my database:");
+            promptBuilder.AppendLine(TablesAsString(SelectedTables));
+            promptBuilder.AppendLine($"My query is: '{query}'");
             promptBuilder.AppendLine("My data:");
             promptBuilder.AppendLine(data);
             promptBuilder.AppendLine("Your insight from my data and my query:");
 
-            var result = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), false, CreativityLevel.High, GenerativeModel.Gemini_15_Flash);
+            var result = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), false, CreativityLevel.High, GenerativeModel.Gemini_15_Pro);
             return StringTool.AsPlainText(result);
         }
 
@@ -226,6 +228,5 @@ namespace DatabaseAnalyzer
 
             SampleData = sb.ToString().Trim();
         }
-
     }
 }

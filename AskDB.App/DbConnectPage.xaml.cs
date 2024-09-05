@@ -291,8 +291,19 @@ namespace AskDB.App
             {
                 forwardButton.IsEnabled = false;
             }
+
             selectAllCheckbox.IsChecked = tablesListView.SelectedItems.Count == Analyzer.DatabaseExtractor.Tables.Count;
-            startBtn.IsEnabled = tablesListView.SelectedItems.Count > 0 && tablesListView.SelectedItems.Count <= Analyzer.MaxTotalTables;
+
+            var selectedTableNames = tablesListView.SelectedItems.Cast<string>();
+            var totalColumns = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).Sum(table => table.Columns.Count);
+            if (totalColumns > Analyzer.MaxTotalColumns || tablesListView.SelectedItems.Count > Analyzer.MaxTotalTables)
+            {
+                startBtn.IsEnabled = false;
+            }
+            else
+            {
+                startBtn.IsEnabled = true;
+            }
         }
 
         private void SelectAllCheckbox_Click(object sender, RoutedEventArgs e)

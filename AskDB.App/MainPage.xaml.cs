@@ -163,6 +163,17 @@ namespace AskDB.App
         private void TablesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             selectAllCheckbox.IsChecked = tablesListView.SelectedItems.Count == Analyzer.DatabaseExtractor.Tables.Count;
+
+            var selectedTableNames = tablesListView.SelectedItems.Cast<string>();
+            var totalColumns = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).Sum(table => table.Columns.Count);
+            if (totalColumns > Analyzer.MaxTotalColumns || tablesListView.SelectedItems.Count > Analyzer.MaxTotalTables)
+            {
+                sendButton.IsEnabled = queryBox.IsEnabled = false;
+            }
+            else
+            {
+                sendButton.IsEnabled = queryBox.IsEnabled = true;
+            }
         }
 
         private async void SendButton_Click(object sender, RoutedEventArgs e)
@@ -296,11 +307,12 @@ namespace AskDB.App
                     try
                     {
                         var insight = await Analyzer.GetQuickInsight(queryBox.Text.Trim(), _resultDataTable);
+                        SetLoadingState(false, string.Empty);
                         await WinUiHelper.ShowDialog(RootGrid.XamlRoot, insight, "Quick Insight");
                     }
                     catch (Exception ex)
                     {
-                        await WinUiHelper.ShowDialog(RootGrid.XamlRoot, ex.Message, "Error");
+                        await WinUiHelper.ShowDialog(RootGrid.XamlRoot, $"{ex.Message}\n\nTry again after 1 minute!");
                     }
                     finally
                     {
