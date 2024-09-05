@@ -57,17 +57,18 @@ namespace AskDB.App
                 queryBox.Text = string.Empty;
                 SetLoadingState(true, "Analyzing your database structure");
 
-                await Analyzer.PrepareSampleData(10);
+                var prepareSampleTask = Analyzer.PrepareSampleData(10);
+                var sqlQueryTask = Analyzer.GetSuggestedQueries(true);
+                var englishQueryTask = Analyzer.GetSuggestedQueries(false);
 
-                var sqlQueries = await Analyzer.GetSuggestedQueries(true);
-                await Cache.Set(sqlQueries);
+                await Task.WhenAll(prepareSampleTask, sqlQueryTask, englishQueryTask);
 
-                var englishQueries = await Analyzer.GetSuggestedQueries(false);
-                await Cache.Set(englishQueries);
+                await Cache.Set(sqlQueryTask.Result);
+                await Cache.Set(englishQueryTask.Result);
             }
             catch
             {
-                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Cannot load all suggested queries.", "Warning");
+                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Cannot load suggested queries. Try starting again in the previous page if you need the suggested queries.", "Warning");
             }
             finally
             {

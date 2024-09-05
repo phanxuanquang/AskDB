@@ -89,10 +89,11 @@ namespace DatabaseAnalyzer
             var promptBuilder = new StringBuilder();
             var databaseType = DatabaseExtractor.DatabaseType.ToString();
             var englishQuery = !useSql ? $"human language ({CultureInfo.CurrentCulture.EnglishName.Split(' ')[0]})" : databaseType;
+            var role = !useSql ? "Senor Data Analyst" : "Database Administrator";
 
-            promptBuilder.AppendLine($"You are a Database Administrator with over 20 years of experience working with {databaseType} databases on large scale projects.");
-            promptBuilder.AppendLine("I am someone who knows nothing about SQL.");
-            promptBuilder.AppendLine($"I will provide you with the table structure of my database with some sample data. You have to suggest at least {MaxTotalQueries} common and completely different {englishQuery} queries related to my database structure.");
+            promptBuilder.AppendLine($"You are a {role} with over 20 years of experience working with {databaseType} databases on large-scaled projects.");
+            promptBuilder.AppendLine("I am a CEO who knows nothing about SQL or data analysis, but I want to use my data for the decision making purposes.");
+            promptBuilder.AppendLine($"I will provide you with the table structure of my database with some sample data. You have to suggest at least {MaxTotalQueries} common and completely different {englishQuery} queries from simple level to complex level based on my database structure.");
             promptBuilder.AppendLine("Your response must be a List<string> in C# programming language.");
             promptBuilder.AppendLine("In order to help you understand my command and do the task more effectively, here is an example for your response:");
             promptBuilder.AppendLine("[");
