@@ -40,7 +40,7 @@ AskDB analyzes your database structure and provides suggestions for both natural
 
 ![image](https://i.imgur.com/Ov1iIBE.png)
 
-AskDB can analyzes your output data and give some quick insight to help you with the decision making.
+AskDB can analyze your output data and give some quick insight to help you with the decision making.
    - Get the instant insight from your data with only one click
    - Perfect for managers, analysts, and anyone who needs quick data insights
 
