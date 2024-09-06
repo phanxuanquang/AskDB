@@ -20,56 +20,52 @@ namespace DatabaseAnalyzer.Extractors
 
         public override async Task ExtractTables()
         {
-            using (var connection = new MySqlConnection(ConnectionString))
+            using var connection = new MySqlConnection(ConnectionString);
+            await connection.OpenAsync();
+
+            var tables = new ConcurrentDictionary<string, Table>();
+
+            var rows = await connection.QueryAsync<dynamic>(TableStructureQuery);
+            foreach (var row in rows)
             {
-                await connection.OpenAsync();
+                string tableName = row.table_name;
+                string columnName = row.column_name;
+                string dataType = row.data_type;
+                int? maxLength = row.character_maximum_length;
+                bool isNullable = row.is_nullable == "YES";
+                string defaultValue = row.column_default;
 
-                var tables = new ConcurrentDictionary<string, Table>();
-
-                var rows = await connection.QueryAsync<dynamic>(TableStructureQuery);
-                foreach (var row in rows)
+                var column = new Column
                 {
-                    string tableName = row.table_name;
-                    string columnName = row.column_name;
-                    string dataType = row.data_type;
-                    int? maxLength = row.character_maximum_length;
-                    bool isNullable = row.is_nullable == "YES";
-                    string defaultValue = row.column_default;
+                    Name = columnName,
+                    DataType = dataType,
+                    MaxLength = maxLength,
+                    IsNullable = isNullable,
+                    DefaultValue = defaultValue
+                };
 
-                    var column = new Column
+                tables.AddOrUpdate(tableName,
+                    new Table { Name = tableName, Columns = [column] },
+                    (_, table) =>
                     {
-                        Name = columnName,
-                        DataType = dataType,
-                        MaxLength = maxLength,
-                        IsNullable = isNullable,
-                        DefaultValue = defaultValue
-                    };
-
-                    tables.AddOrUpdate(tableName,
-                        new Table { Name = tableName, Columns = new List<Column> { column } },
-                        (_, table) =>
-                        {
-                            table.Columns.Add(column);
-                            return table;
-                        });
-                }
-
-                Tables = tables.Values.ToList();
+                        table.Columns.Add(column);
+                        return table;
+                    });
             }
+
+            Tables = [.. tables.Values];
         }
 
         public override async Task<DataTable> Execute(string sqlQuery)
         {
-            using (var connection = new MySqlConnection(ConnectionString))
+            using var connection = new MySqlConnection(ConnectionString);
+            var dataTable = new DataTable();
+            await connection.OpenAsync();
+            using (var reader = await connection.ExecuteReaderAsync(sqlQuery))
             {
-                var dataTable = new DataTable();
-                await connection.OpenAsync();
-                using (var reader = await connection.ExecuteReaderAsync(sqlQuery))
-                {
-                    dataTable.Load(reader);
-                }
-                return dataTable;
+                dataTable.Load(reader);
             }
+            return dataTable;
         }
     }
 

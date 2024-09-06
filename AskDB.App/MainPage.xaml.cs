@@ -72,7 +72,7 @@ namespace AskDB.App
             }
             finally
             {
-                Cache.Data = Cache.Data.AsParallel().OrderByDescending(k => k).ToHashSet();
+                Cache.Data = [.. Cache.Data.AsParallel().OrderByDescending(k => k)];
                 LoadTables();
                 IsFirstEnter = false;
                 SetLoadingState(false, string.Empty);
@@ -175,7 +175,7 @@ namespace AskDB.App
         {
             SetLoadingState(true, "Executing your query");
 
-            if (!await Analyzer.IsSqlSafe(queryBox.Text))
+            if (!Analyzer.IsSqlSafe(queryBox.Text))
             {
                 var warning = new ContentDialog
                 {
@@ -286,11 +286,12 @@ namespace AskDB.App
         {
             if (_resultDataTable != null && _resultDataTable.Rows.Count != 0)
             {
+                var query = queryBox.Text.Trim();
                 var showInsight = new ContentDialog
                 {
                     XamlRoot = RootGrid.XamlRoot,
                     Title = "Quick Insight",
-                    Content = "AskDB will analyze your data to provide some quick insights. This action also reveals your data to AskDB.\n\nAre you sure to continue?",
+                    Content = $"AskDB will analyze your data to provide some quick insights. This action also reveals your data to AskDB. The insight is based on the query: '{query}'\n\nAre you sure to continue?",
                     PrimaryButtonText = "Yes",
                     CloseButtonText = "No",
                     DefaultButton = ContentDialogButton.Primary
@@ -301,13 +302,13 @@ namespace AskDB.App
                     SetLoadingState(true, "Analyzing your data");
                     try
                     {
-                        var insight = await Analyzer.GetQuickInsight(queryBox.Text.Trim(), _resultDataTable);
+                        var insight = await Analyzer.GetQuickInsight(query, _resultDataTable);
                         SetLoadingState(false, string.Empty);
                         await WinUiHelper.ShowDialog(RootGrid.XamlRoot, insight, "Quick Insight");
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
-                        await WinUiHelper.ShowDialog(RootGrid.XamlRoot, $"{ex.Message}\n\nTry again after 1 minute!");
+                        await WinUiHelper.ShowDialog(RootGrid.XamlRoot, $"Cannot analyze your data. Please try again.");
                     }
                     finally
                     {
@@ -318,7 +319,7 @@ namespace AskDB.App
             }
             else
             {
-                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "There is not any data to analyze.", "Data Not Found");
+                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "There is not any data to analyze.");
             }
         }
         private async void BackButton_Click(object sender, RoutedEventArgs e)
@@ -373,7 +374,7 @@ namespace AskDB.App
                 return;
             }
 
-            if (!await Analyzer.IsSqlSafe(commander.Output))
+            if (!Analyzer.IsSqlSafe(commander.Output))
             {
                 var warning = new ContentDialog
                 {

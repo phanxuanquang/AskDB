@@ -2,12 +2,14 @@
 {
     public static class Cache
     {
-        private const string _cacheFileName = "AskDB.cache";
-        public const short MaxResults = 10;
+        private static string _cacheFileName;
         public static HashSet<string> Data = new HashSet<string>();
+        public const short MaxResults = 10;
 
         public static async Task Init()
         {
+            _cacheFileName = Path.Combine(Path.GetTempPath(), "AskDB.tmp");
+
             if (!File.Exists(_cacheFileName))
             {
                 await File.Create(_cacheFileName).DisposeAsync();

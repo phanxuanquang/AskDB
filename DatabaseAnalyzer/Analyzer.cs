@@ -14,7 +14,7 @@ namespace DatabaseAnalyzer
         public const short MaxTotalTables = 500;
         public const short MaxTotalColumns = 10000;
         public const byte MaxTotalQueries = 50;
-        public static List<Table> SelectedTables = new();
+        public static List<Table> SelectedTables = [];
         public static DatabaseExtractor DatabaseExtractor;
         private static string SampleData = string.Empty;
 
@@ -27,7 +27,7 @@ namespace DatabaseAnalyzer
         {
             return Task.Run(() =>
             {
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new();
 
                 foreach (DataColumn column in table.Columns)
                 {
@@ -99,14 +99,14 @@ namespace DatabaseAnalyzer
             promptBuilder.AppendLine("[");
             if (useSql)
             {
-                promptBuilder.AppendLine($"    SELECT * FROM Table1 WHERE Condition,");
+                promptBuilder.AppendLine($"    SELECT TOP 100 * FROM Table1 WHERE Condition,");
                 promptBuilder.AppendLine($"    SELECT COUNT(*) FROM Table2 WHERE Condition,");
                 promptBuilder.AppendLine($"    SELECT DISTINCT(*) FROM Table3 WHERE Condition OrderBy Id DESC");
             }
             else
             {
-                promptBuilder.AppendLine($"    Give me all items of the ExampleTableName table,");
-                promptBuilder.AppendLine($"    How many ExampleTableName items that <some_conditions>?,");
+                promptBuilder.AppendLine($"    Give me items of the ExampleTableName table,");
+                promptBuilder.AppendLine($"    How many ExampleTableName items that <some_conditions>,");
                 promptBuilder.AppendLine($"    I want to know 10 latest item of the ExampleTableName that <some_conditions>,");
                 promptBuilder.AppendLine($"    Tell me the items of the ExampleTableName that <some_conditions> after <some_date>");
             }
@@ -141,12 +141,13 @@ namespace DatabaseAnalyzer
             return StringTool.AsPlainText(result);
         }
 
-        public static async Task<bool> IsSqlSafe(string sqlCommand)
+        public static bool IsSqlSafe(string sqlCommand)
         {
-            string[] unsafeKeywords = {
-                "INSERT", "UPDATE", "DELETE", "ALTER", "CREATE", "DROP", "TRUNCATE", "MERGE", "REPLACE", "ADD",
-                "MODIFY", "RENAME", "GRANT", "REVOKE", "COMMIT", "ROLLBACK", "SAVEPOINT", "SET", "USE", "LOCK",
-                "UNLOCK", "EXPLAIN", "ANALYZE", "OPTIMIZE", "CHECK", "CASCADE", "REFERENCES", "REINDEX", "VACUUM",
+            List<string> unsafeKeywords =
+            [
+                "INSERT INTO", "UPDATE", "DELETE", "ALTER", "CREATE", "DROP", "TRUNCATE", "MERGE", "REPLACE", "ADD",
+                "MODIFY", "RENAME", "GRANT", "REVOKE", "COMMIT", "ROLLBACK", "SAVEPOINT", "SET", "LOCK",
+                "UNLOCK", "EXPLAIN", "ANALYZE", "OPTIMIZE", "CASCADE", "REFERENCES", "REINDEX", "VACUUM",
                 "ENABLE", "DISABLE", "ATTACH", "DETACH", "REPAIR", "REBUILD", "INITIATE", "EXTEND", "SHRINK", "TRANSFER",
                 "DISTRIBUTE", "ARCHIVE", "PARTITION", "ADD CONSTRAINT", "DROP CONSTRAINT", "RENAME COLUMN", "ALTER COLUMN",
                 "SET DEFAULT", "UNSET DEFAULT", "CONVERT TO", "ALTER INDEX", "CREATE TABLE", "CREATE INDEX", "CREATE VIEW",
@@ -158,31 +159,19 @@ namespace DatabaseAnalyzer
                 "END WORK", "CREATE SCHEMA", "DROP SCHEMA", "ALTER SCHEMA", "CREATE USER", "DROP USER", "ALTER USER",
                 "CREATE ROLE", "DROP ROLE", "ALTER ROLE", "REVOKE ALL PRIVILEGES", "GRANT ALL PRIVILEGES", "DENY", "REVOKE",
                 "CHECK CONSTRAINT", "DISABLE TRIGGER", "ENABLE TRIGGER"
-            };
+            ];
 
-            return await Task.Run(() =>
-            {
-                var words = StringTool.GetWords(sqlCommand);
-
-                foreach (var word in words)
-                {
-                    if (unsafeKeywords.Contains(word.ToUpper()))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            });
+            return !unsafeKeywords.Exists(keyword => sqlCommand.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
-        public static async Task PrepareSampleData(short rowsPerTable)
+
+        public static async Task PrepareSampleData(short maxRowsPerTable)
         {
             var sb = new StringBuilder();
 
             foreach (var table in SelectedTables)
             {
-                var exampleDataTable = await DatabaseExtractor.Execute($"SELECT TOP {rowsPerTable} * FROM [{table.Name}] ORDER BY {table.Columns[0].Name} DESC");
+                var exampleDataTable = await DatabaseExtractor.Execute($"SELECT TOP {maxRowsPerTable} * FROM [{table.Name}] ORDER BY {table.Columns[0].Name} DESC");
 
                 if (exampleDataTable == null || exampleDataTable.Columns.Count == 0 || exampleDataTable.Rows.Count == 0)
                 {
