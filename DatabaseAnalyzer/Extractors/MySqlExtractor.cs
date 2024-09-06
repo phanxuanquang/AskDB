@@ -68,5 +68,4 @@ namespace DatabaseAnalyzer.Extractors
             return dataTable;
         }
     }
-
 }

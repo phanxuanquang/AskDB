@@ -12,7 +12,7 @@ namespace Helper
 
                 if (lines.Length == 0)
                 {
-                    return new List<string>();
+                    return [];
                 }
 
                 if (useDecoding)
@@ -21,26 +21,11 @@ namespace Helper
                 }
                 else
                 {
-                    return lines.ToList();
+                    return [.. lines];
                 }
             }
 
-            return new List<string>();
-        }
-
-        public static List<string> GetWords(string sentence)
-        {
-            if (IsNull(sentence))
-            {
-                return new List<string>();
-            }
-
-            char[] splitChars = { ' ', ',', '.', '!', '?', ';', ':', '-', '_', '(', ')', '[', ']', '{', '}', '\"', '\'', '\\', '/' };
-            string[] wordsArray = sentence.Split(splitChars, StringSplitOptions.RemoveEmptyEntries);
-
-            List<string> wordsList = new List<string>(wordsArray);
-
-            return wordsList;
+            return [];
         }
 
         public static bool IsNull(string text)

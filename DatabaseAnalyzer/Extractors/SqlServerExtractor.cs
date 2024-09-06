@@ -58,69 +58,63 @@ namespace DatabaseAnalyzer.Extractors
         {
             var tables = new ConcurrentDictionary<string, Table>();
 
-            using (SqlConnection connection = new SqlConnection(ConnectionString))
+            using (SqlConnection connection = new(ConnectionString))
             {
                 await connection.OpenAsync();
 
-                using (SqlCommand command = new SqlCommand(TableStructureQuery, connection))
+                using SqlCommand command = new(TableStructureQuery, connection);
+                using SqlDataReader reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
                 {
-                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    var tableName = reader.GetString(0);
+                    var columnName = reader.GetString(1);
+                    var dataType = reader.GetString(2);
+                    var maxLength = await reader.IsDBNullAsync(3) ? (int?)null : reader.GetInt32(3);
+                    var isNullable = reader.GetString(4) == "YES";
+                    var defaultValue = await reader.IsDBNullAsync(5) ? null : reader.GetString(5);
+                    var primaryKey = await reader.IsDBNullAsync(6) ? null : reader.GetString(6);
+                    var fkName = await reader.IsDBNullAsync(7) ? null : reader.GetString(7);
+                    var parentColumn = await reader.IsDBNullAsync(8) ? null : reader.GetString(8);
+                    var referencedTable = await reader.IsDBNullAsync(9) ? null : reader.GetString(9);
+                    var referencedColumn = await reader.IsDBNullAsync(10) ? null : reader.GetString(10);
+
+                    var column = new Column
                     {
-                        while (await reader.ReadAsync())
+                        Name = columnName,
+                        DataType = dataType,
+                        MaxLength = maxLength,
+                        IsNullable = isNullable,
+                        DefaultValue = defaultValue,
+                        PrimaryKey = primaryKey,
+                        ForeignKeyName = fkName,
+                        ParentColumn = parentColumn,
+                        ReferencedTable = referencedTable,
+                        ReferencedColumn = referencedColumn
+                    };
+
+                    tables.AddOrUpdate(tableName,
+                        new Table { Name = tableName, Columns = [column] },
+                        (_, table) =>
                         {
-                            var tableName = reader.GetString(0);
-                            var columnName = reader.GetString(1);
-                            var dataType = reader.GetString(2);
-                            var maxLength = await reader.IsDBNullAsync(3) ? (int?)null : reader.GetInt32(3);
-                            var isNullable = reader.GetString(4) == "YES";
-                            var defaultValue = await reader.IsDBNullAsync(5) ? null : reader.GetString(5);
-                            var primaryKey = await reader.IsDBNullAsync(6) ? null : reader.GetString(6);
-                            var fkName = await reader.IsDBNullAsync(7) ? null : reader.GetString(7);
-                            var parentColumn = await reader.IsDBNullAsync(8) ? null : reader.GetString(8);
-                            var referencedTable = await reader.IsDBNullAsync(9) ? null : reader.GetString(9);
-                            var referencedColumn = await reader.IsDBNullAsync(10) ? null : reader.GetString(10);
-
-                            var column = new Column
-                            {
-                                Name = columnName,
-                                DataType = dataType,
-                                MaxLength = maxLength,
-                                IsNullable = isNullable,
-                                DefaultValue = defaultValue,
-                                PrimaryKey = primaryKey,
-                                ForeignKeyName = fkName,
-                                ParentColumn = parentColumn,
-                                ReferencedTable = referencedTable,
-                                ReferencedColumn = referencedColumn
-                            };
-
-                            tables.AddOrUpdate(tableName,
-                                new Table { Name = tableName, Columns = new List<Column> { column } },
-                                (_, table) =>
-                                {
-                                    table.Columns.Add(column);
-                                    return table;
-                                });
-                        }
-                    }
+                            table.Columns.Add(column);
+                            return table;
+                        });
                 }
             }
 
-            Tables = tables.Values.ToList();
+            Tables = [.. tables.Values];
         }
 
         public override async Task<DataTable> Execute(string sqlQuery)
         {
-            using (var connection = new SqlConnection(ConnectionString))
+            using var connection = new SqlConnection(ConnectionString);
+            var dataTable = new DataTable();
+            await connection.OpenAsync();
+            using (var reader = await connection.ExecuteReaderAsync(sqlQuery))
             {
-                var dataTable = new DataTable();
-                await connection.OpenAsync();
-                using (var reader = await connection.ExecuteReaderAsync(sqlQuery))
-                {
-                    dataTable.Load(reader);
-                }
-                return dataTable;
+                dataTable.Load(reader);
             }
+            return dataTable;
         }
     }
 }

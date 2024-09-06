@@ -3,7 +3,7 @@
     public static class Cache
     {
         private static string _cacheFileName;
-        public static HashSet<string> Data = new HashSet<string>();
+        public static HashSet<string> Data = [];
         public const short MaxResults = 10;
 
         public static async Task Init()
@@ -36,17 +36,15 @@
 
                 data = data.Trim();
 
-                if (Data.Any(d => d.Equals(data, StringComparison.OrdinalIgnoreCase)))
+                if (!Data.Any(d => d.Equals(data, StringComparison.OrdinalIgnoreCase)))
                 {
-                    return;
-                }
+                    using (StreamWriter sw = new(_cacheFileName, append: true))
+                    {
+                        await sw.WriteLineAsync(StringCipher.Encode(data));
+                    }
 
-                using (StreamWriter sw = new StreamWriter(_cacheFileName, append: true))
-                {
-                    await sw.WriteLineAsync(StringCipher.Encode(data));
+                    Data.Add(data);
                 }
-
-                Data.Add(data);
             }
             else if (input is IEnumerable<string> items)
             {

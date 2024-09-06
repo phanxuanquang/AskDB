@@ -10,7 +10,7 @@ namespace AskDB.App
         public static bool IsMainPageEntered = false;
         public static async Task<ContentDialogResult> ShowDialog(XamlRoot xamlRoot, string message, string title = "Error")
         {
-            ContentDialog dialog = new ContentDialog
+            ContentDialog dialog = new()
             {
                 XamlRoot = xamlRoot,
                 Title = title,

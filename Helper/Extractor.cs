@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel;
 using System.Data;
-using System.Reflection;
 using System.Text;
 
 namespace Helper
@@ -9,8 +8,8 @@ namespace Helper
     {
         public static string GetEnumDescription(Enum value)
         {
-            FieldInfo fi = value.GetType().GetField(value.ToString());
-            DescriptionAttribute[] attributes = (DescriptionAttribute[])fi.GetCustomAttributes(typeof(DescriptionAttribute), false);
+            var fi = value.GetType().GetField(value.ToString());
+            var attributes = (DescriptionAttribute[])fi.GetCustomAttributes(typeof(DescriptionAttribute), false);
 
             if (attributes != null && attributes.Length > 0)
             {
@@ -24,7 +23,7 @@ namespace Helper
 
         public static void ExportData(DataTable table, string outputFilePath)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             string[] columnNames = table.Columns.Cast<DataColumn>().Select(column => column.ColumnName).ToArray();
             sb.AppendLine(string.Join(",", columnNames));

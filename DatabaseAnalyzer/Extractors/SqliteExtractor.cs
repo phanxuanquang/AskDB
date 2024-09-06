@@ -26,49 +26,45 @@ namespace DatabaseAnalyzer.Extractors
 
         public override async Task ExtractTables()
         {
-            using (var connection = new SqliteConnection(ConnectionString))
+            using var connection = new SqliteConnection(ConnectionString);
+            await connection.OpenAsync();
+
+            var tables = new ConcurrentDictionary<string, Table>();
+            var tableNames = await connection.QueryAsync<string>(TableStructureQuery);
+
+            foreach (var tableName in tableNames)
             {
-                await connection.OpenAsync();
+                var columns = await connection.QueryAsync<ColumnInfor>($"PRAGMA table_info({tableName})");
 
-                var tables = new ConcurrentDictionary<string, Table>();
-                var tableNames = await connection.QueryAsync<string>(TableStructureQuery);
-
-                foreach (var tableName in tableNames)
+                var table = new Table
                 {
-                    var columns = await connection.QueryAsync<ColumnInfor>($"PRAGMA table_info({tableName})");
-
-                    var table = new Table
+                    Name = tableName,
+                    Columns = columns.Select(column => new Column
                     {
-                        Name = tableName,
-                        Columns = columns.Select(column => new Column
-                        {
-                            Name = column.Name,
-                            DataType = column.Type,
-                            IsNullable = !column.NotNull,
-                            DefaultValue = column.DefaultValue,
-                            PrimaryKey = column.Pk == 1 ? column.Name : null
-                        }).ToList()
-                    };
+                        Name = column.Name,
+                        DataType = column.Type,
+                        IsNullable = !column.NotNull,
+                        DefaultValue = column.DefaultValue,
+                        PrimaryKey = column.Pk == 1 ? column.Name : null
+                    }).ToList()
+                };
 
-                    tables.TryAdd(tableName, table);
-                }
-
-                Tables = tables.Values.ToList();
+                tables.TryAdd(tableName, table);
             }
+
+            Tables = [.. tables.Values];
         }
 
         public override async Task<DataTable> Execute(string sqlQuery)
         {
-            using (var connection = new SqliteConnection(ConnectionString))
+            using var connection = new SqliteConnection(ConnectionString);
+            var dataTable = new DataTable();
+            await connection.OpenAsync();
+            using (var reader = await connection.ExecuteReaderAsync(sqlQuery))
             {
-                var dataTable = new DataTable();
-                await connection.OpenAsync();
-                using (var reader = await connection.ExecuteReaderAsync(sqlQuery))
-                {
-                    dataTable.Load(reader);
-                }
-                return dataTable;
+                dataTable.Load(reader);
             }
+            return dataTable;
         }
     }
 }

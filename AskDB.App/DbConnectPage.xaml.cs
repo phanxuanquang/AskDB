@@ -226,7 +226,7 @@ namespace AskDB.App
                     _ => throw new NotSupportedException("Not Supported"),
                 };
                 await Analyzer.DatabaseExtractor.ExtractTables();
-                Analyzer.DatabaseExtractor.Tables = Analyzer.DatabaseExtractor.Tables.OrderBy(t => t.Name).ToList();
+                Analyzer.DatabaseExtractor.Tables = [.. Analyzer.DatabaseExtractor.Tables.OrderBy(t => t.Name)];
 
                 if (Analyzer.DatabaseExtractor.Tables.Count == 0)
                 {
@@ -264,7 +264,7 @@ namespace AskDB.App
                     await Cache.Init();
                     var apiKey = Cache.Data.FirstOrDefault(Generator.CanBeGeminiApiKey);
 
-                    apiKeyBox.Text = Cache.Data.FirstOrDefault(Generator.CanBeGeminiApiKey);
+                    apiKeyBox.Text = apiKey;
                     connectGeminiButton.IsEnabled = !string.IsNullOrEmpty(apiKey);
                 }
                 else
