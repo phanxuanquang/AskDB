@@ -76,3 +76,14 @@ Accidentally trying to drop a table? AskDB has your back. Our intelligent system
 
    - Transform query results into ready-to-use CSV files with a single click
    - Get the SQL query translated from your natural language query
+
+## :lock: Data Privacy
+Your data, including your Gemini API Keys, connection strings, and the results queried from your databases, are securely stored on your local device only. This data will be automatically deleted permanently when you clean the Temp folder of your Windows. We do not store or retain your data on our servers, ensuring that your information remains private and secure at all times.
+
+If you have any concerns or questions about our data privacy practices, please feel free to open a new issue.
+
+## :open_hands: Contribution
+We welcome contributions and encourage you to help this project better and better. If you encounter any issues or have suggestions for improvements, please open an issue in the [Issues](https://github.com/phanxuanquang/AskDB/issues) section of the repository.
+Before submitting a pull request, please ensure that your changes are well-documented in the Pull Request description.
+
+Thank you for your contribution and for helping to make this project better! :tada:
