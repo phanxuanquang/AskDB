@@ -90,7 +90,7 @@ namespace DatabaseAnalyzer
             var response = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
             return JsonConvert.DeserializeObject<List<string>>(response);
         }
-        public static async Task<string> GetInsight(string query, DataTable dataTable)
+        public static async Task<string> GetQuickInsight(string query, DataTable dataTable)
         {
             var promptBuilder = new StringBuilder();
             var data = DataAsString(dataTable);
