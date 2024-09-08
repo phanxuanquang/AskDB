@@ -91,7 +91,7 @@ namespace AskDB.App
         }
         private void ConnectionStringBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
         {
-            EnableForwardButton(Analyzer.DatabaseExtractor?.ConnectionString, sender.Text.Trim());
+            EnableForwardButton(Analyzer.DbExtractor?.ConnectionString, sender.Text.Trim());
 
             if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
             {
@@ -217,7 +217,7 @@ namespace AskDB.App
                 WinUiHelper.SetLoading(true, sender as Button, dbInputLoadingOverlay, dbInputPanel, "Loading database structure . . .");
                 var selectedType = (DatabaseType)dbTypeCombobox.SelectedItem;
 
-                Analyzer.DatabaseExtractor = selectedType switch
+                Analyzer.DbExtractor = selectedType switch
                 {
                     DatabaseType.SqlServer => new SqlServerExtractor(connectionStringBox.Text.Trim()),
                     DatabaseType.PostgreSQL => new PostgreSqlExtractor(connectionStringBox.Text.Trim()),
@@ -225,10 +225,10 @@ namespace AskDB.App
                     DatabaseType.MySQL => new MySqlExtractor(connectionStringBox.Text.Trim()),
                     _ => throw new NotSupportedException("Not Supported"),
                 };
-                await Analyzer.DatabaseExtractor.ExtractTables();
-                Analyzer.DatabaseExtractor.Tables = [.. Analyzer.DatabaseExtractor.Tables.OrderBy(t => t.Name)];
+                await Analyzer.DbExtractor.ExtractTables();
+                Analyzer.DbExtractor.Tables = [.. Analyzer.DbExtractor.Tables.OrderBy(t => t.Name)];
 
-                if (Analyzer.DatabaseExtractor.Tables.Count == 0)
+                if (Analyzer.DbExtractor.Tables.Count == 0)
                 {
                     await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Cannot find any tables in this database", "Not Found");
                     WinUiHelper.SetLoading(false, sender as Button, dbInputLoadingOverlay, dbInputPanel);
@@ -237,7 +237,7 @@ namespace AskDB.App
                 {
                     await Cache.Set(connectionStringBox.Text);
 
-                    tablesListView.ItemsSource = Analyzer.DatabaseExtractor.Tables.Select(t => t.Name);
+                    tablesListView.ItemsSource = Analyzer.DbExtractor.Tables.Select(t => t.Name);
                     step2Expander.IsExpanded = false;
                     step3Expander.IsExpanded = step3Expander.IsEnabled = true;
                     selectAllCheckbox.IsChecked = false;
@@ -274,7 +274,7 @@ namespace AskDB.App
 
                     step1Expander.IsExpanded = step2Expander.IsExpanded = step3Expander.IsExpanded = true;
 
-                    dbTypeCombobox.SelectedItem = Analyzer.DatabaseExtractor.DatabaseType;
+                    dbTypeCombobox.SelectedItem = Analyzer.DbExtractor.DatabaseType;
 
                     connectDbButton.IsEnabled = true;
                     startBtn.IsEnabled = true;
@@ -292,10 +292,10 @@ namespace AskDB.App
                 forwardButton.IsEnabled = false;
             }
 
-            selectAllCheckbox.IsChecked = tablesListView.SelectedItems.Count == Analyzer.DatabaseExtractor.Tables.Count;
+            selectAllCheckbox.IsChecked = tablesListView.SelectedItems.Count == Analyzer.DbExtractor.Tables.Count;
 
             var selectedTableNames = tablesListView.SelectedItems.Cast<string>();
-            var totalColumns = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).Sum(table => table.Columns.Count);
+            var totalColumns = Analyzer.DbExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).Sum(table => table.Columns.Count);
             if (totalColumns > Analyzer.MaxTotalColumns || tablesListView.SelectedItems.Count > Analyzer.MaxTotalTables)
             {
                 startBtn.IsEnabled = false;
@@ -350,7 +350,7 @@ namespace AskDB.App
                     }
                 }
 
-                Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
+                Analyzer.SelectedTables = Analyzer.DbExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
                 MainPage.IsFirstEnter = true;
                 IsFirstEnter = false;
                 Frame.Navigate(typeof(MainPage), null, new EntranceNavigationTransitionInfo());

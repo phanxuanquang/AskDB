@@ -15,43 +15,13 @@ namespace DatabaseAnalyzer
         public const short MaxTotalColumns = 10000;
         public const byte MaxTotalQueries = 50;
         public static List<Table> SelectedTables = [];
-        public static DatabaseExtractor DatabaseExtractor;
+        public static DatabaseExtractor DbExtractor;
         private static string SampleData = string.Empty;
-
-        public static string TablesAsString(List<Table> tables)
-        {
-            var schemas = tables.Select(d => d.ToString()).ToList();
-            return string.Join(string.Empty, schemas).Trim();
-        }
-        public static Task<string> DataTableAsString(DataTable table)
-        {
-            return Task.Run(() =>
-            {
-                StringBuilder sb = new();
-
-                foreach (DataColumn column in table.Columns)
-                {
-                    sb.AppendFormat("{0,-15}", column.ColumnName);
-                }
-                sb.AppendLine();
-
-                foreach (DataRow row in table.Rows)
-                {
-                    foreach (var item in row.ItemArray)
-                    {
-                        sb.AppendFormat("{0,-15}", item);
-                    }
-                    sb.AppendLine();
-                }
-
-                return sb.ToString();
-            });
-        }
 
         public static async Task<SqlCommander> GetSql(string question)
         {
             var promptBuilder = new StringBuilder();
-            var databaseType = DatabaseExtractor.DatabaseType.ToString();
+            var databaseType = DbExtractor.DatabaseType.ToString();
 
             promptBuilder.AppendLine($"You are a Database Administrator with over 20 years of experience working with {databaseType} databases on large scale projects.");
             promptBuilder.AppendLine("I am someone who knows nothing about SQL.");
@@ -83,11 +53,10 @@ namespace DatabaseAnalyzer
             var response = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
             return JsonConvert.DeserializeObject<SqlCommander>(response);
         }
-
         public static async Task<List<string>> GetSuggestedQueries(bool useSql)
         {
             var promptBuilder = new StringBuilder();
-            var databaseType = DatabaseExtractor.DatabaseType.ToString();
+            var databaseType = DbExtractor.DatabaseType.ToString();
             var englishQuery = !useSql ? $"human language ({CultureInfo.CurrentCulture.EnglishName.Split(' ')[0]})" : databaseType;
             var role = !useSql ? "Senor Data Analyst" : "Database Administrator";
 
@@ -121,11 +90,10 @@ namespace DatabaseAnalyzer
             var response = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
             return JsonConvert.DeserializeObject<List<string>>(response);
         }
-
-        public static async Task<string> GetQuickInsight(string query, DataTable dataTable)
+        public static async Task<string> GetInsight(string query, DataTable dataTable)
         {
             var promptBuilder = new StringBuilder();
-            var data = await DataTableAsString(dataTable);
+            var data = DataAsString(dataTable);
 
             promptBuilder.AppendLine("You are a Senior Data Analyst and a Data Scientist with over 20 years of experience working in large-scaled projects.");
             promptBuilder.AppendLine("I am a CEO and I need you to provide some quick insight from my provided data, which is very helpful for my decision.");
@@ -141,6 +109,102 @@ namespace DatabaseAnalyzer
             return StringTool.AsPlainText(result);
         }
 
+
+        #region Helpers
+        public static async Task ExtractSampleData(short rowsPerTable)
+        {
+            try
+            {
+                var sb = new StringBuilder();
+
+                foreach (var table in SelectedTables)
+                {
+                    var query = DbExtractor.DatabaseType == DatabaseType.SqlServer
+                        ? $"SELECT TOP {rowsPerTable} * FROM [{table.Name}] ORDER BY {table.Columns[0].Name} DESC"
+                        : $"SELECT * FROM {table.Name} ORDER BY {table.Columns[0].Name} DESC LIMIT {rowsPerTable}";
+
+                    var exampleDataTable = await DbExtractor.Execute(query);
+
+                    if (exampleDataTable == null || exampleDataTable.Columns.Count == 0 || exampleDataTable.Rows.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    foreach (DataRow row in exampleDataTable.Rows)
+                    {
+                        sb.AppendFormat("INSERT INTO [{0}] (", table.Name);
+
+                        for (int i = 0; i < exampleDataTable.Columns.Count; i++)
+                        {
+                            sb.Append(exampleDataTable.Columns[i].ColumnName);
+                            if (i < exampleDataTable.Columns.Count - 1)
+                            {
+                                sb.Append(", ");
+                            }
+                        }
+
+                        sb.Append(") VALUES (");
+
+                        for (int i = 0; i < exampleDataTable.Columns.Count; i++)
+                        {
+                            object value = row[i];
+
+                            if (value == DBNull.Value)
+                            {
+                                sb.Append("NULL");
+                            }
+                            else if (value is string || value is DateTime)
+                            {
+                                sb.AppendFormat("'{0}'", value.ToString().Replace("'", "''"));
+                            }
+                            else
+                            {
+                                sb.Append(value);
+                            }
+
+                            if (i < exampleDataTable.Columns.Count - 1)
+                            {
+                                sb.Append(", ");
+                            }
+                        }
+
+                        sb.Append(");\n");
+                    }
+                }
+
+                SampleData = sb.ToString().Trim();
+            }
+            catch
+            {
+                SampleData = string.Empty;
+            }
+        }
+        public static string TablesAsString(List<Table> tables)
+        {
+            var schemas = tables.Select(d => d.ToString()).ToList();
+            return string.Join(string.Empty, schemas).Trim();
+        }
+        public static string DataAsString(DataTable table)
+        {
+            StringBuilder sb = new();
+
+            foreach (DataColumn column in table.Columns)
+            {
+                sb.AppendFormat("{0,-15}", column.ColumnName);
+            }
+            sb.AppendLine();
+
+            foreach (DataRow row in table.Rows)
+            {
+                foreach (var item in row.ItemArray)
+                {
+                    sb.AppendFormat("{0,-15}", item);
+                }
+                sb.AppendLine();
+            }
+
+            return sb.ToString();
+        }
         public static bool IsSqlSafe(string sqlCommand)
         {
             List<string> unsafeKeywords =
@@ -163,60 +227,6 @@ namespace DatabaseAnalyzer
 
             return !unsafeKeywords.Exists(keyword => sqlCommand.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0);
         }
-
-
-        public static async Task PrepareSampleData(short maxRowsPerTable)
-        {
-            var sb = new StringBuilder();
-
-            foreach (var table in SelectedTables)
-            {
-                var exampleDataTable = await DatabaseExtractor.Execute($"SELECT TOP {maxRowsPerTable} * FROM [{table.Name}] ORDER BY {table.Columns[0].Name} DESC");
-
-                if (exampleDataTable == null || exampleDataTable.Columns.Count == 0 || exampleDataTable.Rows.Count == 0)
-                {
-                    continue;
-                }
-
-                foreach (DataRow row in exampleDataTable.Rows)
-                {
-                    sb.AppendFormat("INSERT INTO [{0}] (", table.Name);
-
-                    for (int i = 0; i < exampleDataTable.Columns.Count; i++)
-                    {
-                        sb.Append(exampleDataTable.Columns[i].ColumnName);
-                        if (i < exampleDataTable.Columns.Count - 1)
-                            sb.Append(", ");
-                    }
-
-                    sb.Append(") VALUES (");
-
-                    for (int i = 0; i < exampleDataTable.Columns.Count; i++)
-                    {
-                        object value = row[i];
-
-                        if (value == DBNull.Value)
-                        {
-                            sb.Append("NULL");
-                        }
-                        else if (value is string || value is DateTime)
-                        {
-                            sb.AppendFormat("'{0}'", value.ToString().Replace("'", "''"));
-                        }
-                        else
-                        {
-                            sb.Append(value);
-                        }
-
-                        if (i < exampleDataTable.Columns.Count - 1)
-                            sb.Append(", ");
-                    }
-
-                    sb.Append(");\n");
-                }
-            }
-
-            SampleData = sb.ToString().Trim();
-        }
+        #endregion
     }
 }

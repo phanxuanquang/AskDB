@@ -57,7 +57,7 @@ namespace AskDB.App
                 queryBox.Text = string.Empty;
                 SetLoadingState(true, "Analyzing your database structure");
 
-                var prepareSampleTask = Analyzer.PrepareSampleData(10);
+                var prepareSampleTask = Analyzer.ExtractSampleData(10);
                 var sqlQueryTask = Analyzer.GetSuggestedQueries(true);
                 var englishQueryTask = Analyzer.GetSuggestedQueries(false);
 
@@ -129,8 +129,8 @@ namespace AskDB.App
                     var source = Cache.Get(k => k.Contains(query, StringComparison.OrdinalIgnoreCase)
                         && !Generator.CanBeGeminiApiKey(k)
                         && !k.Contains(Generator.ApiKey, StringComparison.OrdinalIgnoreCase)
-                        && !k.Contains(Analyzer.DatabaseExtractor.ConnectionString, StringComparison.OrdinalIgnoreCase)
-                        && !k.Contains(Extractor.GetEnumDescription(Analyzer.DatabaseExtractor.DatabaseType), StringComparison.OrdinalIgnoreCase));
+                        && !k.Contains(Analyzer.DbExtractor.ConnectionString, StringComparison.OrdinalIgnoreCase)
+                        && !k.Contains(Extractor.GetEnumDescription(Analyzer.DbExtractor.DatabaseType), StringComparison.OrdinalIgnoreCase));
 
                     sender.ItemsSource = source;
                 }
@@ -157,10 +157,10 @@ namespace AskDB.App
         }
         private void TablesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            selectAllCheckbox.IsChecked = tablesListView.SelectedItems.Count == Analyzer.DatabaseExtractor.Tables.Count;
+            selectAllCheckbox.IsChecked = tablesListView.SelectedItems.Count == Analyzer.DbExtractor.Tables.Count;
 
             var selectedTableNames = tablesListView.SelectedItems.Cast<string>();
-            var totalColumns = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).Sum(table => table.Columns.Count);
+            var totalColumns = Analyzer.DbExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).Sum(table => table.Columns.Count);
             if (totalColumns > Analyzer.MaxTotalColumns || tablesListView.SelectedItems.Count > Analyzer.MaxTotalTables)
             {
                 sendButton.IsEnabled = queryBox.IsEnabled = false;
@@ -195,11 +195,11 @@ namespace AskDB.App
             }
 
             var selectedTableNames = tablesListView.SelectedItems.Cast<string>();
-            Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
+            Analyzer.SelectedTables = Analyzer.DbExtractor.Tables.Where(t => selectedTableNames.Contains(t.Name)).ToList();
 
             try
             {
-                _resultDataTable = await Analyzer.DatabaseExtractor.Execute(queryBox.Text);
+                _resultDataTable = await Analyzer.DbExtractor.Execute(queryBox.Text);
                 await Cache.Set(queryBox.Text);
                 SetButtonVisibility(true);
                 showSqlButton.Visibility = Visibility.Collapsed;
@@ -338,14 +338,14 @@ namespace AskDB.App
         #region Helpers
         private void LoadTables()
         {
-            tablesListView.ItemsSource = Analyzer.DatabaseExtractor.Tables.Select(t => t.Name);
+            tablesListView.ItemsSource = Analyzer.DbExtractor.Tables.Select(t => t.Name);
 
             foreach (var t in Analyzer.SelectedTables)
             {
                 tablesListView.SelectedItems.Add(t.Name);
             }
 
-            if (Analyzer.SelectedTables.Count == Analyzer.DatabaseExtractor.Tables.Count)
+            if (Analyzer.SelectedTables.Count == Analyzer.DbExtractor.Tables.Count)
             {
                 selectAllCheckbox.IsChecked = true;
             }
@@ -357,7 +357,7 @@ namespace AskDB.App
 
             try
             {
-                Analyzer.SelectedTables = Analyzer.DatabaseExtractor.Tables.Where(t => tablesListView.SelectedItems.Contains(t.Name)).ToList();
+                Analyzer.SelectedTables = Analyzer.DbExtractor.Tables.Where(t => tablesListView.SelectedItems.Contains(t.Name)).ToList();
                 commander = await Analyzer.GetSql(query);
             }
             catch (Exception ex)
@@ -395,7 +395,7 @@ namespace AskDB.App
 
             try
             {
-                _resultDataTable = await Analyzer.DatabaseExtractor.Execute(commander.Output);
+                _resultDataTable = await Analyzer.DbExtractor.Execute(commander.Output);
                 await Cache.Set(commander.Output);
                 _sqlQuery = commander.Output;
                 SetButtonVisibility(true);

@@ -24,7 +24,13 @@ namespace DatabaseAnalyzer.Models
                 "VARCHAR",
                 "CHAR",
                 "NVARCHAR",
-                "NCHAR"
+                "NCHAR",
+                "TEXT",
+                "CITEXT",
+                "BINARY",
+                "BLOB",
+                "JSON",
+                "BSON"
             };
 
             stringBuilder.Append($"{Name} {DataType.ToUpper()}");
@@ -51,7 +57,7 @@ namespace DatabaseAnalyzer.Models
 
             if (ForeignKeyName != null)
             {
-                stringBuilder.Append($" REFERENCES {ReferencedTable}({ReferencedColumn})");
+                stringBuilder.Append($" REFERENCES [{ReferencedTable}]({ReferencedColumn})");
             }
 
             return stringBuilder.ToString();
