@@ -10,15 +10,15 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Required">
 
-    <Grid x:Name="RootGrid" Padding="20">
+    <Grid x:Name="RootGrid" Padding="40">
         <Border
-        HorizontalAlignment="Center"
-        VerticalAlignment="Center"
-        BorderThickness="0"
-        Background="{StaticResource LayerOnMicaBaseAltFillColorDefault}"
-        CornerRadius="15"
-        Padding="40"
-        MinWidth="600">
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            BorderThickness="0"
+            Background="{StaticResource LayerOnMicaBaseAltFillColorDefault}"
+            CornerRadius="15"
+            Padding="40"
+            MinWidth="800">
 
             <StackPanel Orientation="Vertical" HorizontalAlignment="Center" IsTabStop="False">
                 <StackPanel.ChildrenTransitions>
@@ -27,7 +27,7 @@
                     </TransitionCollection>
                 </StackPanel.ChildrenTransitions>
 
-                <Grid Margin="0,0,0,20" MinWidth="1000">
+                <Grid Margin="0,0,0,10" MinWidth="1000">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
@@ -37,13 +37,13 @@
                     <Button x:Name="backButton" Grid.Column="0" BorderThickness="0" Background="Transparent" IsEnabled="False">
                         <SymbolIcon Symbol="Back"/>
                     </Button>
-                    <TextBlock Text="GETTING STARTED" FontSize="36" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Column="1"/>
+                    <TextBlock Text="GETTING STARTED" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Column="1"/>
                     <Button x:Name="forwardButton" Grid.Column="2" BorderThickness="0" Background="Transparent" IsEnabled="False">
                         <SymbolIcon Symbol="Forward"/>
                     </Button>
                 </Grid>
 
-                <Expander x:Name="step1Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsExpanded="True" IsTabStop="False">
+                <Expander x:Name="step1Expander" HorizontalAlignment="Stretch" Margin="0,0,0,10" IsExpanded="True" IsTabStop="False">
                     <Expander.Header>
                         <ContentControl FontWeight="SemiBold">Step 1 - Connect to Gemini</ContentControl>
                     </Expander.Header>
@@ -53,14 +53,14 @@
                             <StackPanel x:Name="apiInputPanel" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
                                 <AutoSuggestBox x:Name="apiKeyBox" PlaceholderText="Enter the Gemini API Key" AutomationProperties.Name="simple text editor" MinWidth="830" Margin="0,0,10,0"/>
                                 <HyperlinkButton x:Name="getApiKeyButton" HorizontalAlignment="Center" Background="{StaticResource AcrylicInAppFillColorBaseBrush}"  NavigateUri="https://aistudio.google.com/app/apikey" Content="Get API Key" Height="35"/>
-                        </StackPanel>
+                            </StackPanel>
                             <HyperlinkButton x:Name="tutorialButton" Content="I don't know how to get the API key" NavigateUri="https://www.youtube.com/embed/z8-S9P2SFU8" Padding="5,0,0,0"/>
                             <Button x:Name="connectGeminiButton" IsEnabled="False" Style="{StaticResource AccentButtonStyle}" Content="Connect" Height="35" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Expander.Content>
                 </Expander>
 
-                <Expander x:Name="step2Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsEnabled="False" IsTabStop="False">
+                <Expander x:Name="step2Expander" HorizontalAlignment="Stretch" Margin="0,0,0,10" IsEnabled="False" IsTabStop="False">
                     <Expander.Header>
                         <ContentControl FontWeight="SemiBold"> Step 2 - Connect to your SQL database</ContentControl>
                     </Expander.Header>
@@ -76,7 +76,7 @@
                     </Expander.Content>
                 </Expander>
 
-                <Expander x:Name="step3Expander" HorizontalAlignment="Stretch" Margin="0,0,0,20" IsEnabled="False" IsTabStop="False">
+                <Expander x:Name="step3Expander" HorizontalAlignment="Stretch" Margin="0,0,0,10" IsEnabled="False" IsTabStop="False">
                     <Expander.Header>
                         <ContentControl FontWeight="SemiBold">Step 3 - Select tables to ask</ContentControl>
                     </Expander.Header>
@@ -89,7 +89,7 @@
                                 BorderThickness="2"
                                 BorderBrush="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}"
                                 UseLayoutRounding="True"
-                                Width="800"
+                                MinWidth="700"
                                 MaxHeight="300"
                                 HorizontalAlignment="Left">
                                 <ListView.ItemContainerTransitions>
