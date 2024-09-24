@@ -26,7 +26,8 @@
                         <EntranceThemeTransition IsStaggeringEnabled="True" />
                     </TransitionCollection>
                 </StackPanel.ChildrenTransitions>
-                <Grid Margin="0,0,0,20" IsTabStop="False">
+                
+                <Grid Margin="0,0,0,10" IsTabStop="False">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
@@ -36,12 +37,12 @@
                     <Button x:Name="backButton" Grid.Column="0" BorderThickness="0" Background="Transparent">
                         <SymbolIcon Symbol="Back"/>
                     </Button>
-                    <TextBlock Text="ASK ME EVERYTHING ABOUT YOUR DATABASE" FontSize="36" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Column="1"/>
+                    <TextBlock Text="ASK ME EVERYTHING ABOUT YOUR DATABASE" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Column="1"/>
                     <Button x:Name="forwardButton" Grid.Column="2" BorderThickness="0" Background="Transparent" IsEnabled="False">
                         <SymbolIcon Symbol="Forward"/>
                     </Button>
                 </Grid>
-                <Expander x:Name="selectTableExpander" MinWidth="1070" Margin="0,0,0,20" IsExpanded="False" HorizontalAlignment="Stretch" IsTabStop="False">
+                <Expander x:Name="selectTableExpander" MaxHeight="400" Margin="0,0,0,10" IsExpanded="False" HorizontalAlignment="Stretch" IsTabStop="False">
                     <Expander.Header>
                         <ContentControl FontWeight="SemiBold">Select tables to ask</ContentControl>
                     </Expander.Header>
@@ -55,7 +56,7 @@
                                 BorderBrush="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}"
                                 UseLayoutRounding="True"
                                 Width="800"
-                                MaxHeight="400"
+                                MaxHeight="300"
                                 HorizontalAlignment="Stretch"/>
                         </StackPanel>
                     </Expander.Content>
@@ -63,7 +64,7 @@
 
                 <local:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20"/>
                 <StackPanel x:Name="mainPanel" Visibility="Collapsed" Margin="0,0,0,10">
-                    <Grid Margin="0,0,0,20">
+                    <Grid Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
@@ -71,7 +72,7 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <AutoSuggestBox x:Name="queryBox" HorizontalAlignment="Stretch" PlaceholderText="Enter your question or the SQL query . . ." AutomationProperties.Name="simple text editor" MinWidth="1000" Grid.Column="0"/>
+                        <AutoSuggestBox x:Name="queryBox" HorizontalAlignment="Stretch" PlaceholderText="Enter your question or the SQL query . . ." AutomationProperties.Name="simple text editor" Grid.Column="0"/>
 
                         <Button x:Name="sendButton" IsEnabled="False" Style="{StaticResource AccentButtonStyle}" Width="60" Height="35" Grid.Column="1" Margin="5,0,0,0">
                             <SymbolIcon Symbol="Send"/>
@@ -97,10 +98,9 @@
                                 <ToolTip Content="Export"/>
                             </ToolTipService.ToolTip>
                         </Button>
-
                     </Grid>
 
-                    <controls:DataGrid x:Name="resultTable" MaxHeight="800" IsReadOnly="True" AutoGenerateColumns="False" VerticalAlignment="Top" Margin="0,0,0,20"/>
+                    <controls:DataGrid x:Name="resultTable" MaxHeight="1000" IsReadOnly="True" AutoGenerateColumns="False" VerticalAlignment="Top" Margin="0,0,0,10"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <HyperlinkButton Background="{StaticResource AcrylicInAppFillColorBaseBrush}" Content="Find the project on GitHub" NavigateUri="https://github.com/phanxuanquang/AskDB" Margin="0,0,10,0"/>
