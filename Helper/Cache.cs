@@ -6,6 +6,14 @@
         public static HashSet<string> Data = [];
         public const short MaxResults = 10;
 
+        private static async Task EnsureCacheFileCreated()
+        {
+            if (!File.Exists(_cacheFileName))
+            {
+                await File.Create(_cacheFileName).DisposeAsync();
+            }
+        }
+
         public static async Task Init()
         {
             _cacheFileName = Path.Combine(Path.GetTempPath(), "AskDB.tmp");
@@ -29,10 +37,7 @@
 
             if (input is string data)
             {
-                if (!File.Exists(_cacheFileName))
-                {
-                    await File.Create(_cacheFileName).DisposeAsync();
-                }
+                await EnsureCacheFileCreated();
 
                 data = data.Trim();
 
@@ -52,9 +57,51 @@
             }
         }
 
+        public static async Task Remove<T>(T input)
+        {
+            if (object.Equals(input, default(T)))
+            {
+                return;
+            }
+
+            if (input is string data)
+            {
+                await EnsureCacheFileCreated();
+
+                data = data.Trim();
+
+                if (Data.Any(d => d.Equals(data, StringComparison.OrdinalIgnoreCase)))
+                {
+                    var lines = File.ReadAllLinesAsync(_cacheFileName).Result
+                        .Select(StringCipher.Decode)
+                        .ToList();
+
+                    lines.RemoveAll(line => line.Equals(data, StringComparison.OrdinalIgnoreCase));
+
+                    using (StreamWriter sw = new StreamWriter(_cacheFileName))
+                    {
+                        foreach (var line in lines)
+                        {
+                            await sw.WriteLineAsync(StringCipher.Encode(line));
+                        }
+                    }
+
+                    Data.Remove(data);
+                }
+            }
+            else if (input is IEnumerable<string> items)
+            {
+                Data.ExceptWith(items);
+            }
+        }
+
         public static IEnumerable<string> Get(Func<string, bool> predicate)
         {
-            return Data.Where(predicate).OrderBy(k => k).Distinct().Take(MaxResults);
+            return Data
+                .Where(predicate)
+                .OrderBy(k => k)
+                .Distinct()
+                .Take(MaxResults);
         }
     }
 }

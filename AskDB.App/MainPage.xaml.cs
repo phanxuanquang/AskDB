@@ -57,14 +57,19 @@ namespace AskDB.App
                 queryBox.Text = string.Empty;
                 SetLoadingState(true, "Analyzing your database structure");
 
-                var prepareSampleTask = Analyzer.ExtractSampleData(10);
-                var sqlQueryTask = Analyzer.GetSuggestedQueries(true);
-                var englishQueryTask = Analyzer.GetSuggestedQueries(false);
+                var prepareSampleTask = Analyzer.ExtractSampleData(15);
 
-                await Task.WhenAll(prepareSampleTask, sqlQueryTask, englishQueryTask);
+                var sqlQueryTask1 = Analyzer.GetSuggestedQueries(true);
+                var sqlQueryTask2 = Analyzer.GetSuggestedQueries(true);
+                var englishQueryTask1 = Analyzer.GetSuggestedQueries(false);
+                var englishQueryTask2 = Analyzer.GetSuggestedQueries(false);
 
-                await Cache.Set(sqlQueryTask.Result);
-                await Cache.Set(englishQueryTask.Result);
+                await Task.WhenAll(prepareSampleTask, sqlQueryTask1, sqlQueryTask2, englishQueryTask1, englishQueryTask2);
+
+                await Cache.Set(sqlQueryTask1.Result);
+                await Cache.Set(sqlQueryTask2.Result);
+                await Cache.Set(englishQueryTask1.Result);
+                await Cache.Set(englishQueryTask2.Result);
             }
             catch
             {
@@ -200,7 +205,6 @@ namespace AskDB.App
             try
             {
                 _resultDataTable = await Analyzer.DbExtractor.Execute(queryBox.Text);
-                await Cache.Set(queryBox.Text);
                 SetButtonVisibility(true);
                 showSqlButton.Visibility = Visibility.Collapsed;
             }
@@ -396,7 +400,6 @@ namespace AskDB.App
             try
             {
                 _resultDataTable = await Analyzer.DbExtractor.Execute(commander.Output);
-                await Cache.Set(commander.Output);
                 _sqlQuery = commander.Output;
                 SetButtonVisibility(true);
             }

@@ -204,6 +204,7 @@ namespace AskDB.App
             }
             else
             {
+                await Cache.Remove(apiKeyBox.Text);
                 await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Invalid API Key. Please try again.");
             }
 
@@ -245,6 +246,7 @@ namespace AskDB.App
             }
             catch (Exception ex)
             {
+                await Cache.Remove(connectionStringBox.Text);
                 await WinUiHelper.ShowDialog(RootGrid.XamlRoot, ex.Message);
             }
             finally

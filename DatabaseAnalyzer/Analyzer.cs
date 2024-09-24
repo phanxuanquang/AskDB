@@ -13,7 +13,6 @@ namespace DatabaseAnalyzer
     {
         public const short MaxTotalTables = 500;
         public const short MaxTotalColumns = 10000;
-        public const byte MaxTotalQueries = 50;
         public static List<Table> SelectedTables = [];
         public static DatabaseExtractor DbExtractor;
         private static string SampleData = string.Empty;
@@ -53,16 +52,17 @@ namespace DatabaseAnalyzer
             var response = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
             return JsonConvert.DeserializeObject<SqlCommander>(response);
         }
-        public static async Task<List<string>> GetSuggestedQueries(bool useSql)
+
+        public static async Task<List<string>?> GetSuggestedQueries(bool useSql, sbyte totalSuggestedQueries = 20)
         {
             var promptBuilder = new StringBuilder();
             var databaseType = DbExtractor.DatabaseType.ToString();
             var englishQuery = !useSql ? $"human language ({CultureInfo.CurrentCulture.EnglishName.Split(' ')[0]})" : databaseType;
-            var role = !useSql ? "Senor Data Analyst" : "Database Administrator";
+            var role = !useSql ? "Senor Data Analyst and Expert Data Scientist" : "Database Administrator";
 
-            promptBuilder.AppendLine($"You are a {role} with over 20 years of experience working with {databaseType} databases on large-scaled projects.");
+            promptBuilder.AppendLine($"You are a {role} with over 30 years of experience working with {databaseType} databases on large-scaled projects.");
             promptBuilder.AppendLine("I am a CEO who knows nothing about SQL or data analysis, but I want to use my data for the decision making purposes.");
-            promptBuilder.AppendLine($"I will provide you with the table structure of my database with some sample data. You have to suggest at least {MaxTotalQueries} common and completely different {englishQuery} queries from simple level to complex level based on my database structure.");
+            promptBuilder.AppendLine($"I will provide you with the table structure of my database with some sample data. You have to suggest at least {totalSuggestedQueries} common and completely different {englishQuery} queries from simple level to complex level based on my database structure.");
             promptBuilder.AppendLine("Your response must be a List<string> in C# programming language.");
             promptBuilder.AppendLine("In order to help you understand my command and do the task more effectively, here is an example for your response:");
             promptBuilder.AppendLine("[");
@@ -87,8 +87,14 @@ namespace DatabaseAnalyzer
             promptBuilder.AppendLine(SampleData);
             promptBuilder.AppendLine("Your response:");
 
-            var response = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
-            return JsonConvert.DeserializeObject<List<string>>(response);
+            try
+            {
+                return await Generator.GenerateContentAsArray(Generator.ApiKey, promptBuilder.ToString(), CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
+            }
+            catch
+            {
+                return null;
+            }
         }
         public static async Task<string> GetQuickInsight(string query, DataTable dataTable)
         {
@@ -97,7 +103,7 @@ namespace DatabaseAnalyzer
 
             promptBuilder.AppendLine("You are a Senior Data Analyst and a Data Scientist with over 20 years of experience working in large-scaled projects.");
             promptBuilder.AppendLine("I am a CEO and I need you to provide some quick insight from my provided data, which is very helpful for my decision.");
-            promptBuilder.AppendLine("I will provide you with my query (can be SQL or natural language) and my data, please help me to analyze and then provide some useful insight. Your analysis must be easy to understand for even non-tech people like me, have less than 250 words, and be wrapped into only one paragraph.");
+            promptBuilder.AppendLine("I will provide you with my query (can be SQL or natural language) and my data, please help me to analyze and then provide some useful insight. Your analysis must be easy to understand for even non-tech people like me, have less than 150 words, and be wrapped into only one paragraph.");
             promptBuilder.AppendLine("In order to help you understand my command and do the task more effectively, here is the table schemas of my database:");
             promptBuilder.AppendLine(TablesAsString(SelectedTables));
             promptBuilder.AppendLine($"My query is: '{query}'");
