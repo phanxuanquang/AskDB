@@ -42,5 +42,20 @@ namespace Helper
         {
             return Markdown.ToPlainText(markdown).Trim();
         }
+
+        public static string EscapeCsvValue(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
+            {
+                value = value.Replace("\"", "\"\"");
+                return $"\"{value}\"";
+            }
+            return value;
+        }
     }
 }

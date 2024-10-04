@@ -284,7 +284,7 @@ namespace AskDB.App
 
                 if (file != null)
                 {
-                    Extractor.ExportData(_resultDataTable, file.Path);
+                    Extractor.ExportCsv(_resultDataTable, file.Path);
                 }
             }
             catch (Exception ex)

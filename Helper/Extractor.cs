@@ -21,20 +21,17 @@ namespace Helper
             }
         }
 
-        public static void ExportData(DataTable table, string outputFilePath)
+        public static void ExportCsv(DataTable table, string outputFilePath)
         {
-            StringBuilder sb = new();
-
-            string[] columnNames = table.Columns.Cast<DataColumn>().Select(column => column.ColumnName).ToArray();
-            sb.AppendLine(string.Join(",", columnNames));
+            using var writer = new StreamWriter(outputFilePath, false, Encoding.UTF8);
+            var header = string.Join(",", table.Columns.Cast<DataColumn>().Select(col => StringTool.EscapeCsvValue(col.ColumnName)));
+            writer.WriteLine(header);
 
             foreach (DataRow row in table.Rows)
             {
-                var fields = row.ItemArray.Select(field => field?.ToString()).ToArray();
-                sb.AppendLine(string.Join(",", fields));
+                var rowValues = string.Join(",", row.ItemArray.Select(value => StringTool.EscapeCsvValue(value.ToString())));
+                writer.WriteLine(rowValues);
             }
-
-            File.WriteAllText(outputFilePath, sb.ToString());
         }
     }
 }
