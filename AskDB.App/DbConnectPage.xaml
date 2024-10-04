@@ -7,7 +7,6 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Required">
 
     <Grid x:Name="RootGrid" Padding="40">
@@ -15,7 +14,7 @@
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             BorderThickness="0"
-            Background="{StaticResource LayerOnMicaBaseAltFillColorDefault}"
+            Background="{StaticResource LayerFillColorAlt}"
             CornerRadius="15"
             Padding="40"
             MinWidth="800">

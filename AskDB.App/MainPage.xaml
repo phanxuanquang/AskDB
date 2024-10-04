@@ -7,7 +7,6 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Required">
 
     <Grid x:Name="RootGrid" Padding="100">
@@ -15,7 +14,7 @@
         HorizontalAlignment="Stretch"
         VerticalAlignment="Center"
         BorderThickness="0"
-        Background="{StaticResource LayerOnMicaBaseAltFillColorDefault}"
+        Background="{StaticResource LayerFillColorAlt}"
         CornerRadius="15"
         Padding="40"
         MinWidth="800">
@@ -100,7 +99,7 @@
                         </Button>
                     </Grid>
 
-                    <controls:DataGrid x:Name="resultTable" MaxHeight="1000" IsReadOnly="True" AutoGenerateColumns="False" VerticalAlignment="Top" Margin="0,0,0,10"/>
+                    <controls:DataGrid x:Name="resultTable" MaxHeight="900" IsReadOnly="True" AutoGenerateColumns="False" VerticalAlignment="Top" Margin="0,0,0,10"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <HyperlinkButton Background="{StaticResource AcrylicInAppFillColorBaseBrush}" Content="Find the project on GitHub" NavigateUri="https://github.com/phanxuanquang/AskDB" Margin="0,0,10,0"/>
