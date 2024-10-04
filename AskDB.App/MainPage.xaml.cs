@@ -33,6 +33,7 @@ namespace AskDB.App
             queryBox.KeyDown += QueryBox_KeyDown;
             queryBox.KeyUp += QueryBox_KeyUp;
             queryBox.TextChanged += QueryBox_TextChanged;
+            queryBox.SuggestionChosen += QueryBox_SuggestionChosen;
 
             selectAllCheckbox.Click += SelectAllCheckbox_Click;
             tablesListView.SelectionChanged += TablesListView_SelectionChanged;
@@ -43,6 +44,7 @@ namespace AskDB.App
             showInsightButton.Click += ShowInsightButton_Click;
             backButton.Click += BackButton_Click;
         }
+
 
         #region Events
         private async void MainPage_Loaded(object sender, RoutedEventArgs e)
@@ -84,6 +86,10 @@ namespace AskDB.App
             }
         }
 
+        private void QueryBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+        {
+            SendButton_Click(sender, null);
+        }
         private void QueryBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
         {
             if (e.Key == VirtualKey.Tab)
