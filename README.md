@@ -29,7 +29,7 @@ Introducing **AskDB**, the revolutionary application that simplifies the way you
 
 ### Natural Language Querying
 
-![image](https://i.imgur.com/Klito4H.png)
+![image](https://i.imgur.com/vkrxeTK.png)
 
 AskDB analyzes your database structure and provides suggestions for both natural language queries and SQL commands.
    - No more struggling with complex SQL syntax
@@ -54,10 +54,10 @@ Whether you're working with SQL Server, MySQL, PostgreSQL, or SQLite, AskDB has 
 
 ### Intelligent Query Suggestions
 
-![image](https://i.imgur.com/sCOZY8P.png)
-![image](https://i.imgur.com/iIxOpYE.png)
+![image](https://i.imgur.com/g1WQpOH.png)
+![image](https://i.imgur.com/1A5C7cb.png)
 
-   - Get intelligent query suggestions based on the structure of your selected tables
+   - Get up to 100 intelligent query suggestions based on the structure of your selected tables
    - Get query suggestions in both SQL and natural language, customized to your computer's language settings!
    - Remember what you inputed for faster typing and effectively querying
 
@@ -72,7 +72,7 @@ Accidentally trying to drop a table? AskDB has your back. Our intelligent system
 
 ### Export with Ease
     
-![image](https://i.imgur.com/poq5bP2.png)
+![image](https://i.imgur.com/i00tILq.png)
 
    - Transform query results into ready-to-use CSV files with a single click
    - Get the SQL query translated from your natural language query
