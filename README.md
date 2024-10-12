@@ -36,7 +36,7 @@ AskDB analyzes your database structure and provides suggestions for both natural
    - Simply describe what you want to know, and AskDB will help to get the results.
    - Perfect for the ones who don't know what to query
 
-### Instant Insight From Your Data
+### Quick Insights
 
 ![image](https://i.imgur.com/Ov1iIBE.png)
 
