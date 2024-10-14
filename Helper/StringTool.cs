@@ -30,12 +30,7 @@ namespace Helper
 
         public static bool IsNull(string text)
         {
-            if (string.IsNullOrWhiteSpace(text) || string.IsNullOrEmpty(text))
-            {
-                return true;
-            }
-
-            return false;
+            return string.IsNullOrWhiteSpace(text) || string.IsNullOrEmpty(text);
         }
 
         public static string AsPlainText(string markdown)
@@ -55,6 +50,7 @@ namespace Helper
                 value = value.Replace("\"", "\"\"");
                 return $"\"{value}\"";
             }
+
             return value;
         }
     }

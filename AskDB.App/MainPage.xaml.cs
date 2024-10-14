@@ -94,7 +94,10 @@ namespace AskDB.App
         {
             if (e.Key == VirtualKey.Tab)
             {
-                if (StringTool.IsNull((sender as AutoSuggestBox).Text))
+                var autoSuggestBox = sender as AutoSuggestBox;
+                var keyword = autoSuggestBox.Text.Trim();
+
+                if (StringTool.IsNull(keyword))
                 {
                     (sender as AutoSuggestBox).ItemsSource = null;
                     sendButton.IsEnabled = false;
@@ -102,8 +105,13 @@ namespace AskDB.App
                     return;
                 }
 
-                var autoSuggestBox = sender as AutoSuggestBox;
-                var suggestion = Cache.Data.FirstOrDefault(k => k.StartsWith(autoSuggestBox.Text, StringComparison.OrdinalIgnoreCase));
+                var suggestion = Cache.Get(k => k.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                        && !Generator.CanBeGeminiApiKey(k)
+                        && !k.Contains(Generator.ApiKey, StringComparison.OrdinalIgnoreCase)
+                        && !k.Contains(Analyzer.DbExtractor.ConnectionString, StringComparison.OrdinalIgnoreCase)
+                        && !k.Contains(Extractor.GetEnumDescription(Analyzer.DbExtractor.DatabaseType), StringComparison.OrdinalIgnoreCase))
+                    .FirstOrDefault();
+
                 if (suggestion != null)
                 {
                     autoSuggestBox.Text = suggestion;
@@ -133,7 +141,7 @@ namespace AskDB.App
         {
             if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
             {
-                var query = sender.Text;
+                var query = sender.Text.Trim();
 
                 if (!StringTool.IsNull(query))
                 {
