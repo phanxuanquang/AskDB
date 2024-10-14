@@ -78,7 +78,7 @@
 
                     lines.RemoveAll(line => line.Equals(data, StringComparison.OrdinalIgnoreCase));
 
-                    using (StreamWriter sw = new StreamWriter(_cacheFileName))
+                    using (StreamWriter sw = new(_cacheFileName))
                     {
                         foreach (var line in lines)
                         {
@@ -97,11 +97,7 @@
 
         public static IEnumerable<string> Get(Func<string, bool> predicate)
         {
-            return Data
-                .Where(predicate)
-                .OrderBy(k => k)
-                .Distinct()
-                .Take(MaxResults);
+            return Data.Where(predicate).Distinct().Take(MaxResults);
         }
     }
 }

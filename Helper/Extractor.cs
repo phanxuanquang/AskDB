@@ -23,15 +23,36 @@ namespace Helper
 
         public static void ExportCsv(DataTable table, string outputFilePath)
         {
-            using var writer = new StreamWriter(outputFilePath, false, Encoding.UTF8);
-            var header = string.Join(",", table.Columns.Cast<DataColumn>().Select(col => StringTool.EscapeCsvValue(col.ColumnName)));
-            writer.WriteLine(header);
+            using var writer = new StreamWriter(outputFilePath, false, Encoding.UTF8, bufferSize: 65536); 
+            var sb = new StringBuilder();
+
+            var totalColumns = table.Columns.Count;
+
+            for (int i = 0; i < totalColumns; i++)
+            {
+                sb.Append(StringTool.EscapeCsvValue(table.Columns[i].ColumnName));
+                if (i < totalColumns - 1)
+                {
+                    sb.Append(',');
+                }
+            }
+            writer.WriteLine(sb.ToString());
 
             foreach (DataRow row in table.Rows)
             {
-                var rowValues = string.Join(",", row.ItemArray.Select(value => StringTool.EscapeCsvValue(value.ToString())));
-                writer.WriteLine(rowValues);
+                sb.Clear();
+                for (int i = 0; i < totalColumns; i++)
+                {
+                    var value = row[i] != null ? StringTool.EscapeCsvValue(row[i].ToString()) : string.Empty;
+                    sb.Append(value);
+                    if (i < totalColumns - 1)
+                    {
+                        sb.Append(',');
+                    }
+                }
+                writer.WriteLine(sb.ToString());
             }
         }
+
     }
 }
