@@ -9,7 +9,12 @@ using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Data;
 using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
 using Windows.System;
+using Exception = System.Exception;
+using Uri = System.Uri;
 
 
 namespace AskDB.App
@@ -268,6 +273,8 @@ namespace AskDB.App
 
                     apiKeyBox.Text = apiKey;
                     connectGeminiButton.IsEnabled = !string.IsNullOrEmpty(apiKey);
+
+                    await CheckUpdate();
                 }
                 else
                 {
@@ -368,6 +375,39 @@ namespace AskDB.App
             if (!IsFirstEnter)
             {
                 forwardButton.IsEnabled = !string.IsNullOrEmpty(oldData) && newData.Equals(oldData);
+            }
+        }
+
+        private async Task CheckUpdate()
+        {
+            var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+            var latestRelease = await Extractor.GetGithubLatestReleaseInfo();
+
+            if (latestRelease != null && !currentVersion.ToString().StartsWith(latestRelease.Name))
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine($"The latest version {latestRelease.Name} was released on {latestRelease.CreatedAt.ToString("MMMM dd, yyyy")}.");
+                sb.AppendLine();
+                sb.AppendLine("Please check the new updates in the latest version as below:");
+                sb.AppendLine(latestRelease.Body);
+                sb.AppendLine();
+                sb.AppendLine($"It is recommended to download and use the latest version for smoothest experience.");
+
+                var showInsight = new ContentDialog
+                {
+                    XamlRoot = RootGrid.XamlRoot,
+                    Title = "New Version!",
+                    Content = sb.ToString().Trim(),
+                    PrimaryButtonText = "Download Now",
+                    CloseButtonText = "Skip",
+                    DefaultButton = ContentDialogButton.Primary
+                };
+
+                if (await showInsight.ShowAsync() == ContentDialogResult.Primary)
+                {
+                    await Launcher.LaunchUriAsync(new Uri(latestRelease.Assets[0].BrowserDownloadUrl));
+                    Application.Current.Exit();
+                }
             }
         }
     }

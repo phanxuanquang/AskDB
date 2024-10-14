@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using Octokit;
+using System.ComponentModel;
 using System.Data;
 using System.Text;
 
@@ -31,6 +32,19 @@ namespace Helper
             {
                 var rowValues = string.Join(",", row.ItemArray.Select(value => StringTool.EscapeCsvValue(value.ToString())));
                 writer.WriteLine(rowValues);
+            }
+        }
+
+        public static async Task<Release?> GetGithubLatestReleaseInfo()
+        {
+            var client = new GitHubClient(new ProductHeaderValue("AskDB-Client"));
+            try
+            {
+                return await client.Repository.Release.GetLatest("phanxuanquang", "AskDB");
+            }
+            catch
+            {
+                return null;
             }
         }
     }
