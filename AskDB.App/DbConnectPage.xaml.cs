@@ -404,7 +404,7 @@ namespace AskDB.App
                 var sb = new StringBuilder();
                 sb.AppendLine($"The latest version {latestRelease.Name} was released on {latestRelease.CreatedAt.ToString("MMMM dd, yyyy")}.");
                 sb.AppendLine();
-                sb.AppendLine("Please check the new updates in the latest version as below:");
+                sb.AppendLine("Please check the description of the latest version as below:");
                 sb.AppendLine(latestRelease.Body);
                 sb.AppendLine();
                 sb.AppendLine($"It is recommended to download and use the latest version for smoothest experience.");
