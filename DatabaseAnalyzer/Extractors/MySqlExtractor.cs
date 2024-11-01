@@ -12,10 +12,17 @@ namespace DatabaseAnalyzer.Extractors
         {
             DatabaseType = DatabaseType.MySQL;
             TableStructureQuery = @"
-                    SELECT table_name, column_name, data_type, character_maximum_length, is_nullable, column_default 
-                    FROM information_schema.columns 
-                    WHERE table_schema = DATABASE() 
-                    ORDER BY table_name, ordinal_position";
+                    SELECT 
+                        CONCAT(table_schema, '.', table_name) AS table_name,
+                        column_name, 
+                        data_type, 
+                        character_maximum_length, 
+                        is_nullable, 
+                        column_default
+                    FROM 
+                        information_schema.columns
+                    WHERE 
+                        table_schema = DATABASE()";
         }
 
         public override async Task ExtractTables()
