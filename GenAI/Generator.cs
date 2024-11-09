@@ -9,11 +9,12 @@ namespace GenAI
     {
         public const string ApiKeySite = "https://aistudio.google.com/app/apikey";
         public const string ApiKeyPrefix = "AIzaSy";
+
         public static string ApiKey;
+        private static HttpClient _client = new HttpClient();
 
         public static async Task<string> GenerateContent(string apiKey, string query, bool useJson = false, CreativityLevel creativityLevel = CreativityLevel.Medium, GenerativeModel model = GenerativeModel.Gemini_15_Flash)
         {
-            var client = new HttpClient();
             var modelName = Extractor.GetEnumDescription(model);
             var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{modelName}:generateContent?key={apiKey}";
 
@@ -65,7 +66,7 @@ namespace GenAI
             };
 
             var body = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
-            var response = await client.PostAsync(endpoint, body).ConfigureAwait(false);
+            var response = await _client.PostAsync(endpoint, body).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
             var responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -76,7 +77,6 @@ namespace GenAI
 
         public static async Task<List<string>> GenerateContentAsArray(string apiKey, string query, CreativityLevel creativityLevel = CreativityLevel.Medium, GenerativeModel model = GenerativeModel.Gemini_15_Flash)
         {
-            var client = new HttpClient();
             var modelName = Extractor.GetEnumDescription(model);
             var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{modelName}:generateContent?key={apiKey}";
 
@@ -144,7 +144,7 @@ namespace GenAI
             };
 
             var body = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
-            var response = await client.PostAsync(endpoint, body).ConfigureAwait(false);
+            var response = await _client.PostAsync(endpoint, body).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
             var responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);

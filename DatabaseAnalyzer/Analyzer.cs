@@ -22,31 +22,66 @@ namespace DatabaseAnalyzer
             var promptBuilder = new StringBuilder();
             var databaseType = DbExtractor.DatabaseType.ToString();
 
-            promptBuilder.AppendLine($"You are a Database Administrator with over 20 years of experience working with {databaseType} databases on large scale projects.");
-            promptBuilder.AppendLine("I am someone who knows nothing about SQL.");
-            promptBuilder.AppendLine($"I will provide you the structure of my database with some sample data from my database, and my query in natural language. Please help me convert it into a corresponding {databaseType} query.");
+            promptBuilder.AppendLine($"You are a senior Database Administrator with over 20 years of experience working with {databaseType} databases on large-scale enterprise projects. ");
+            promptBuilder.Append($"Your goal is to help a beginner, who has no knowledge of SQL, convert their plain-language queries into precise SQL queries for the {databaseType} database. ");
+            promptBuilder.Append("I will provide the table schemas of the database, some sample data, and a question written in natural language. Your task is to interpret the question, understand the intent, and return the correct SQL query if it is possible. ");
+            promptBuilder.AppendLine();
             promptBuilder.AppendLine("Your response must include two parts as follows:");
-            promptBuilder.AppendLine($"- Output: This is your response to my input. If my input cannot be converted into a {databaseType} query or you find it is not relevant to the table structure in the database I provided, please respond that my request is invalid and why. Otherwise, please return the corresponding {databaseType} query.");
-            promptBuilder.AppendLine("- IsSql: If the Output is an SQL query, this should be TRUE; otherwise, it should be FALSE.");
-            promptBuilder.AppendLine("Your response should be a JSON that corresponds to the following C# class:");
+            promptBuilder.AppendLine($"- **Output:** This is your response to my input. Return the SQL query if the plain-language query is relevant to the the provided database schema and can be converted to a valid SQL query for the {databaseType} database. If my input cannot be converted into a {databaseType} query or it is not relevant to the provided table schemas, please respond that my request is invalid with a short explanation. ");
+            promptBuilder.AppendLine("- **IsSql:** `True` if Output contains a **valid** SQL query, `False` if Output is an explanation.");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("One more important thing is that your response should be structured in the JSON format, matching the following C# class structure:");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("```cs");
             promptBuilder.AppendLine("class SqlCommander");
             promptBuilder.AppendLine("{");
             promptBuilder.AppendLine("    string Output;");
             promptBuilder.AppendLine("    bool IsSql;");
             promptBuilder.AppendLine("}");
-            promptBuilder.AppendLine("To help you understand my command and do the task more effectively, here is an example:");
-            promptBuilder.AppendLine("My input: give me all available products");
+            promptBuilder.AppendLine("```");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("To help you understand my command and do the task more effectively, here are some examples:");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("User’s input: \"List all available products\"");
+            promptBuilder.AppendLine();
             promptBuilder.AppendLine("Your response:");
+            promptBuilder.AppendLine("```");
             promptBuilder.AppendLine("{");
-            promptBuilder.AppendLine("    \"Output\" : \"SELECT * AS AvailableProducts FROM Products WHERE IsAvailable = 1\",");
+            promptBuilder.AppendLine("    \"Output\" : \"SELECT * FROM Products WHERE IsAvailable = 1\",");
             promptBuilder.AppendLine("    \"IsSql\" : true");
             promptBuilder.AppendLine("}");
-            promptBuilder.AppendLine("Now, let's get started.");
-            promptBuilder.AppendLine("This is the table schemas of my database:");
+            promptBuilder.AppendLine("```");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("User’s input: \"Show the best-selling product of all time\"");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("Your Response:");
+            promptBuilder.AppendLine("```");
+            promptBuilder.AppendLine("{");
+            promptBuilder.AppendLine("    \"Output\" : \"The database schema does not contain sales data needed to determine best-selling products.\",");
+            promptBuilder.AppendLine("    \"IsSql\" : false");
+            promptBuilder.AppendLine("}");
+            promptBuilder.AppendLine("```");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("### Additional Instructions:");
+            promptBuilder.AppendLine("1. Be strict with the structure: The output must exactly match the structure of the given C# class SqlCommander.");
+            promptBuilder.AppendLine("2. Focus on accuracy: Carefully analyze the provided table schemas and sample data to determine if the question can be answered.");
+            promptBuilder.AppendLine($"3. Use {databaseType}-specific SQL syntax to ensure compatibility with the database type.");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("Here are the tables in my database with their schemas and their relationship:");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("```sql");
             promptBuilder.AppendLine(TablesAsString(SelectedTables));
-            promptBuilder.AppendLine("This is the some sample data from my database:");
+            promptBuilder.AppendLine("```");
+            promptBuilder.AppendLine("### Sample data for context:");
+            promptBuilder.AppendLine("```sql");
             promptBuilder.AppendLine(SampleData);
-            promptBuilder.AppendLine($"My input: {question}");
+            promptBuilder.AppendLine("```");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("User's query:");
+            promptBuilder.AppendLine("```");
+            promptBuilder.AppendLine(question);
+            promptBuilder.AppendLine("```");
+            promptBuilder.AppendLine();
             promptBuilder.AppendLine("Your response:");
 
             var response = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
@@ -60,31 +95,40 @@ namespace DatabaseAnalyzer
             var englishQuery = !useSql ? $"human language ({CultureInfo.CurrentCulture.EnglishName.Split(' ')[0]})" : databaseType;
             var role = !useSql ? "Senor Data Analyst and Expert Data Scientist" : "Database Administrator";
 
-            promptBuilder.AppendLine($"You are a {role} with over 30 years of experience working with {databaseType} databases on large-scaled projects.");
-            promptBuilder.AppendLine("I am a CEO who knows nothing about SQL or data analysis, but I want to use my data for the decision making purposes.");
-            promptBuilder.AppendLine($"I will provide you with the table structure of my database with some sample data. You have to suggest at least {totalSuggestedQueries} common and completely different {englishQuery} queries from simple level to complex level based on my database structure.");
-            promptBuilder.AppendLine("Your response must be a List<string> in C# programming language.");
+            promptBuilder.AppendLine($"You are a {role} with over 30 years of experience working with {databaseType} databases on large-scaled projects. ");
+            promptBuilder.Append("I am a CEO who knows nothing about SQL or data analysis, but I want to use my data for the decision making purposes. ");
+            promptBuilder.Append($"I will provide you with the table structure of my database with some sample data. You have to suggest at least {totalSuggestedQueries} common and unique {englishQuery} queries from simple level to complex level based on my database structure. ");
+            promptBuilder.Append("Your response must be a `List<string>` in C# programming language.");
+            promptBuilder.AppendLine();
             promptBuilder.AppendLine("In order to help you understand my command and do the task more effectively, here is an example for your response:");
+            promptBuilder.AppendLine("```json");
             promptBuilder.AppendLine("[");
             if (useSql)
             {
-                promptBuilder.AppendLine($"    SELECT TOP 100 * FROM Table1 WHERE Condition,");
-                promptBuilder.AppendLine($"    SELECT COUNT(*) FROM Table2 WHERE Condition,");
-                promptBuilder.AppendLine($"    SELECT DISTINCT(*) FROM Table3 WHERE Condition OrderBy Id DESC");
+                promptBuilder.AppendLine("    \"SELECT TOP 100 * FROM Table1 WHERE Condition\",");
+                promptBuilder.AppendLine("    \"SELECT COUNT(*) FROM Table2 WHERE Condition\",");
+                promptBuilder.AppendLine("    \"SELECT DISTINCT(*) FROM Table3 WHERE Condition OrderBy Id DESC\"");
             }
             else
             {
-                promptBuilder.AppendLine($"    Give me items of the ExampleTableName table,");
-                promptBuilder.AppendLine($"    How many ExampleTableName items that <some_conditions>,");
-                promptBuilder.AppendLine($"    I want to know 10 latest item of the ExampleTableName that <some_conditions>,");
-                promptBuilder.AppendLine($"    Tell me the items of the ExampleTableName that <some_conditions> after <some_date>");
+                promptBuilder.AppendLine("    \"Give me items of the ExampleTableName table\",");
+                promptBuilder.AppendLine("    \"How many ExampleTableName items that <some_conditions>\",");
+                promptBuilder.AppendLine("    \"I want to know 10 latest item of the ExampleTableName that <some_conditions>\",");
+                promptBuilder.AppendLine("    \"Tell me the items of the ExampleTableName that <some_conditions> after <some_date>\"");
             }
             promptBuilder.AppendLine("]");
-            promptBuilder.AppendLine("Now, let's get started.");
-            promptBuilder.AppendLine("This is the table schemas of my database:");
+            promptBuilder.AppendLine("```");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("Here are the tables in my database with their schemas and their relationship:");
+            promptBuilder.AppendLine("```sql");
             promptBuilder.AppendLine(TablesAsString(SelectedTables));
+            promptBuilder.AppendLine("```");
+            promptBuilder.AppendLine();
             promptBuilder.AppendLine("This is the some sample data from my database:");
+            promptBuilder.AppendLine("```sql");
             promptBuilder.AppendLine(SampleData);
+            promptBuilder.AppendLine("```");
+            promptBuilder.AppendLine();
             promptBuilder.AppendLine("Your response:");
 
             try
@@ -99,22 +143,48 @@ namespace DatabaseAnalyzer
         public static async Task<string> GetQuickInsight(string query, DataTable dataTable)
         {
             var promptBuilder = new StringBuilder();
-            var data = DataAsString(dataTable);
 
-            promptBuilder.AppendLine("You are a Senior Data Analyst and a Data Scientist with over 20 years of experience working in large-scaled projects.");
-            promptBuilder.AppendLine("I am a CEO and I need you to provide some quick insight from my provided data, which is very helpful for my decision.");
-            promptBuilder.AppendLine("I will provide you with my query (can be SQL or natural language) and my data, please help me to analyze and then provide some useful insight. Your analysis must be easy to understand for even non-tech people like me, have less than 150 words, and be wrapped into only one paragraph.");
-            promptBuilder.AppendLine("In order to help you understand my command and do the task more effectively, here is the table schemas of my database:");
+            promptBuilder.AppendLine("You are a Senior Data Analyst and Data Scientist with over 20 years of experience providing insights for large-scale business projects. ");
+            promptBuilder.Append("I am a CEO seeking quick, impactful insights based on the data I provide to support strategic decision-making. ");
+            promptBuilder.Append("I will provide a query (in SQL or natural language) and the related data. Please analyze the data comprehensively and summarize your insights with clear, practical recommendations. ");
+            promptBuilder.Append("Your response should be non-technical, concise (under 150 words), in a single paragraph, and organized in an easy-to-understand format.");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("### Key Objectives:");
+            promptBuilder.AppendLine("Your analysis should focus on extracting meaningful insights that address the following:");
+            promptBuilder.AppendLine("- **Trends and Patterns**: Identify any significant or recurring trends, behaviors, or shifts in the data that may indicate growth, decline, or seasonal changes.");
+            promptBuilder.AppendLine("- **Anomalies and Deviations**: Point out any anomalies or deviations from expected patterns, explaining their potential causes or impact.");
+            promptBuilder.AppendLine("- **Opportunities and Risks**: Identify areas for growth, potential challenges, or risks in the data, and suggest how these may affect the company's goals.");
+            promptBuilder.AppendLine("- **Strategic Implications**: Explain how these insights could guide high-level decision-making, focusing on areas like revenue growth, customer retention, or operational efficiency.");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("### Specific Instructions for the Analysis:");
+            promptBuilder.AppendLine("1. **Data Trends and Summary**: Briefly summarize any key patterns or recurring trends in the data. For example, if the data reveals a steady increase in customer engagement, highlight this trend with potential reasons.");
+            promptBuilder.AppendLine("2. **Impactful Metrics and KPIs**: Focus on metrics most relevant to decision-making, such as revenue, conversion rate, or customer satisfaction. Emphasize any notable changes in these metrics.");
+            promptBuilder.AppendLine("3. **Anomalies and Deviations**: Identify and explain any outliers or anomalies in the data. Provide context on what could be causing these deviations and any associated risks or opportunities.");
+            promptBuilder.AppendLine("4. **Business Relevance and Recommendations**: Conclude by explaining how the identified trends or patterns relate to the company’s strategic goals. Offer clear recommendations if applicable.");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("### Formatting Guidelines for the Insight:");
+            promptBuilder.AppendLine("- Keep the insight concise and under 150 words, formatted in a single paragraph.");
+            promptBuilder.AppendLine("- Avoid technical jargon; use simple language accessible to non-technical readers.");
+            promptBuilder.AppendLine("- Summarize key findings at the start, followed by any relevant details or explanations, and conclude with any strategic recommendations.");
+            promptBuilder.AppendLine("- Structure the paragraph in a clear, logical order: first trends, then anomalies, followed by business relevance, and finally recommendations.");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("Here is the database schema for your reference, including column names, data types, and relationships for each table:");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("```sql");
             promptBuilder.AppendLine(TablesAsString(SelectedTables));
-            promptBuilder.AppendLine($"My query is: '{query}'");
-            promptBuilder.AppendLine("My data:");
-            promptBuilder.AppendLine(data);
-            promptBuilder.AppendLine("Your insight from my data and my query:");
+            promptBuilder.AppendLine("```");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine($"The query I am interested in is: **{query}**");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("Here is the data table that is used for the data analysis:");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine(DataAsString(dataTable));
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("### Your insight from the data analysis:");
 
             var result = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), false, CreativityLevel.High, GenerativeModel.Gemini_15_Flash);
             return StringTool.AsPlainText(result);
         }
-
 
         #region Helpers
         public static async Task ExtractSampleData(short rowsPerTable)
@@ -126,7 +196,7 @@ namespace DatabaseAnalyzer
                 foreach (var table in SelectedTables)
                 {
                     var query = DbExtractor.DatabaseType == DatabaseType.SqlServer
-                        ? $"SELECT TOP {rowsPerTable} * FROM [{table.Name}] ORDER BY {table.Columns[0].Name} DESC"
+                        ? $"SELECT TOP {rowsPerTable} * FROM {table.Name} ORDER BY {table.Columns[0].Name} DESC"
                         : $"SELECT * FROM {table.Name} ORDER BY {table.Columns[0].Name} DESC LIMIT {rowsPerTable}";
 
                     var exampleDataTable = await DbExtractor.Execute(query);
@@ -138,7 +208,7 @@ namespace DatabaseAnalyzer
 
                     foreach (DataRow row in exampleDataTable.Rows)
                     {
-                        sb.AppendFormat("INSERT INTO [{0}] (", table.Name);
+                        sb.AppendFormat("INSERT INTO {0} (", table.Name);
 
                         for (int i = 0; i < exampleDataTable.Columns.Count; i++)
                         {
@@ -192,24 +262,33 @@ namespace DatabaseAnalyzer
         }
         public static string DataAsString(DataTable table)
         {
-            StringBuilder sb = new();
+            if (table == null || table.Rows.Count == 0)
+                return string.Empty;
 
-            foreach (DataColumn column in table.Columns)
+            var markdownBuilder = new StringBuilder();
+
+            for (int i = 0; i < table.Columns.Count; i++)
             {
-                sb.AppendFormat("{0,-15}", column.ColumnName);
+                markdownBuilder.Append("| " + table.Columns[i].ColumnName + " ");
             }
-            sb.AppendLine();
+            markdownBuilder.AppendLine("|");
+
+            for (int i = 0; i < table.Columns.Count; i++)
+            {
+                markdownBuilder.Append("| --- ");
+            }
+            markdownBuilder.AppendLine("|");
 
             foreach (DataRow row in table.Rows)
             {
-                foreach (var item in row.ItemArray)
+                for (int i = 0; i < table.Columns.Count; i++)
                 {
-                    sb.AppendFormat("{0,-15}", item);
+                    markdownBuilder.Append("| " + row[i].ToString() + " ");
                 }
-                sb.AppendLine();
+                markdownBuilder.AppendLine("|");
             }
 
-            return sb.ToString();
+            return markdownBuilder.ToString();
         }
         public static bool IsSqlSafe(string sqlCommand)
         {

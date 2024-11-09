@@ -45,7 +45,6 @@ namespace AskDB.App
             backButton.Click += BackButton_Click;
         }
 
-
         #region Events
         private async void MainPage_Loaded(object sender, RoutedEventArgs e)
         {
@@ -79,7 +78,6 @@ namespace AskDB.App
             }
             finally
             {
-                Cache.Data = [.. Cache.Data.AsParallel().OrderByDescending(k => k)];
                 LoadTables();
                 IsFirstEnter = false;
                 SetLoadingState(false, string.Empty);
@@ -109,7 +107,7 @@ namespace AskDB.App
                         && !Generator.CanBeGeminiApiKey(k)
                         && !k.Contains(Generator.ApiKey, StringComparison.OrdinalIgnoreCase)
                         && !k.Contains(Analyzer.DbExtractor.ConnectionString, StringComparison.OrdinalIgnoreCase)
-                        && !k.Contains(Extractor.GetEnumDescription(Analyzer.DbExtractor.DatabaseType), StringComparison.OrdinalIgnoreCase))
+                        && !k.Contains(Extractor.GetEnumDescription(Analyzer.DbExtractor.DatabaseType), StringComparison.OrdinalIgnoreCase), keyword)
                     .FirstOrDefault();
 
                 if (suggestion != null)
@@ -149,7 +147,7 @@ namespace AskDB.App
                         && !Generator.CanBeGeminiApiKey(k)
                         && !k.Contains(Generator.ApiKey, StringComparison.OrdinalIgnoreCase)
                         && !k.Contains(Analyzer.DbExtractor.ConnectionString, StringComparison.OrdinalIgnoreCase)
-                        && !k.Contains(Extractor.GetEnumDescription(Analyzer.DbExtractor.DatabaseType), StringComparison.OrdinalIgnoreCase));
+                        && !k.Contains(Extractor.GetEnumDescription(Analyzer.DbExtractor.DatabaseType), StringComparison.OrdinalIgnoreCase), query);
 
                     sender.ItemsSource = source;
                 }

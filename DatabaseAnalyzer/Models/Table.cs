@@ -10,7 +10,7 @@ namespace DatabaseAnalyzer.Models
         public override string ToString()
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"CREATE TABLE [{Name}] (");
+            sb.AppendLine($"CREATE TABLE {Name} (");
 
             for (int i = 0; i < Columns.Count; i++)
             {
@@ -23,6 +23,7 @@ namespace DatabaseAnalyzer.Models
 
             sb.AppendLine();
             sb.AppendLine(");");
+            sb.AppendLine();
 
             return sb.ToString();
         }

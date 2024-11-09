@@ -67,7 +67,7 @@ namespace AskDB.App
                     {
                         var suggestion = Cache
                             .Get(k => !Generator.CanBeGeminiApiKey(k)
-                                && (k.StartsWith(keyword, StringComparison.OrdinalIgnoreCase) || k.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+                                && (k.StartsWith(keyword, StringComparison.OrdinalIgnoreCase) || k.Contains(keyword, StringComparison.OrdinalIgnoreCase)), keyword)
                             .FirstOrDefault();
 
                         if (suggestion != null)
@@ -114,7 +114,7 @@ namespace AskDB.App
 
                 var source = Cache
                     .Get(k => !Generator.CanBeGeminiApiKey(k)
-                        && (k.StartsWith(keyword, StringComparison.OrdinalIgnoreCase) || k.Contains(keyword, StringComparison.OrdinalIgnoreCase)));
+                        && (k.StartsWith(keyword, StringComparison.OrdinalIgnoreCase) || k.Contains(keyword, StringComparison.OrdinalIgnoreCase)), keyword);
 
                 sender.ItemsSource = source;
                 connectDbButton.IsEnabled = true;
@@ -187,14 +187,14 @@ namespace AskDB.App
             }
         }
 
-        private void DbTypeCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void DbTypeCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (dbTypeCombobox.SelectedIndex != -1)
             {
                 var defaultConnectionString = Extractor.GetEnumDescription((DatabaseType)dbTypeCombobox.SelectedItem);
 
                 connectionStringBox.PlaceholderText = defaultConnectionString;
-                Cache.Data.Add(defaultConnectionString);
+                await Cache.Set(defaultConnectionString);
 
                 connectDbButton.IsEnabled = true;
             }
@@ -252,7 +252,7 @@ namespace AskDB.App
 
                 if (Analyzer.DbExtractor.Tables.Count == 0)
                 {
-                    await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Cannot find any tables in this database", "Not Found");
+                    await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Cannot find any tables in this database. Please ensure that the connected database contains at least one table (not including system tables).", "Empty Database");
                     WinUiHelper.SetLoading(false, sender as Button, dbInputLoadingOverlay, dbInputPanel);
                 }
                 else
@@ -285,7 +285,7 @@ namespace AskDB.App
                 if (IsFirstEnter)
                 {
                     await Cache.Init();
-                    var apiKey = Cache.Data.FirstOrDefault(Generator.CanBeGeminiApiKey);
+                    var apiKey = Cache.Get(Generator.CanBeGeminiApiKey).FirstOrDefault();
 
                     apiKeyBox.Text = apiKey;
                     connectGeminiButton.IsEnabled = !string.IsNullOrEmpty(apiKey);
@@ -404,12 +404,12 @@ namespace AskDB.App
                 var sb = new StringBuilder();
                 sb.AppendLine($"The latest version {latestRelease.Name} was released on {latestRelease.CreatedAt.ToString("MMMM dd, yyyy")}.");
                 sb.AppendLine();
-                sb.AppendLine("Please check the description of the latest version as below:");
+                sb.AppendLine("Please check the description of the latest version below:");
                 sb.AppendLine(latestRelease.Body);
                 sb.AppendLine();
-                sb.AppendLine($"It is recommended to download and use the latest version for smoothest experience.");
+                sb.AppendLine($"It is recommended to use the latest version for smoothest experience.");
 
-                var showInsight = new ContentDialog
+                var updateConfirmation = new ContentDialog
                 {
                     XamlRoot = RootGrid.XamlRoot,
                     Title = "New Version!",
@@ -419,7 +419,7 @@ namespace AskDB.App
                     DefaultButton = ContentDialogButton.Primary
                 };
 
-                if (await showInsight.ShowAsync() == ContentDialogResult.Primary)
+                if (await updateConfirmation.ShowAsync() == ContentDialogResult.Primary)
                 {
                     await Launcher.LaunchUriAsync(new Uri(latestRelease.Assets[0].BrowserDownloadUrl));
                     Application.Current.Exit();

@@ -24,7 +24,7 @@ namespace Helper
 
         public static void ExportCsv(DataTable table, string outputFilePath)
         {
-            using var writer = new StreamWriter(outputFilePath, false, Encoding.UTF8, bufferSize: 65536); 
+            using var writer = new StreamWriter(outputFilePath, false, Encoding.UTF8, bufferSize: 65536);
             var sb = new StringBuilder();
 
             var totalColumns = table.Columns.Count;
