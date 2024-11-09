@@ -21,70 +21,66 @@ namespace DatabaseAnalyzer
         {
             var promptBuilder = new StringBuilder();
             var databaseType = DbExtractor.DatabaseType.ToString();
+            var prompt = $@"You are a highly skilled Database Administrator with over 20 years of experience working with {databaseType} databases in large-scale enterprise systems.
+I am a beginner with no knowledge of SQL and need your help to translate plain-language queries into SQL queries for my {databaseType} database.
+I will provide the structure of my database, some sample data, and a query in natural language. Your job is to analyze the query, map it to the database schema, and return the corresponding SQL query if it’s possible.
 
-            promptBuilder.AppendLine($"You are a senior Database Administrator with over 20 years of experience working with {databaseType} databases on large-scale enterprise projects. ");
-            promptBuilder.Append($"Your goal is to help a beginner, who has no knowledge of SQL, convert their plain-language queries into precise SQL queries for the {databaseType} database. ");
-            promptBuilder.Append("I will provide the table schemas of the database, some sample data, and a question written in natural language. Your task is to interpret the question, understand the intent, and return the correct SQL query if it is possible. ");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("Your response must include two parts as follows:");
-            promptBuilder.AppendLine($"- **Output:** This is your response to my input. Return the SQL query if the plain-language query is relevant to the the provided database schema and can be converted to a valid SQL query for the {databaseType} database. If my input cannot be converted into a {databaseType} query or it is not relevant to the provided table schemas, please respond that my request is invalid with a short explanation. ");
-            promptBuilder.AppendLine("- **IsSql:** `True` if Output contains a **valid** SQL query, `False` if Output is an explanation.");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("One more important thing is that your response should be structured in the JSON format, matching the following C# class structure:");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("```cs");
-            promptBuilder.AppendLine("class SqlCommander");
-            promptBuilder.AppendLine("{");
-            promptBuilder.AppendLine("    string Output;");
-            promptBuilder.AppendLine("    bool IsSql;");
-            promptBuilder.AppendLine("}");
-            promptBuilder.AppendLine("```");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("To help you understand my command and do the task more effectively, here are some examples:");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("User’s input: \"List all available products\"");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("Your response:");
-            promptBuilder.AppendLine("```");
-            promptBuilder.AppendLine("{");
-            promptBuilder.AppendLine("    \"Output\" : \"SELECT * FROM Products WHERE IsAvailable = 1\",");
-            promptBuilder.AppendLine("    \"IsSql\" : true");
-            promptBuilder.AppendLine("}");
-            promptBuilder.AppendLine("```");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("User’s input: \"Show the best-selling product of all time\"");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("Your Response:");
-            promptBuilder.AppendLine("```");
-            promptBuilder.AppendLine("{");
-            promptBuilder.AppendLine("    \"Output\" : \"The database schema does not contain sales data needed to determine best-selling products.\",");
-            promptBuilder.AppendLine("    \"IsSql\" : false");
-            promptBuilder.AppendLine("}");
-            promptBuilder.AppendLine("```");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("### Additional Instructions:");
-            promptBuilder.AppendLine("1. Be strict with the structure: The output must exactly match the structure of the given C# class SqlCommander.");
-            promptBuilder.AppendLine("2. Focus on accuracy: Carefully analyze the provided table schemas and sample data to determine if the question can be answered.");
-            promptBuilder.AppendLine($"3. Use {databaseType}-specific SQL syntax to ensure compatibility with the database type.");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("Here are the tables in my database with their schemas and their relationship:");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("```sql");
-            promptBuilder.AppendLine(TablesAsString(SelectedTables));
-            promptBuilder.AppendLine("```");
-            promptBuilder.AppendLine("### Sample data for context:");
-            promptBuilder.AppendLine("```sql");
-            promptBuilder.AppendLine(SampleData);
-            promptBuilder.AppendLine("```");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("User's query:");
-            promptBuilder.AppendLine("```");
-            promptBuilder.AppendLine(question);
-            promptBuilder.AppendLine("```");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("Your response:");
+### Instructions for Generating the Response:
+1. **Output**: If the input query is valid and can be converted into an SQL query for the {databaseType} database, return the corresponding SQL query. 
+   - If the query cannot be converted due to an error, invalid data, or lack of context in the database schema, respond with a clear and explanation.
+   - The SQL query should be syntactically correct and adhere to the conventions and features of the {databaseType} database.
+2. **IsSql**: 
+   - Set this field to `true` if ""Output"" contains a valid SQL query.
+   - Set it to `false` if ""Output"" is an explanation or if the input is invalid.
 
-            var response = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
+### Example 1: Valid Query
+- User’s input: ""List all available products""
+- Response:
+
+```json
+{{
+    ""Output"": ""SELECT * FROM Products WHERE IsAvailable = 1"",
+    ""IsSql"": true
+}}
+```
+
+### Example 2: Invalid Query
+- User’s input: ""Show the best-selling product of all time""
+- Response:
+
+```json
+{{
+    ""Output"": ""Invalid request: The database schema does not include sales data necessary to determine best-selling products."",
+    ""IsSql"": false
+}}
+```
+
+### Additional Guidelines ###
+1. **Accurate SQL Conversion**: Ensure the generated SQL query is accurate and respects the database schema. Only use tables and columns provided in the database structure.
+2. **Database-Specific Syntax**: Be aware of {databaseType}-specific SQL syntax (e.g., T-SQL for SQL Server, MySQL syntax) and adapt the query accordingly.
+3. **Clarify Ambiguities**: If the input query is unclear or requires assumptions to be made (e.g., missing table relationships or unclear filtering criteria), respond with description of the ambiguity.
+4. **No Guessing**: If the input does not match the schema or is too vague to infer a valid query, be specific about why the query cannot be constructed.
+5. **Explain Invalid Queries**: When returning an invalid response, provide a short but clear explanation. Example: ""The query refers to a non-existent column."", or ""There is no table for 'products' in the schema."".
+6. **Only Relevant Data**: Focus only on the tables and fields provided in the schema and sample data. Do not make assumptions about data outside of what is presented.
+
+### Database Schema:
+
+```sql
+{TablesAsString(SelectedTables)}
+```
+
+### Sample Data:
+
+```sql
+{SampleData}
+```
+
+### User Query:
+{question}
+
+### Generated {databaseType} Query:";
+
+            var response = await Generator.GenerateContent(Generator.ApiKey, prompt.Trim(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
             return JsonConvert.DeserializeObject<SqlCommander>(response);
         }
 

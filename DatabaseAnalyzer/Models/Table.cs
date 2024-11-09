@@ -18,7 +18,7 @@ namespace DatabaseAnalyzer.Models
                 {
                     sb.AppendLine(",");
                 }
-                sb.Append($"    {Columns[i]}");
+                sb.Append($"    {Columns[i].ToString()}");
             }
 
             sb.AppendLine();

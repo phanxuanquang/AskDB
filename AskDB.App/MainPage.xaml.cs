@@ -86,6 +86,7 @@ namespace AskDB.App
 
         private void QueryBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
         {
+            sender.Text = args.SelectedItem.ToString();
             SendButton_Click(sender, null);
         }
         private void QueryBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)

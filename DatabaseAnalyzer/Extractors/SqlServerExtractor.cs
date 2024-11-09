@@ -13,7 +13,7 @@ namespace DatabaseAnalyzer.Extractors
             DatabaseType = DatabaseType.SqlServer;
             TableStructureQuery = @"
                 SELECT 
-                    t.TABLE_SCHEMA + '.' + t.TABLE_NAME AS TABLE_NAME,
+                    s.name + '.' + t.name AS TableName, -- Kết hợp schema và table name
                     c.COLUMN_NAME, 
                     c.DATA_TYPE, 
                     c.CHARACTER_MAXIMUM_LENGTH, 
@@ -22,34 +22,37 @@ namespace DatabaseAnalyzer.Extractors
                     pk.COLUMN_NAME AS PRIMARY_KEY,
                     fk.FK_Name, 
                     fk.ParentColumn, 
-                    fk.ReferencedTable, 
+                    OBJECT_NAME(fk.referenced_object_id) AS ReferencedTable, 
                     fk.ReferencedColumn
                 FROM 
-                    INFORMATION_SCHEMA.TABLES t
+                    sys.tables t
+                JOIN 
+                    sys.schemas s ON t.schema_id = s.schema_id -- Lấy schema từ sys.schemas
                 LEFT JOIN 
-                    INFORMATION_SCHEMA.COLUMNS c ON t.TABLE_NAME = c.TABLE_NAME AND t.TABLE_SCHEMA = c.TABLE_SCHEMA
+                    INFORMATION_SCHEMA.COLUMNS c 
+                        ON t.name = c.TABLE_NAME 
+                        AND s.name = c.TABLE_SCHEMA -- Đảm bảo kết nối đúng với schema trong INFORMATION_SCHEMA
                 LEFT JOIN (
                     SELECT 
-                        kcu.TABLE_SCHEMA,
                         kcu.TABLE_NAME, 
-                        kcu.COLUMN_NAME 
+                        kcu.COLUMN_NAME, 
+                        kcu.CONSTRAINT_NAME AS PRIMARY_KEY
                     FROM 
                         INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
-                    INNER JOIN 
-                        INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc 
-                        ON kcu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME 
-                        AND tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
-                ) pk ON t.TABLE_NAME = pk.TABLE_NAME 
-                      AND t.TABLE_SCHEMA = pk.TABLE_SCHEMA 
-                      AND c.COLUMN_NAME = pk.COLUMN_NAME
+                    WHERE 
+                        kcu.CONSTRAINT_NAME IN (
+                            SELECT CONSTRAINT_NAME 
+                            FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+                            WHERE CONSTRAINT_TYPE = 'PRIMARY KEY'
+                        )
+                ) pk ON t.name = pk.TABLE_NAME AND c.COLUMN_NAME = pk.COLUMN_NAME
                 LEFT JOIN (
                     SELECT 
                         fk.name AS FK_Name,
-                        tp.schema_id AS ParentSchema,
                         tp.name AS ParentTable,
                         cp.name AS ParentColumn,
                         cr.name AS ReferencedColumn,
-                        OBJECT_SCHEMA_NAME(fk.referenced_object_id) + '.' + OBJECT_NAME(fk.referenced_object_id) AS ReferencedTable
+                        fk.referenced_object_id
                     FROM 
                         sys.foreign_keys AS fk
                     INNER JOIN 
@@ -60,11 +63,9 @@ namespace DatabaseAnalyzer.Extractors
                         sys.columns AS cp ON fkc.parent_object_id = cp.object_id AND fkc.parent_column_id = cp.column_id
                     INNER JOIN 
                         sys.columns AS cr ON fkc.referenced_object_id = cr.object_id AND fkc.referenced_column_id = cr.column_id
-                ) fk ON t.TABLE_NAME = fk.ParentTable 
-                      AND t.TABLE_SCHEMA = OBJECT_SCHEMA_NAME(fk.ParentSchema)
-                      AND c.COLUMN_NAME = fk.ParentColumn
+                ) fk ON t.name = fk.ParentTable AND c.COLUMN_NAME = fk.ParentColumn
                 WHERE 
-                    t.TABLE_TYPE = 'BASE TABLE'";
+                    t.is_ms_shipped = 0";
         }
 
         public override async Task ExtractTables()

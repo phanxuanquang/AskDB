@@ -57,7 +57,7 @@ namespace DatabaseAnalyzer.Models
 
             if (ForeignKeyName != null)
             {
-                stringBuilder.Append($" REFERENCES [{ReferencedTable}]({ReferencedColumn})");
+                stringBuilder.Append($" REFERENCES {ReferencedTable}({ReferencedColumn})");
             }
 
             return stringBuilder.ToString();
