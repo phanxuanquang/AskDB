@@ -38,9 +38,8 @@
             return _cachedData
                 .Where(predicate)
                 .Distinct()
-                .OrderBy(k => StringTool.GetSimilarity(k, keyword))
-                .Take(10)
-                .OrderBy(k => k);
+                .OrderByDescending(k => StringTool.GetSimilarity(k, keyword))
+                .Take(10);
         }
         public static async Task Set<T>(T input)
         {

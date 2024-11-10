@@ -19,7 +19,6 @@ namespace DatabaseAnalyzer
 
         public static async Task<SqlCommander> GetSql(string question)
         {
-            var promptBuilder = new StringBuilder();
             var databaseType = DbExtractor.DatabaseType.ToString();
             var prompt = $@"You are a highly skilled Database Administrator with over 20 years of experience working with {databaseType} databases in large-scale enterprise systems.
 I am a beginner with no knowledge of SQL and need your help to translate plain-language queries into SQL queries for my {databaseType} database.
@@ -92,11 +91,22 @@ I will provide the structure of my database, some sample data, and a query in na
             var role = !useSql ? "Senor Data Analyst and Expert Data Scientist" : "Database Administrator";
 
             promptBuilder.AppendLine($"You are a {role} with over 30 years of experience working with {databaseType} databases on large-scaled projects. ");
-            promptBuilder.Append("I am a CEO who knows nothing about SQL or data analysis, but I want to use my data for the decision making purposes. ");
-            promptBuilder.Append($"I will provide you with the table structure of my database with some sample data. You have to suggest at least {totalSuggestedQueries} common and unique {englishQuery} queries from simple level to complex level based on my database structure. ");
-            promptBuilder.Append("Your response must be a `List<string>` in C# programming language.");
+            promptBuilder.Append("I am someone who knows nothing about SQL or data analysis, but I want to use my data for the decision making purposes. ");
+            promptBuilder.Append($"I will provide you with the database schemas with some sample data based on the provided database schemas. You have to suggest at least {totalSuggestedQueries} common and unique {englishQuery} queries from simple level to complex level based on my database structure. ");
             promptBuilder.AppendLine();
-            promptBuilder.AppendLine("In order to help you understand my command and do the task more effectively, here is an example for your response:");
+            promptBuilder.AppendLine("### Database Schema:");
+            promptBuilder.AppendLine("```sql");
+            promptBuilder.AppendLine(TablesAsString(SelectedTables));
+            promptBuilder.AppendLine("```");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("### Sample Data:");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine(SampleData);
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("### Output Requirement:");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("The output must be structured as a string array, here is an example for the output:");
+            promptBuilder.AppendLine();
             promptBuilder.AppendLine("```json");
             promptBuilder.AppendLine("[");
             if (useSql)
@@ -115,17 +125,7 @@ I will provide the structure of my database, some sample data, and a query in na
             promptBuilder.AppendLine("]");
             promptBuilder.AppendLine("```");
             promptBuilder.AppendLine();
-            promptBuilder.AppendLine("Here are the tables in my database with their schemas and their relationship:");
-            promptBuilder.AppendLine("```sql");
-            promptBuilder.AppendLine(TablesAsString(SelectedTables));
-            promptBuilder.AppendLine("```");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("This is the some sample data from my database:");
-            promptBuilder.AppendLine("```sql");
-            promptBuilder.AppendLine(SampleData);
-            promptBuilder.AppendLine("```");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("Your response:");
+            promptBuilder.AppendLine("### Your response:");
 
             try
             {
@@ -202,24 +202,27 @@ I will provide the structure of my database, some sample data, and a query in na
                         continue;
                     }
 
+                    sb.AppendLine($"#### {table.Name}:");
+                    sb.AppendLine();
+
+                    foreach (DataColumn column in exampleDataTable.Columns)
+                    {
+                        sb.Append($"| {column.ColumnName} ");
+                    }
+                    sb.AppendLine("|");
+
+                    foreach (DataColumn column in exampleDataTable.Columns)
+                    {
+                        sb.Append("| --- ");
+                    }
+                    sb.AppendLine("|");
+
                     foreach (DataRow row in exampleDataTable.Rows)
                     {
-                        sb.AppendFormat("INSERT INTO {0} (", table.Name);
-
-                        for (int i = 0; i < exampleDataTable.Columns.Count; i++)
+                        foreach (DataColumn column in exampleDataTable.Columns)
                         {
-                            sb.Append(exampleDataTable.Columns[i].ColumnName);
-                            if (i < exampleDataTable.Columns.Count - 1)
-                            {
-                                sb.Append(", ");
-                            }
-                        }
-
-                        sb.Append(") VALUES (");
-
-                        for (int i = 0; i < exampleDataTable.Columns.Count; i++)
-                        {
-                            object value = row[i];
+                            object value = row[column];
+                            sb.Append("| ");
 
                             if (value == DBNull.Value)
                             {
@@ -227,21 +230,19 @@ I will provide the structure of my database, some sample data, and a query in na
                             }
                             else if (value is string || value is DateTime)
                             {
-                                sb.AppendFormat("'{0}'", value.ToString().Replace("'", "''"));
+                                sb.Append(value.ToString().Replace("|", "\\|"));
                             }
                             else
                             {
                                 sb.Append(value);
                             }
 
-                            if (i < exampleDataTable.Columns.Count - 1)
-                            {
-                                sb.Append(", ");
-                            }
+                            sb.Append(" ");
                         }
-
-                        sb.Append(");\n");
+                        sb.AppendLine("|");
                     }
+
+                    sb.AppendLine();
                 }
 
                 SampleData = sb.ToString().Trim();
@@ -251,6 +252,7 @@ I will provide the structure of my database, some sample data, and a query in na
                 SampleData = string.Empty;
             }
         }
+
         public static string TablesAsString(List<Table> tables)
         {
             var schemas = tables.Select(d => d.ToString()).ToList();

@@ -248,12 +248,11 @@ namespace AskDB.App
                     _ => throw new NotSupportedException("Not Supported"),
                 };
                 await Analyzer.DbExtractor.ExtractTables();
-                Analyzer.DbExtractor.Tables = [.. Analyzer.DbExtractor.Tables.OrderBy(t => t.Name)];
+                Analyzer.DbExtractor.Tables = [.. Analyzer.DbExtractor.Tables.Where(t => t.Columns.Count > 0).OrderBy(t => t.Name)];
 
                 if (Analyzer.DbExtractor.Tables.Count == 0)
                 {
-                    await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Cannot find any tables in this database. Please ensure that the connected database contains at least one table (not including system tables).", "Empty Database");
-                    WinUiHelper.SetLoading(false, sender as Button, dbInputLoadingOverlay, dbInputPanel);
+                    await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Please ensure that your database has at least one table with data (not including system tables).", "Empty Database!");
                 }
                 else
                 {

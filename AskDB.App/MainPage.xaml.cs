@@ -58,14 +58,14 @@ namespace AskDB.App
                 queryBox.Text = string.Empty;
                 SetLoadingState(true, "Analyzing your database structure");
 
-                var prepareSampleTask = Analyzer.ExtractSampleData(15);
+                await Analyzer.ExtractSampleData(15);
 
                 var sqlQueryTask1 = Analyzer.GetSuggestedQueries(true);
                 var sqlQueryTask2 = Analyzer.GetSuggestedQueries(true);
                 var englishQueryTask1 = Analyzer.GetSuggestedQueries(false);
                 var englishQueryTask2 = Analyzer.GetSuggestedQueries(false);
 
-                await Task.WhenAll(prepareSampleTask, sqlQueryTask1, sqlQueryTask2, englishQueryTask1, englishQueryTask2);
+                await Task.WhenAll(sqlQueryTask1, sqlQueryTask2, englishQueryTask1, englishQueryTask2);
 
                 await Cache.Set(sqlQueryTask1.Result);
                 await Cache.Set(sqlQueryTask2.Result);
@@ -104,8 +104,7 @@ namespace AskDB.App
                     return;
                 }
 
-                var suggestion = Cache.Get(k => k.Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                        && !Generator.CanBeGeminiApiKey(k)
+                var suggestion = Cache.Get(k => !Generator.CanBeGeminiApiKey(k)
                         && !k.Contains(Generator.ApiKey, StringComparison.OrdinalIgnoreCase)
                         && !k.Contains(Analyzer.DbExtractor.ConnectionString, StringComparison.OrdinalIgnoreCase)
                         && !k.Contains(Extractor.GetEnumDescription(Analyzer.DbExtractor.DatabaseType), StringComparison.OrdinalIgnoreCase), keyword)
@@ -144,8 +143,7 @@ namespace AskDB.App
 
                 if (!StringTool.IsNull(query))
                 {
-                    var source = Cache.Get(k => k.Contains(query, StringComparison.OrdinalIgnoreCase)
-                        && !Generator.CanBeGeminiApiKey(k)
+                    var source = Cache.Get(k => !Generator.CanBeGeminiApiKey(k)
                         && !k.Contains(Generator.ApiKey, StringComparison.OrdinalIgnoreCase)
                         && !k.Contains(Analyzer.DbExtractor.ConnectionString, StringComparison.OrdinalIgnoreCase)
                         && !k.Contains(Extractor.GetEnumDescription(Analyzer.DbExtractor.DatabaseType), StringComparison.OrdinalIgnoreCase), query);

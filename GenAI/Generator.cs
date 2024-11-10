@@ -11,7 +11,7 @@ namespace GenAI
         public const string ApiKeyPrefix = "AIzaSy";
 
         public static string ApiKey;
-        private static HttpClient _client = new HttpClient();
+        private static readonly HttpClient _client = new();
 
         public static async Task<string> GenerateContent(string apiKey, string query, bool useJson = false, CreativityLevel creativityLevel = CreativityLevel.Medium, GenerativeModel model = GenerativeModel.Gemini_15_Flash)
         {

@@ -8,21 +8,36 @@ namespace DatabaseAnalyzer.Extractors
 {
     public class MySqlExtractor : DatabaseExtractor
     {
+        private const string ForeignKeyQuery = @"
+            SELECT 
+                kcu.constraint_name AS foreign_key_name,
+                kcu.table_name AS parent_table,
+                kcu.column_name AS parent_column,
+                ccu.table_name AS referenced_table,
+                ccu.column_name AS referenced_column
+            FROM 
+                information_schema.key_column_usage kcu
+            JOIN 
+                information_schema.constraint_column_usage ccu 
+                ON kcu.constraint_name = ccu.constraint_name
+            WHERE 
+                kcu.table_schema = DATABASE()";
+
         public MySqlExtractor(string connectionString) : base(connectionString)
         {
             DatabaseType = DatabaseType.MySQL;
             TableStructureQuery = @"
-                    SELECT 
-                        CONCAT(table_schema, '.', table_name) AS table_name,
-                        column_name, 
-                        data_type, 
-                        character_maximum_length, 
-                        is_nullable, 
-                        column_default
-                    FROM 
-                        information_schema.columns
-                    WHERE 
-                        table_schema = DATABASE()";
+            SELECT 
+                CONCAT(table_schema, '.', table_name) AS table_name,
+                column_name, 
+                data_type, 
+                character_maximum_length, 
+                is_nullable, 
+                column_default
+            FROM 
+                information_schema.columns
+            WHERE 
+                table_schema = DATABASE()";
         }
 
         public override async Task ExtractTables()
@@ -31,26 +46,20 @@ namespace DatabaseAnalyzer.Extractors
             await connection.OpenAsync();
 
             var tables = new ConcurrentDictionary<string, Table>();
-
             var rows = await connection.QueryAsync<dynamic>(TableStructureQuery);
+
             foreach (var row in rows)
             {
-                string tableName = row.table_name;
-                string columnName = row.column_name;
-                string dataType = row.data_type;
-                int? maxLength = row.character_maximum_length;
-                bool isNullable = row.is_nullable == "YES";
-                string defaultValue = row.column_default;
-
                 var column = new Column
                 {
-                    Name = columnName,
-                    DataType = dataType,
-                    MaxLength = maxLength,
-                    IsNullable = isNullable,
-                    DefaultValue = defaultValue
+                    Name = (string)row.column_name,
+                    DataType = (string)row.data_type,
+                    MaxLength = (int?)row.character_maximum_length,
+                    IsNullable = (string?)row.is_nullable == "YES",
+                    DefaultValue = (string?)row.column_default,
                 };
 
+                var tableName = (string)row.table_name;
                 tables.AddOrUpdate(tableName,
                     new Table { Name = tableName, Columns = [column] },
                     (_, table) =>
@@ -58,6 +67,19 @@ namespace DatabaseAnalyzer.Extractors
                         table.Columns.Add(column);
                         return table;
                     });
+            }
+
+            var foreignKeys = await connection.QueryAsync<dynamic>(ForeignKeyQuery);
+            foreach (var fk in foreignKeys)
+            {
+                var parentColumnObj = tables[(string)fk.parent_table]?.Columns.FirstOrDefault(c => c.Name == fk.parent_column);
+                if (parentColumnObj != null)
+                {
+                    parentColumnObj.ForeignKeyName = fk.foreign_key_name;
+                    parentColumnObj.ParentColumn = fk.parent_column;
+                    parentColumnObj.ReferencedTable = fk.referenced_table;
+                    parentColumnObj.ReferencedColumn = fk.referenced_column;
+                }
             }
 
             Tables = [.. tables.Values];
@@ -75,4 +97,5 @@ namespace DatabaseAnalyzer.Extractors
             return dataTable;
         }
     }
+
 }

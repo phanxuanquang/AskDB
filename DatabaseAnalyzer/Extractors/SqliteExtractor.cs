@@ -61,10 +61,10 @@ namespace DatabaseAnalyzer.Extractors
                                 IsNullable = !column.NotNull,
                                 DefaultValue = column.DefaultValue,
                                 PrimaryKey = column.Pk == 1 ? column.Name : null,
-                                ForeignKeyName = foreignKeyInfor?.Table, 
-                                ParentColumn = foreignKeyInfor?.From,    
-                                ReferencedTable = foreignKeyInfor?.Table, 
-                                ReferencedColumn = foreignKeyInfor?.To  
+                                ForeignKeyName = foreignKeyInfor?.Table,
+                                ParentColumn = foreignKeyInfor?.From,
+                                ReferencedTable = foreignKeyInfor?.Table,
+                                ReferencedColumn = foreignKeyInfor?.To
                             };
                         })
                         .ToList()

@@ -30,7 +30,7 @@ namespace Helper
 
         public static bool IsNull(string text)
         {
-            return string.IsNullOrWhiteSpace(text) || string.IsNullOrEmpty(text);
+            return string.IsNullOrEmpty(text) || string.IsNullOrWhiteSpace(text);
         }
 
         public static string AsPlainText(string markdown)
@@ -45,7 +45,7 @@ namespace Helper
                 return string.Empty;
             }
 
-            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
+            if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
             {
                 value = value.Replace("\"", "\"\"");
                 return $"\"{value}\"";
