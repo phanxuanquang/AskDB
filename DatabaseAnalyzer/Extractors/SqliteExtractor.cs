@@ -18,6 +18,14 @@ namespace DatabaseAnalyzer.Extractors
             internal int? Pk { get; set; }
         }
 
+        internal class ForeignKeyInfo
+        {
+            internal int Id { get; set; }
+            internal string Table { get; set; }
+            internal string From { get; set; }
+            internal string To { get; set; }
+        }
+
         public SqliteExtractor(string connectionString) : base(connectionString)
         {
             DatabaseType = DatabaseType.SQLite;
@@ -34,19 +42,32 @@ namespace DatabaseAnalyzer.Extractors
 
             foreach (var tableName in tableNames)
             {
-                var columns = await connection.QueryAsync<ColumnInfor>($"PRAGMA table_info({tableName})");
+                var columnInfors = await connection.QueryAsync<ColumnInfor>($"PRAGMA table_info({tableName})");
+
+                var foreignKeyInfors = await connection.QueryAsync<ForeignKeyInfo>($"PRAGMA foreign_key_list({tableName})");
 
                 var table = new Table
                 {
                     Name = tableName,
-                    Columns = columns.Select(column => new Column
-                    {
-                        Name = column.Name,
-                        DataType = column.Type,
-                        IsNullable = !column.NotNull,
-                        DefaultValue = column.DefaultValue,
-                        PrimaryKey = column.Pk == 1 ? column.Name : null
-                    }).ToList()
+                    Columns = columnInfors
+                        .Select(column =>
+                        {
+                            var foreignKeyInfor = foreignKeyInfors.FirstOrDefault(fk => fk.From.Equals(column.Name));
+
+                            return new Column
+                            {
+                                Name = column.Name,
+                                DataType = column.Type,
+                                IsNullable = !column.NotNull,
+                                DefaultValue = column.DefaultValue,
+                                PrimaryKey = column.Pk == 1 ? column.Name : null,
+                                ForeignKeyName = foreignKeyInfor?.Table, 
+                                ParentColumn = foreignKeyInfor?.From,    
+                                ReferencedTable = foreignKeyInfor?.Table, 
+                                ReferencedColumn = foreignKeyInfor?.To  
+                            };
+                        })
+                        .ToList()
                 };
 
                 tables.TryAdd(tableName, table);

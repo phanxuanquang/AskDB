@@ -27,11 +27,11 @@ namespace DatabaseAnalyzer.Extractors
                 FROM 
                     sys.tables t
                 JOIN 
-                    sys.schemas s ON t.schema_id = s.schema_id -- Lấy schema từ sys.schemas
+                    sys.schemas s ON t.schema_id = s.schema_id 
                 LEFT JOIN 
                     INFORMATION_SCHEMA.COLUMNS c 
                         ON t.name = c.TABLE_NAME 
-                        AND s.name = c.TABLE_SCHEMA -- Đảm bảo kết nối đúng với schema trong INFORMATION_SCHEMA
+                        AND s.name = c.TABLE_SCHEMA 
                 LEFT JOIN (
                     SELECT 
                         kcu.TABLE_NAME, 
