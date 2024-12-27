@@ -83,7 +83,19 @@ Your data, including your Gemini API Keys, connection strings, and the results q
 If you have any concerns or questions about our data privacy practices, please feel free to open a new issue.
 
 ## :open_hands: Contribution
-We welcome contributions and encourage you to help this project better and better. If you encounter any issues or have suggestions for improvements, please open an issue in the [Issues](https://github.com/phanxuanquang/AskDB/issues) section of the repository.
+I welcome contributions and encourage you to help this project better and better. If you encounter any issues or have suggestions for improvements, please open an issue in the [Issues](https://github.com/phanxuanquang/AskDB/issues) section of the repository.
 Before submitting a pull request, please ensure that your changes are well-documented in the Pull Request description.
 
 Thank you for your contribution and for helping to make this project better! :tada:
+
+## :gift: Support Me
+
+<a href="https://i.imgur.com/9YpRPQs.jpeg" target="_blank">
+  <img src="https://i.imgur.com/IUK9CFo.png" height=72 alt="Vietcombank" />
+</a>
+<a href="https://me.momo.vn/phanxuanquang" target="_blank">
+  <img src="https://i.imgur.com/0r18xHl.png" height=72 alt="Momo" />
+</a>
+<a href="https://i.imgur.com/00NqiL8.jpeg" target="_blank">
+  <img src="https://i.imgur.com/PSCoduQ.png" height=72 alt="ZaloPay" />
+</a>
