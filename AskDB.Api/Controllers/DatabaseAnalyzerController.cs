@@ -57,7 +57,7 @@ namespace AskDB.Api.Controllers
                 .OrderBy(t => t.Name)
                 .ToList();
 
-            return Ok(Analyzer.DbExtractor.Tables);
+            return Ok(Analyzer.DbExtractor.Tables.Select(t => t.Name).ToList());
         }
 
         [HttpPost("ExtractTableSqlSchemas")]

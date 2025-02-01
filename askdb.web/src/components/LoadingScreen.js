@@ -13,11 +13,11 @@ function LoadingScreen() {
           height: '100vh',
         }}
       >
-        <CircularProgress size={100} thickness={3} sx={{color: "white"}}/>
+        <CircularProgress size={100} thickness={3} sx={{color: "primary"}}/>
         <Typography 
           variant="h6" 
           mt={2}
-          color="white"
+          color="primary"
           fontWeight="medium"
         >
           Getting started...

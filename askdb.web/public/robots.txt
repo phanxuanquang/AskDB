@@ -1,3 +1,11 @@
-# https://www.robotstxt.org/robotstxt.html
+# AskDB - Natural Language Database Assistant
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /api/
+Disallow: /private/
+Disallow: /admin/
+
+# Crawl-delay: 10
+
+# Sitemaps
+Sitemap: https://askdb.web.app/sitemap.xml
