@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   TextField,
   Button,
@@ -18,9 +18,17 @@ import { ArrowForward } from "@mui/icons-material";
 function GeminiConnectionStep({ onNext, initialData }) {
   const [apiKey, setApiKey] = useState(initialData?.apiKey || "");
   const [acceptedPolicies, setAcceptedPolicies] = useState(false);
+  const [rememberApiKey, setRememberApiKey] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
+
+  useEffect(() => {
+    const savedApiKey = localStorage.getItem("geminiApiKey");
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+    }
+  }, []);
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -37,7 +45,13 @@ function GeminiConnectionStep({ onNext, initialData }) {
 
       if (!response.ok) {
         const errorData = await response.text();
-        throw new Error(errorData || "Failed to validate API key");
+        throw new Error(errorData || "Failed to validate API key.");
+      }
+
+      if (rememberApiKey) {
+        localStorage.setItem("geminiApiKey", apiKey);
+      } else {
+        localStorage.removeItem("geminiApiKey");
       }
 
       onNext();
@@ -52,11 +66,14 @@ function GeminiConnectionStep({ onNext, initialData }) {
   return (
     <Box sx={{ p: 2, paddingRight: 5 }}>
       <Typography variant="h5" mb={2} fontWeight={700}>
-        Connect to Google Gemini
+        Connect to Gemini
+      </Typography>
+      <Typography variant="body2" mb={1} color="text.secondary">
+        AskDB ultilize Gemini as the AI engine for natural language processing
+        purposes. To get started, please enter your Google Gemini API key.
       </Typography>
       <Typography variant="body2" mb={3} color="text.secondary">
-        To get started, please enter your Google Gemini API key. You can find or
-        create your API key in the{" "}
+        You can find or create your API key in the{" "}
         <Link
           href="https://makersuite.google.com/app/apikey"
           target="_blank"
@@ -72,29 +89,42 @@ function GeminiConnectionStep({ onNext, initialData }) {
         label="Gemini API Key"
         value={apiKey}
         onChange={(e) => setApiKey(e.target.value)}
+        sx={{ mb: 1 }}
       />
 
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={acceptedPolicies}
-            onChange={(e) => setAcceptedPolicies(e.target.checked)}
-          />
-        }
-        label={
-          <Typography variant="body2">
-            I accept Google's{" "}
-            <Link
-              href="https://ai.google.dev/terms"
-              target="_blank"
-              rel="noopener"
-            >
-              AI Terms of Service
-            </Link>
-          </Typography>
-        }
-        sx={{ mb: 2 }}
-      />
+      <Box sx={{ mb: 2 }}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={acceptedPolicies}
+              onChange={(e) => setAcceptedPolicies(e.target.checked)}
+            />
+          }
+          label={
+            <Typography variant="body2">
+              I accept the{" "}
+              <Link
+                href="https://ai.google.dev/terms"
+                target="_blank"
+                rel="noopener"
+              >
+                Terms of Service
+              </Link>
+              .
+            </Typography>
+          }
+        />
+
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={rememberApiKey}
+              onChange={(e) => setRememberApiKey(e.target.checked)}
+            />
+          }
+          label={<Typography variant="body2">Remember API Key.</Typography>}
+        />
+      </Box>
 
       <Box>
         <Button
@@ -117,8 +147,8 @@ function GeminiConnectionStep({ onNext, initialData }) {
       </Box>
 
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle color="red">Error</DialogTitle>
-        <DialogContent sx={{ minWidth: 400 }}>{error}</DialogContent>
+        <DialogTitle>Error</DialogTitle>
+        <DialogContent>{error}</DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>Close</Button>
         </DialogActions>

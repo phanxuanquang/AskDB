@@ -26,7 +26,7 @@ function OnboardingModal({ onClose }) {
     selectedTables: [],
   });
 
-  const steps = ["Connect to Gemini", "Connect Database", "Select Tables"];
+  const steps = ["Gemini Access", "Database Access", "Query Suggestion"];
 
   const handleNextStep = (data) => {
     setFormData({ ...formData, ...data });
@@ -125,7 +125,7 @@ function OnboardingModal({ onClose }) {
                   justifyContent: "center",
                   alignItems: "center",
                   bgcolor: 'grey.50',
-                  borderRadius: 2,
+                  borderRadius: 1,
                   overflow: 'hidden',
                   position: 'relative',
                 }}

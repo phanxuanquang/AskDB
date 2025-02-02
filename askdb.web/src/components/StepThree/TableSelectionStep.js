@@ -66,7 +66,7 @@ function TableSelectionStep({ onComplete, onSkip, initialData }) {
           fontSize: { xs: '1.25rem', sm: '1.5rem' }
         }}
       >
-        Select tables to analyze
+        Query Suggestion
       </Typography>
       <Typography 
         variant="body2" 
@@ -76,8 +76,7 @@ function TableSelectionStep({ onComplete, onSkip, initialData }) {
           fontSize: { xs: '0.875rem', sm: '1rem' }
         }}
       >
-        To get started, please enter your Google Gemini API key. You can find or
-        create your API key in the.
+        AskDB will use the selected tables to provide intelligent query suggestions based on your schema. The suggested queries includes up to 100 queries in both natural language and SQL format.
       </Typography>
       
       <TextField
@@ -86,7 +85,7 @@ function TableSelectionStep({ onComplete, onSkip, initialData }) {
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         sx={{ 
-          mb: 2,
+          mb: 1,
           '& .MuiInputBase-root': {
             fontSize: { xs: '0.875rem', sm: '1rem' }
           }
@@ -110,7 +109,7 @@ function TableSelectionStep({ onComplete, onSkip, initialData }) {
       />
 
       <List sx={{ 
-        maxHeight: { xs: '30vh', sm: 300 }, 
+        maxHeight: { xs: '40vh', sm: 300 }, 
         overflow: "auto", 
         position: "relative",
         border: 1,
