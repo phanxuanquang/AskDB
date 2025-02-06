@@ -79,7 +79,7 @@ I will provide the structure of my database, some sample data, and a query in na
 
 ### Generated {databaseType} Query:";
 
-            var response = await Generator.GenerateContent(Generator.ApiKey, prompt.Trim(), true, CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
+            var response = await Generator.GenerateContent(Generator.ApiKey, prompt.Trim(), true, CreativityLevel.Medium, GenerativeModel.Gemini_20_Flash);
             return JsonConvert.DeserializeObject<SqlCommander>(response);
         }
 
@@ -129,7 +129,7 @@ I will provide the structure of my database, some sample data, and a query in na
 
             try
             {
-                return await Generator.GenerateContentAsArray(Generator.ApiKey, promptBuilder.ToString(), CreativityLevel.Medium, GenerativeModel.Gemini_15_Flash);
+                return await Generator.GenerateContentAsArray(Generator.ApiKey, promptBuilder.ToString(), CreativityLevel.Medium, GenerativeModel.Gemini_20_Flash);
             }
             catch
             {
@@ -178,7 +178,7 @@ I will provide the structure of my database, some sample data, and a query in na
             promptBuilder.AppendLine();
             promptBuilder.AppendLine("### Your insight from the data analysis:");
 
-            var result = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), false, CreativityLevel.High, GenerativeModel.Gemini_15_Flash);
+            var result = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), false, CreativityLevel.High, GenerativeModel.Gemini_20_Flash);
             return StringTool.AsPlainText(result);
         }
 

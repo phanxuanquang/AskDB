@@ -1,108 +1,70 @@
-import React, { useState, useEffect } from "react";
-import {
-  Box,
-  TextField,
-  Typography,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Button,
-  Grid,
-  CircularProgress,
-  Checkbox,
-  FormControlLabel,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-} from "@mui/material";
-import { ArrowForward } from "@mui/icons-material";
+import React from "react";
+import { Box, Typography, FormControlLabel, Checkbox, Stepper, Step, StepLabel } from "@mui/material";
+import { STEPS } from "./constants";
+import useConnectionForm from "./useConnectionForm";
+import DatabaseTypeSelect from "./components/DatabaseTypeSelect";
+import ConnectionForm from "./components/ConnectionForm";
+import ErrorDialog from "./components/ErrorDialog";
+import StepNavigation from "./components/StepNavigation";
 
 function DatabaseConnectionStep({ onNext, initialData }) {
-  const [dbType, setDbType] = useState(initialData.dbType || "");
-  const [loading, setLoading] = useState(false);
-  const [connectionString, setConnectionString] = useState(
-    initialData.connectionString || ""
-  );
-  const [rememberConnection, setRememberConnection] = useState(true);
-  const [errorDialog, setErrorDialog] = useState({ open: false, message: "" });
+  const {
+    activeStep,
+    dbType,
+    loading,
+    connectionTested,
+    formData,
+    errors,
+    rememberConnection,
+    errorDialog,
+    handleInputChange,
+    handleDbTypeChange,
+    handleTestConnection,
+    handleNext,
+    handleBack,
+    closeError,
+    setRememberConnection,
+  } = useConnectionForm(initialData);
 
-  useEffect(() => {
-    const savedConnection = localStorage.getItem("savedConnection");
-    if (savedConnection) {
-      const { dbType: savedType, connectionString: savedString } =
-        JSON.parse(savedConnection);
-      setDbType(savedType);
-      setConnectionString(savedString);
-    }
-  }, []);
+  const renderStepContent = () => {
+    switch (activeStep) {
+      case 0:
+        return (
+          <DatabaseTypeSelect
+            value={dbType}
+            onChange={handleDbTypeChange}
+            error={errors.dbType}
+          />
+        );
 
-  const getDbTypeNumber = (type) => {
-    switch (type) {
-      case "sqlserver":
-        return 1;
-      case "postgresql":
-        return 2;
-      case "mysql":
-        return 3;
-      case "sqlite":
-        return 4;
+      case 1:
+      case 2:
+        return (
+          <ConnectionForm
+            dbType={dbType}
+            formData={formData}
+            errors={errors}
+            onInputChange={handleInputChange}
+          />
+        );
+
       default:
-        return 1;
+        return null;
     }
   };
 
-  const handleCloseError = () => {
-    setErrorDialog({ open: false, message: "" });
-  };
-
-  const showError = (message) => {
-    setErrorDialog({ open: true, message });
-  };
-
-  const handleSubmit = async () => {
-    setLoading(true);
-    if (!dbType || !connectionString) {
-      showError("Please fill in all fields");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `https://localhost:5000/api/DatabaseAnalyzer/InitConnection?databaseType=${getDbTypeNumber(
-          dbType
-        )}&connectionStringBox=${connectionString}`,
-        {
-          method: "POST",
-          headers: {
-            accept: "*/*",
-          },
+  const handleStepAction = async () => {
+    if (activeStep === 1) {
+      const tables = await handleTestConnection();
+      if (tables) {
+        const result = handleNext(tables);
+        if (result) {
+          onNext(result);
         }
-      );
-
-      if (response.ok) {
-        const tables = await response.json();
-        if (rememberConnection) {
-          localStorage.setItem(
-            "savedConnection",
-            JSON.stringify({ dbType, connectionString })
-          );
-        } else {
-          localStorage.removeItem("savedConnection");
-        }
-        onNext({ dbType, connectionString, tables });
-      } else {
-        const errorData = await response.text();
-        showError(errorData);
       }
-    } catch (error) {
-      showError("Error connecting to database: " + error.message);
+    } else {
+      handleNext();
     }
-
-    setLoading(false);
   };
 
   return (
@@ -116,33 +78,20 @@ function DatabaseConnectionStep({ onNext, initialData }) {
         color="text.secondary"
         sx={{ wordBreak: "break-word" }}
       >
-        AskDB needs to connect to your database to analyze its structure and execute database queries. Please provide the connection string for your database. To find the connection string, you can refer to the official documentation of your database provider or contact your database administrator.
+        AskDB needs to connect to your database to analyze its structure and execute database queries. 
+        Follow the steps below to configure your database connection.
       </Typography>
-      <Grid container spacing={2} sx={{ mb: 1 }}>
-        <Grid item xs={12} md={4}>
-          <FormControl fullWidth>
-            <InputLabel>Database Type</InputLabel>
-            <Select
-              value={dbType}
-              onChange={(e) => setDbType(e.target.value)}
-              label="Database Type"
-            >
-              <MenuItem value="sqlserver">SQL Server</MenuItem>
-              <MenuItem value="mysql">MySQL</MenuItem>
-              <MenuItem value="postgresql">PostgreSQL</MenuItem>
-              <MenuItem value="sqlite">SQLite</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} md={8}>
-          <TextField
-            fullWidth
-            label="Connection String"
-            value={connectionString}
-            onChange={(e) => setConnectionString(e.target.value)}
-          />
-        </Grid>
-      </Grid>
+
+      <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+        {STEPS.map((label) => (
+          <Step key={label}>
+            <StepLabel>{label}</StepLabel>
+          </Step>
+        ))}
+      </Stepper>
+
+      {renderStepContent()}
+
       <FormControlLabel
         control={
           <Checkbox
@@ -150,52 +99,24 @@ function DatabaseConnectionStep({ onNext, initialData }) {
             onChange={(e) => setRememberConnection(e.target.checked)}
           />
         }
-        label="Remember connection credentials."
-        sx={{ mb: 1 }}
+        label="Remember connection credentials"
+        sx={{ mt: 2 }}
       />
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: { xs: "center", sm: "flex-end" },
-        }}
-      >
-        <Button
-          fullWidth
-          sx={{ maxWidth: { xs: "100%", sm: "auto" } }}
-          variant="contained"
-          onClick={handleSubmit}
-          disabled={loading}
-          endIcon={
-            loading ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : (
-              <ArrowForward />
-            )
-          }
-          size="large"
-          disableElevation
-        >
-          {loading ? "Connecting..." : "Continue"}
-        </Button>
-      </Box>
-      <Dialog
+
+      <StepNavigation
+        activeStep={activeStep}
+        loading={loading}
+        connectionTested={connectionTested}
+        onBack={handleBack}
+        onNext={handleStepAction}
+        showSuccessMessage={true}
+      />
+
+      <ErrorDialog
         open={errorDialog.open}
-        onClose={handleCloseError}
-        aria-labelledby="error-dialog-title"
-        aria-describedby="error-dialog-description"
-      >
-        <DialogTitle id="error-dialog-title">Error</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="error-dialog-description">
-            {errorDialog.message}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseError} color="primary" autoFocus>
-            OK
-          </Button>
-        </DialogActions>
-      </Dialog>
+        message={errorDialog.message}
+        onClose={closeError}
+      />
     </Box>
   );
 }

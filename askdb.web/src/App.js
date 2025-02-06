@@ -4,18 +4,60 @@ import { CssBaseline } from "@mui/material";
 import theme from "./theme";
 import LoadingScreen from "./components/LoadingScreen";
 import OnboardingModal from "./components/OnboardingModal";
-import { Grid, Typography, Link, Box } from "@mui/material";
+import {
+  Grid,
+  Typography,
+  Link,
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+} from "@mui/material";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [tabs, setTabs] = useState([{ id: 1, title: "" }]);
   const [activeTab, setActiveTab] = useState(0);
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+  const [serverAvailable, setServerAvailable] = useState(true);
 
   useEffect(() => {
+    const checkServerHealth = async () => {
+      try {
+        const response = await fetch(
+          "https://localhost:5000/Authentication/Healthcheck",
+          {
+            method: "POST",
+            headers: {
+              Accept: "*/*",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Server health check failed");
+        }
+        setServerAvailable(true);
+      } catch (error) {
+        setErrorDialogOpen(true);
+        setServerAvailable(false);
+      }
+    };
+
+    checkServerHealth();
+
     setTimeout(() => {
       setIsLoading(false);
-    }, 1500);
+    });
   }, []);
+
+  const handleCloseErrorDialog = () => {
+    setErrorDialogOpen(false);
+    setServerAvailable(false); // Keep components disabled after dialog close
+  };
 
   const handleCloseTab = (tabId) => {
     if (tabs.length <= 1) return;
@@ -69,7 +111,7 @@ function App() {
                       background: "white",
                       textAlign: "center",
                       borderRadius: 3,
-                      py: 1
+                      py: 1,
                     }}
                   >
                     <Grid item xs={12}>
@@ -101,6 +143,8 @@ function App() {
                           style={{
                             textDecoration: "none",
                             fontWeight: "bold",
+                            pointerEvents: !serverAvailable ? "none" : "auto",
+                            opacity: !serverAvailable ? 0.5 : 1,
                           }}
                         >
                           GitHub repository
@@ -111,12 +155,40 @@ function App() {
                   <OnboardingModal
                     key={tab.id}
                     onClose={() => handleCloseTab(tab.id)}
+                    disabled={!serverAvailable}
                   />
                 </Box>
               )
           )
         )}
       </Box>
+
+      <Dialog
+        open={errorDialogOpen}
+        onClose={handleCloseErrorDialog}
+        aria-labelledby="error-dialog-title"
+        aria-describedby="error-dialog-description"
+      >
+        <DialogTitle color="error" fontWeight={700} id="error-dialog-title">
+          {"Connection Error"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="error-dialog-description">
+            Unable to connect to the server. Please ensure the backend server is
+            running and try again.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleCloseErrorDialog}
+            variant="contained"
+            color="error"
+            autoFocus
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </ThemeProvider>
   );
 }

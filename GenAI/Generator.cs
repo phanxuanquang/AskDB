@@ -13,7 +13,7 @@ namespace GenAI
         public static string ApiKey;
         private static readonly HttpClient _client = new();
 
-        public static async Task<string> GenerateContent(string apiKey, string query, bool useJson = false, CreativityLevel creativityLevel = CreativityLevel.Medium, GenerativeModel model = GenerativeModel.Gemini_15_Flash)
+        public static async Task<string> GenerateContent(string apiKey, string query, bool useJson = false, CreativityLevel creativityLevel = CreativityLevel.Medium, GenerativeModel model = GenerativeModel.Gemini_20_Flash)
         {
             var modelName = Extractor.GetEnumDescription(model);
             var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{modelName}:generateContent?key={apiKey}";
@@ -75,7 +75,7 @@ namespace GenAI
             return responseDTO.Candidates[0].Content.Parts[0].Text;
         }
 
-        public static async Task<List<string>> GenerateContentAsArray(string apiKey, string query, CreativityLevel creativityLevel = CreativityLevel.Medium, GenerativeModel model = GenerativeModel.Gemini_15_Flash)
+        public static async Task<List<string>> GenerateContentAsArray(string apiKey, string query, CreativityLevel creativityLevel = CreativityLevel.Medium, GenerativeModel model = GenerativeModel.Gemini_20_Flash)
         {
             var modelName = Extractor.GetEnumDescription(model);
             var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{modelName}:generateContent?key={apiKey}";
