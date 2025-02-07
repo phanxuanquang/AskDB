@@ -15,11 +15,11 @@ import DatabaseConnectionStep from "./StepTwo/DatabaseConnectionStep";
 import TableSelectionStep from "./StepThree/TableSelectionStep";
 import "../App.css";
 
-function OnboardingModal({ onClose }) {
+function OnboardingModal({ onClose, onComplete }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const [activeStep, setActiveStep] = useState(0); // Changed to 0-based index
+  const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState({
     apiKey: "",
     databaseConfig: {},
@@ -36,7 +36,7 @@ function OnboardingModal({ onClose }) {
   const handleComplete = (data) => {
     const finalData = { ...formData, ...data };
     console.log("Onboarding complete:", finalData);
-    onClose();
+    onComplete(); // Navigate to QueryPanel
   };
 
   const renderStep = () => {

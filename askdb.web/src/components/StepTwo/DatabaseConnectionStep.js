@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Typography, FormControlLabel, Checkbox, Stepper, Step, StepLabel } from "@mui/material";
-import { STEPS } from "./constants";
+import { STEPS } from "../constants";
 import useConnectionForm from "./useConnectionForm";
 import DatabaseTypeSelect from "./components/DatabaseTypeSelect";
 import ConnectionForm from "./components/ConnectionForm";

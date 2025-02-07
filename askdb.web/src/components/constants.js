@@ -1,5 +1,7 @@
 export const STEPS = ["Select Database", "Configure Connection", "Connect"];
 
+export const BACKEND_DOMAIN = "https://localhost:5000";
+
 export const DEFAULT_PORTS = {
   mysql: "3306",
   postgresql: "5432",

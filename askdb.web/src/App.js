@@ -4,6 +4,7 @@ import { CssBaseline } from "@mui/material";
 import theme from "./theme";
 import LoadingScreen from "./components/LoadingScreen";
 import OnboardingModal from "./components/OnboardingModal";
+import QueryPanel from "./components/MainPanel/QueryPanel";
 import {
   Grid,
   Typography,
@@ -23,6 +24,7 @@ function App() {
   const [activeTab, setActiveTab] = useState(0);
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [serverAvailable, setServerAvailable] = useState(true);
+  const [showQueryPanel, setShowQueryPanel] = useState(false);
 
   useEffect(() => {
     const checkServerHealth = async () => {
@@ -71,6 +73,10 @@ function App() {
     }
   };
 
+  const handleOnboardingComplete = () => {
+    setShowQueryPanel(true);
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -104,7 +110,7 @@ function App() {
           tabs.map(
             (tab, index) =>
               activeTab === index && (
-                <Box sx={{ gap: 2, display: "flex", flexDirection: "column" }}>
+                <Box key={tab.id} sx={{ gap: 2, display: "flex", flexDirection: "column" }}>
                   <Grid
                     container
                     sx={{
@@ -152,11 +158,15 @@ function App() {
                       </Typography>
                     </Grid>
                   </Grid>
-                  <OnboardingModal
-                    key={tab.id}
-                    onClose={() => handleCloseTab(tab.id)}
-                    disabled={!serverAvailable}
-                  />
+                  {showQueryPanel ? (
+                    <QueryPanel />
+                  ) : (
+                    <OnboardingModal
+                      onClose={() => handleCloseTab(tab.id)}
+                      onComplete={handleOnboardingComplete}
+                      disabled={!serverAvailable}
+                    />
+                  )}
                 </Box>
               )
           )

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Box, Button, CircularProgress, Alert } from '@mui/material';
-import { ArrowForward, CheckCircle } from '@mui/icons-material';
+import { Box, Button, CircularProgress } from '@mui/material';
+import { ArrowForward } from '@mui/icons-material';
 
 const StepNavigation = ({
   activeStep,

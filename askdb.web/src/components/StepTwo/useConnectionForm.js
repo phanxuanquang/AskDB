@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { DEFAULT_FORM_DATA, DEFAULT_PORTS } from './constants';
+import { DEFAULT_FORM_DATA, DEFAULT_PORTS } from '../constants';
 import { validateForm, buildConnectionString, testConnection } from './connectionUtils';
 
 export const useConnectionForm = (initialData) => {

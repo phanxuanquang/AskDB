@@ -1,7 +1,9 @@
+import { BACKEND_DOMAIN } from "../constants";
+
 export const validateForm = (dbType, formData) => {
   const errors = {};
   if (!dbType) errors.dbType = "Database type is required";
-  
+
   if (dbType !== "sqlite") {
     if (!formData.host) errors.host = "Host is required";
     if (!formData.port) errors.port = "Port is required";
@@ -14,18 +16,30 @@ export const validateForm = (dbType, formData) => {
 
   return {
     isValid: Object.keys(errors).length === 0,
-    errors
+    errors,
   };
 };
 
 export const buildConnectionString = (dbType, formData) => {
   switch (dbType) {
     case "mysql":
-      return `Server=${formData.host};Port=${formData.port};Database=${formData.database};Uid=${formData.username};Pwd=${formData.password};${formData.ssl ? "SslMode=Required;" : ""}ConnectionTimeout=${formData.timeout};`;
+      return `Server=${formData.host};Port=${formData.port};Database=${
+        formData.database
+      };Uid=${formData.username};Pwd=${formData.password};${
+        formData.ssl ? "SslMode=Required;" : ""
+      }ConnectionTimeout=${formData.timeout};`;
     case "postgresql":
-      return `Host=${formData.host};Port=${formData.port};Database=${formData.database};Username=${formData.username};Password=${formData.password};${formData.ssl ? "SSL Mode=Require;" : ""}Timeout=${formData.timeout};`;
+      return `Host=${formData.host};Port=${formData.port};Database=${
+        formData.database
+      };Username=${formData.username};Password=${formData.password};${
+        formData.ssl ? "SSL Mode=Require;" : ""
+      }Timeout=${formData.timeout};`;
     case "sqlserver":
-      return `Server=${formData.host},${formData.port};Database=${formData.database};User Id=${formData.username};Password=${formData.password};${formData.ssl ? "Encrypt=True;" : ""}Connection Timeout=${formData.timeout};`;
+      return `Server=${formData.host},${formData.port};Database=${
+        formData.database
+      };User Id=${formData.username};Password=${formData.password};${
+        formData.ssl ? "Encrypt=True;" : ""
+      }Connection Timeout=${formData.timeout};`;
     case "sqlite":
       return `Data Source=${formData.database};`;
     default:
@@ -36,7 +50,9 @@ export const buildConnectionString = (dbType, formData) => {
 export const testConnection = async (dbType, connectionString) => {
   try {
     const response = await fetch(
-      `https://localhost:5000/api/DatabaseAnalyzer/InitConnection?databaseType=${getDbTypeNumber(dbType)}&connectionStringBox=${connectionString}`,
+      `${BACKEND_DOMAIN}/api/DatabaseAnalyzer/InitConnection?databaseType=${getDbTypeNumber(
+        dbType
+      )}&connectionStringBox=${connectionString}`,
       {
         method: "POST",
         headers: { accept: "*/*" },
@@ -56,10 +72,15 @@ export const testConnection = async (dbType, connectionString) => {
 
 const getDbTypeNumber = (type) => {
   switch (type) {
-    case "sqlserver": return 1;
-    case "postgresql": return 2;
-    case "mysql": return 3;
-    case "sqlite": return 4;
-    default: return 1;
+    case "sqlserver":
+      return 1;
+    case "postgresql":
+      return 2;
+    case "mysql":
+      return 3;
+    case "sqlite":
+      return 4;
+    default:
+      return 1;
   }
 };

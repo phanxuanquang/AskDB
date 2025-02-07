@@ -14,6 +14,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { ArrowForward } from "@mui/icons-material";
+import { BACKEND_DOMAIN } from "../constants";
 
 function GeminiConnectionStep({ onNext, initialData }) {
   const [apiKey, setApiKey] = useState(initialData?.apiKey || "");
@@ -34,7 +35,7 @@ function GeminiConnectionStep({ onNext, initialData }) {
     setLoading(true);
     try {
       const response = await fetch(
-        `https://localhost:5000/Authentication/ValidateGeminiApiKey?apiKey=${apiKey}`,
+        `${BACKEND_DOMAIN}/Authentication/ValidateGeminiApiKey?apiKey=${apiKey}`,
         {
           method: "POST",
           headers: {

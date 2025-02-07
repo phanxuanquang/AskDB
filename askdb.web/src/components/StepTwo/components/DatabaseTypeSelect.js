@@ -1,6 +1,6 @@
 import React from 'react';
 import { FormControl, InputLabel, Select, MenuItem } from '@mui/material';
-import { DB_TYPES } from '../constants';
+import { DB_TYPES } from '../../constants';
 
 const DatabaseTypeSelect = ({ value, onChange, error }) => {
   return (
