@@ -67,5 +67,15 @@ namespace Helper
                 return null;
             }
         }
+
+        public static async Task<string> ReadFile(string path)
+        {
+            if (!File.Exists(path))
+            {
+                throw new FileNotFoundException("File not found", path);
+            }
+
+            return await File.ReadAllTextAsync(path);
+        }
     }
 }

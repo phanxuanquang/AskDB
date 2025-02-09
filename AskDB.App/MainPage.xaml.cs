@@ -1,6 +1,6 @@
 ﻿using DatabaseAnalyzer;
 using DatabaseAnalyzer.Models;
-using GenAI;
+using Gemini.NET;
 using Helper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -104,8 +104,8 @@ namespace AskDB.App
                     return;
                 }
 
-                var suggestion = Cache.Get(k => !Generator.CanBeGeminiApiKey(k)
-                        && !k.Contains(Generator.ApiKey, StringComparison.OrdinalIgnoreCase)
+                var suggestion = Cache.Get(k => !Validator.CanBeValidApiKey(k)
+                        && !k.Contains(Cache.ApiKey, StringComparison.OrdinalIgnoreCase)
                         && !k.Contains(Analyzer.DbExtractor.ConnectionString, StringComparison.OrdinalIgnoreCase)
                         && !k.Contains(Extractor.GetEnumDescription(Analyzer.DbExtractor.DatabaseType), StringComparison.OrdinalIgnoreCase), keyword)
                     .FirstOrDefault();
@@ -143,8 +143,8 @@ namespace AskDB.App
 
                 if (!StringTool.IsNull(query))
                 {
-                    var source = Cache.Get(k => !Generator.CanBeGeminiApiKey(k)
-                        && !k.Contains(Generator.ApiKey, StringComparison.OrdinalIgnoreCase)
+                    var source = Cache.Get(k => !Validator.CanBeValidApiKey(k)
+                        && !k.Contains(Cache.ApiKey, StringComparison.OrdinalIgnoreCase)
                         && !k.Contains(Analyzer.DbExtractor.ConnectionString, StringComparison.OrdinalIgnoreCase)
                         && !k.Contains(Extractor.GetEnumDescription(Analyzer.DbExtractor.DatabaseType), StringComparison.OrdinalIgnoreCase), query);
 

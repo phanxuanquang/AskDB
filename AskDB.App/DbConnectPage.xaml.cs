@@ -1,7 +1,7 @@
 ﻿using DatabaseAnalyzer;
 using DatabaseAnalyzer.Extractors;
 using DatabaseAnalyzer.Models;
-using GenAI;
+using Gemini.NET;
 using Helper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -66,7 +66,7 @@ namespace AskDB.App
                     else
                     {
                         var suggestion = Cache
-                            .Get(k => !Generator.CanBeGeminiApiKey(k)
+                            .Get(k => !Validator.CanBeValidApiKey(k)
                                 && (k.StartsWith(keyword, StringComparison.OrdinalIgnoreCase) || k.Contains(keyword, StringComparison.OrdinalIgnoreCase)), keyword)
                             .FirstOrDefault();
 
@@ -113,7 +113,7 @@ namespace AskDB.App
                 }
 
                 var source = Cache
-                    .Get(k => !Generator.CanBeGeminiApiKey(k)
+                    .Get(k => !Validator.CanBeValidApiKey(k)
                         && (k.StartsWith(keyword, StringComparison.OrdinalIgnoreCase) || k.Contains(keyword, StringComparison.OrdinalIgnoreCase)), keyword);
 
                 sender.ItemsSource = source;
@@ -139,7 +139,7 @@ namespace AskDB.App
                 }
 
                 var suggestion = Cache
-                    .Get(k => k.StartsWith(keyword, StringComparison.OrdinalIgnoreCase) && Generator.CanBeGeminiApiKey(k))
+                    .Get(k => k.StartsWith(keyword, StringComparison.OrdinalIgnoreCase) && Validator.CanBeValidApiKey(k))
                     .FirstOrDefault();
 
                 if (!string.IsNullOrEmpty(suggestion))
@@ -170,7 +170,7 @@ namespace AskDB.App
         private void ApiKeyBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
         {
             var keyword = sender.Text.Trim();
-            EnableForwardButton(Generator.ApiKey, keyword);
+            EnableForwardButton(Cache.ApiKey, keyword);
 
             if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
             {
@@ -182,7 +182,7 @@ namespace AskDB.App
                     return;
                 }
 
-                var source = Cache.Get(k => k.StartsWith(keyword, StringComparison.OrdinalIgnoreCase) && Generator.CanBeGeminiApiKey(k));
+                var source = Cache.Get(k => k.StartsWith(keyword, StringComparison.OrdinalIgnoreCase) && Validator.CanBeValidApiKey(k));
                 sender.ItemsSource = source;
             }
         }
@@ -213,7 +213,8 @@ namespace AskDB.App
             WinUiHelper.SetLoading(true, sender as Button, apiKeyInputLoadingOverlay, apiInputPanel, "Validating your API key . . .");
             tutorialButton.Visibility = Visibility.Collapsed;
 
-            var isValidApiKey = await Generator.IsValidApiKey(apiKeyBox.Text);
+            var generator = new Generator(apiKeyBox.Text);
+            var isValidApiKey = await generator.IsValidApiKeyAsync();
 
             if (isValidApiKey)
             {
@@ -221,7 +222,7 @@ namespace AskDB.App
                 step1Expander.IsExpanded = false;
                 step1Expander.IsEnabled = true;
                 step2Expander.IsExpanded = step2Expander.IsEnabled = true;
-                Generator.ApiKey = apiKeyBox.Text;
+                Cache.ApiKey = apiKeyBox.Text.Trim();
             }
             else
             {
@@ -284,7 +285,7 @@ namespace AskDB.App
                 if (IsFirstEnter)
                 {
                     await Cache.Init();
-                    var apiKey = Cache.Get(Generator.CanBeGeminiApiKey).FirstOrDefault();
+                    var apiKey = Cache.Get(Validator.CanBeValidApiKey).FirstOrDefault();
 
                     apiKeyBox.Text = apiKey;
                     connectGeminiButton.IsEnabled = !string.IsNullOrEmpty(apiKey);

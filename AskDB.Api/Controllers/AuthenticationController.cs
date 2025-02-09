@@ -1,5 +1,5 @@
 using AskDB.Api.Constants;
-using GenAI;
+using Gemini.NET;
 using Helper;
 using Microsoft.AspNetCore.Mvc;
 using Octokit;
@@ -33,12 +33,13 @@ namespace AskDB.Api.Controllers
                 return BadRequest("API key is required.");
             }
 
-            if (!Generator.CanBeGeminiApiKey(apiKey))
+            if (!Validator.CanBeValidApiKey(apiKey))
             {
                 return Unauthorized("Invalid API key.");
             }
 
-            var isValidApiKey = await Generator.IsValidApiKey(apiKey);
+            var generator = new Generator(apiKey);
+            var isValidApiKey = await generator.IsValidApiKeyAsync();
 
             if (!isValidApiKey)
             {
@@ -46,7 +47,7 @@ namespace AskDB.Api.Controllers
             }
 
             await Cache.Set(apiKey);
-            Generator.ApiKey = apiKey;
+            Cache.ApiKey = apiKey;
 
             return Ok();
         }

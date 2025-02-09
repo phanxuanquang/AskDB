@@ -1,8 +1,9 @@
 ﻿using DatabaseAnalyzer.Extractors;
 using DatabaseAnalyzer.Models;
-using GenAI;
+using Gemini.NET;
 using Helper;
-using Newtonsoft.Json;
+using Helpers;
+using Models.Enums;
 using System.Data;
 using System.Globalization;
 using System.Text;
@@ -16,6 +17,10 @@ namespace DatabaseAnalyzer
         public static List<Table> SelectedTables = [];
         public static DatabaseExtractor DbExtractor;
         private static string SampleData = string.Empty;
+        private static Generator _generator = new(Cache.ApiKey);
+        private static ApiRequestBuilder _apiRequestBuilder = new ApiRequestBuilder()
+                .WithDefaultGenerationConfig()
+                .DisableAllSafetySettings();
 
         public static async Task<SqlCommander> GetSql(string question)
         {
@@ -79,8 +84,13 @@ I will provide the structure of my database, some sample data, and a query in na
 
 ### Generated {databaseType} Query:";
 
-            var response = await Generator.GenerateContent(Generator.ApiKey, prompt.Trim(), true, CreativityLevel.Medium, GenerativeModel.Gemini_20_Flash);
-            return JsonConvert.DeserializeObject<SqlCommander>(response);
+            var apiRequest = _apiRequestBuilder
+                .WithPrompt(prompt)
+                .Build();
+
+            var response = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Lite);
+
+            return JsonHelper.AsObject<SqlCommander>(response.Result);
         }
 
         public static async Task<List<string>?> GetSuggestedQueries(bool useSql, sbyte totalSuggestedQueries = 20)
@@ -129,7 +139,13 @@ I will provide the structure of my database, some sample data, and a query in na
 
             try
             {
-                return await Generator.GenerateContentAsArray(Generator.ApiKey, promptBuilder.ToString(), CreativityLevel.Medium, GenerativeModel.Gemini_20_Flash);
+                var apiRequest = _apiRequestBuilder
+                    .WithPrompt(promptBuilder.ToString())
+                    .Build();
+
+                var response = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Lite);
+
+                return JsonHelper.AsObject<List<string>>(response.Result);
             }
             catch
             {
@@ -138,48 +154,35 @@ I will provide the structure of my database, some sample data, and a query in na
         }
         public static async Task<string> GetQuickInsight(string query, DataTable dataTable)
         {
+            var instructionBuilder = new StringBuilder();
+            instructionBuilder.AppendLine(await Extractor.ReadFile("Instructions/Data Analysis.md"));
+            instructionBuilder.AppendLine();
+            instructionBuilder.AppendLine();
+            instructionBuilder.AppendLine("### **Database Schema**:");
+            instructionBuilder.AppendLine();
+            instructionBuilder.AppendLine("```sql");
+            instructionBuilder.AppendLine(TablesAsString(SelectedTables));
+            instructionBuilder.AppendLine("```");
+
             var promptBuilder = new StringBuilder();
 
-            promptBuilder.AppendLine("You are a Senior Data Analyst and Data Scientist with over 20 years of experience providing insights for large-scale business projects. ");
-            promptBuilder.Append("I am a CEO seeking quick, impactful insights based on the data I provide to support strategic decision-making. ");
-            promptBuilder.Append("I will provide a query (in SQL or natural language) and the related data. Please analyze the data comprehensively and summarize your insights with clear, practical recommendations. ");
-            promptBuilder.Append("Your response should be non-technical, concise (under 150 words), in a single paragraph, and organized in an easy-to-understand format.");
+            promptBuilder.AppendLine("#### **Query to analyze:**");
             promptBuilder.AppendLine();
-            promptBuilder.AppendLine("### Key Objectives:");
-            promptBuilder.AppendLine("Your analysis should focus on extracting meaningful insights that address the following:");
-            promptBuilder.AppendLine("- **Trends and Patterns**: Identify any significant or recurring trends, behaviors, or shifts in the data that may indicate growth, decline, or seasonal changes.");
-            promptBuilder.AppendLine("- **Anomalies and Deviations**: Point out any anomalies or deviations from expected patterns, explaining their potential causes or impact.");
-            promptBuilder.AppendLine("- **Opportunities and Risks**: Identify areas for growth, potential challenges, or risks in the data, and suggest how these may affect the company's goals.");
-            promptBuilder.AppendLine("- **Strategic Implications**: Explain how these insights could guide high-level decision-making, focusing on areas like revenue growth, customer retention, or operational efficiency.");
+            promptBuilder.AppendLine($"**{query}** ");
             promptBuilder.AppendLine();
-            promptBuilder.AppendLine("### Specific Instructions for the Analysis:");
-            promptBuilder.AppendLine("1. **Data Trends and Summary**: Briefly summarize any key patterns or recurring trends in the data. For example, if the data reveals a steady increase in customer engagement, highlight this trend with potential reasons.");
-            promptBuilder.AppendLine("2. **Impactful Metrics and KPIs**: Focus on metrics most relevant to decision-making, such as revenue, conversion rate, or customer satisfaction. Emphasize any notable changes in these metrics.");
-            promptBuilder.AppendLine("3. **Anomalies and Deviations**: Identify and explain any outliers or anomalies in the data. Provide context on what could be causing these deviations and any associated risks or opportunities.");
-            promptBuilder.AppendLine("4. **Business Relevance and Recommendations**: Conclude by explaining how the identified trends or patterns relate to the company’s strategic goals. Offer clear recommendations if applicable.");
             promptBuilder.AppendLine();
-            promptBuilder.AppendLine("### Formatting Guidelines for the Insight:");
-            promptBuilder.AppendLine("- Keep the insight concise and under 150 words, formatted in a single paragraph.");
-            promptBuilder.AppendLine("- Avoid technical jargon; use simple language accessible to non-technical readers.");
-            promptBuilder.AppendLine("- Summarize key findings at the start, followed by any relevant details or explanations, and conclude with any strategic recommendations.");
-            promptBuilder.AppendLine("- Structure the paragraph in a clear, logical order: first trends, then anomalies, followed by business relevance, and finally recommendations.");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("Here is the database schema for your reference, including column names, data types, and relationships for each table:");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("```sql");
-            promptBuilder.AppendLine(TablesAsString(SelectedTables));
-            promptBuilder.AppendLine("```");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine($"The query I am interested in is: **{query}**");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("Here is the data table that is used for the data analysis:");
+            promptBuilder.AppendLine("#### **Data Source:**");
             promptBuilder.AppendLine();
             promptBuilder.AppendLine(DataAsString(dataTable));
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("### Your insight from the data analysis:");
 
-            var result = await Generator.GenerateContent(Generator.ApiKey, promptBuilder.ToString(), false, CreativityLevel.High, GenerativeModel.Gemini_20_Flash);
-            return StringTool.AsPlainText(result);
+            var apiRequest = _apiRequestBuilder
+                .WithSystemInstruction(instructionBuilder.ToString())
+                .WithPrompt(promptBuilder.ToString())
+                .Build();
+
+            var response = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Thinking);
+
+            return StringTool.AsPlainText(response.Result);
         }
 
         #region Helpers

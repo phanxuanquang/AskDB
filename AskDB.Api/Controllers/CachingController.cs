@@ -1,4 +1,4 @@
-﻿using GenAI;
+﻿using Gemini.NET;
 using Helper;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,8 +17,8 @@ namespace AskDB.Api.Controllers
         public ActionResult<IEnumerable<string>> Search(string keyword, bool includeConnectionKey)
         {
             var results = includeConnectionKey
-                    ? Cache.Get(k => k.StartsWith(keyword, StringComparison.OrdinalIgnoreCase) && Generator.CanBeGeminiApiKey(k))
-                    : Cache.Get(k => k.StartsWith(keyword, StringComparison.OrdinalIgnoreCase) && !Generator.CanBeGeminiApiKey(k));
+                    ? Cache.Get(k => k.StartsWith(keyword, StringComparison.OrdinalIgnoreCase) && Validator.CanBeValidApiKey(k))
+                    : Cache.Get(k => k.StartsWith(keyword, StringComparison.OrdinalIgnoreCase) && !Validator.CanBeValidApiKey(k));
             return Ok(results);
         }
     }
