@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AskDB.App.DatabaseConnection"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:AskDB.App"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:animatedvisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    NavigationCacheMode="Required">
+
+    <Grid x:Name="RootGrid">
+        <Border
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Background="{StaticResource LayerFillColorAlt}"
+            CornerRadius="{StaticResource OverlayCornerRadius}"
+            Padding="40">
+            <StackPanel Spacing="16">
+                <TextBlock Text="Connect to your database" Style="{StaticResource TitleTextBlockStyle}"  FontWeight="Bold"/>
+                <RichTextBlock>
+                    <Paragraph>AskDB needs to connect to your database to analyze its structure and execute database queries. Please fill the fields below to configure your database connection.</Paragraph>
+                </RichTextBlock>
+                <StackPanel/>
+                <ComboBox Header="Database Type" x:Name="databaseTypeComboBox" SelectedIndex="0" HorizontalAlignment="Stretch">
+                    <ComboBox.Items>
+                        <ComboBoxItem Content="SQL Server"/>
+                        <ComboBoxItem Content="MySQL"/>
+                        <ComboBoxItem Content="PostgreSQL"/>
+                        <ComboBoxItem Content="SQLite"/>
+                    </ComboBox.Items>
+                </ComboBox>
+                <StackPanel x:Name="notSqliteComponents" Spacing="16">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Header="Server" x:Name="serverBox" Grid.Column="0"/>
+                        <NumberBox Header="Port" x:Name="portBox" Grid.Column="1" MinWidth="150"/>
+                        <TextBox Header="Database" Grid.Row="3" x:Name="databaseBox" Grid.Column="2" MinWidth="250"/>
+                    </Grid>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Header="Username" x:Name="usernameBox" Grid.Column="0"/>
+                        <PasswordBox Header="Password" x:Name="passwordBox" AutomationProperties.Name="Simple PasswordBox" Grid.Column="1" MinWidth="250"/>
+                    </Grid>
+                    <Expander x:Name="advancedOption" HorizontalAlignment="Stretch">
+                        <Expander.Header>
+                            <TextBlock>Advanced Options</TextBlock>
+                        </Expander.Header>
+                        <Grid RowSpacing="16">
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0" ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <NumberBox Header="Timeout (seconds)" x:Name="connectionTimeoutBox" PlaceholderText="15" Grid.Column="0" MinWidth="150" Value="15"/>
+                                <ComboBox Header="Authentication Method" SelectedIndex="0" x:Name="authenticationBox" PlaceholderText="Default" Grid.Column="1" MinWidth="250">
+                                    <ComboBox.Items>
+                                        <ComboBoxItem Content="Default"/>
+                                        <ComboBoxItem Content="Windows Authentication"/>
+                                    </ComboBox.Items>
+                                </ComboBox>
+                            </Grid>
+                            <CheckBox Content="Enable SSL/TLS" Grid.Row="1" x:Name="enableSslTlsCheckBox"/>
+                        </Grid>
+                    </Expander>
+                    <TextBox Header="Connection String" x:Name="connectionStringBox" Visibility="Collapsed"/>
+                </StackPanel>
+                <Grid x:Name="sqliteComponents" Visibility="Collapsed">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox PlaceholderText="path\\to\\YourDatabaseFile.db" IsReadOnly="True" x:Name="databaseFileBox" Grid.Column="0"/>
+                        <Button Content="Browse" x:Name="browseButton" Grid.Column="1"/>
+                    </Grid>
+                </Grid>
+                <CheckBox Content="Remember connection credentials" x:Name="rememberConnectionCheckbox" IsChecked="True" />
+                <Grid ColumnSpacing="8" HorizontalAlignment="Right">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <HyperlinkButton Content="Back" Grid.Column="1" x:Name="backButton" MinWidth="100"/>
+                    <Button Content="Continue" Grid.Column="2" x:Name="continueButton" MinWidth="150" Style="{StaticResource AccentButtonStyle}"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Page>

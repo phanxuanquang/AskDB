@@ -5,15 +5,15 @@ namespace DatabaseAnalyzer.Models
     public enum DatabaseType
     {
         [Description("Integrated Security=True;Server=localhost;Database=YourDatabaseName")]
-        SqlServer = 1,
+        SqlServer = 0,
 
         [Description("Host=localhost;Username=postgres;Password=YourPassword;Database=YourDatabaseName")]
-        PostgreSQL = 2,
+        PostgreSQL = 1,
 
         [Description("SslMode=Preferred;Server=localhost;User=root;Password=;Database=YourDatabaseName;")]
-        MySQL = 3,
+        MySQL = 2,
 
         [Description("Data Source=path\\to\\YourDatabaseName.db")]
-        SQLite = 4,
+        SQLite = 3,
     }
 }

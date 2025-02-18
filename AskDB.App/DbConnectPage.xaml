@@ -25,7 +25,7 @@
                         <EntranceThemeTransition IsStaggeringEnabled="True" />
                     </TransitionCollection>
                 </StackPanel.ChildrenTransitions>
-
+                
                 <Grid Margin="0,0,0,10" MinWidth="1000">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -61,7 +61,7 @@
 
                 <Expander x:Name="step2Expander" HorizontalAlignment="Stretch" Margin="0,0,0,10" IsEnabled="False" IsTabStop="False">
                     <Expander.Header>
-                        <ContentControl FontWeight="SemiBold"> Step 2 - Connect to your SQL database</ContentControl>
+                        <ContentControl FontWeight="SemiBold">Step 2 - Connect to your SQL database</ContentControl>
                     </Expander.Header>
                     <Expander.Content>
                         <StackPanel>
@@ -102,7 +102,6 @@
                 </Expander>
                 <Button x:Name="startBtn" IsEnabled="False" HorizontalAlignment="Center" Style="{StaticResource AccentButtonStyle}" Content="START" FontWeight="SemiBold" Height="35" Width="100"/>
             </StackPanel>
-
         </Border>
     </Grid>
 </Page>

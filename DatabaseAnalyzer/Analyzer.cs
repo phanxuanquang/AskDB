@@ -17,7 +17,7 @@ namespace DatabaseAnalyzer
         public static List<Table> SelectedTables = [];
         public static DatabaseExtractor DbExtractor;
         private static string SampleData = string.Empty;
-        private static Generator _generator = new(Cache.ApiKey);
+        private static Generator _generator;
         private static ApiRequestBuilder _apiRequestBuilder = new ApiRequestBuilder()
                 .WithDefaultGenerationConfig()
                 .DisableAllSafetySettings();
@@ -88,6 +88,8 @@ I will provide the structure of my database, some sample data, and a query in na
                 .WithPrompt(prompt)
                 .Build();
 
+            _generator = new Generator(Cache.ApiKey);
+
             var response = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Lite);
 
             return JsonHelper.AsObject<SqlCommander>(response.Result);
@@ -143,6 +145,7 @@ I will provide the structure of my database, some sample data, and a query in na
                     .WithPrompt(promptBuilder.ToString())
                     .Build();
 
+                _generator = new Generator(Cache.ApiKey);
                 var response = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Lite);
 
                 return JsonHelper.AsObject<List<string>>(response.Result);

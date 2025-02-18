@@ -16,7 +16,7 @@ namespace AskDB.App
 
             this.AppWindow.Title = "AskDB";
 
-            MainFrame.Navigate(typeof(DbConnectPage));
+            MainFrame.Navigate(typeof(GeminiConnection));
         }
     }
 }

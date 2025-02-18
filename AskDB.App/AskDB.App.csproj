@@ -47,10 +47,12 @@
 		<RemoveDir Directories="@(RemovingFolders)" />
 	</Target>
   <ItemGroup>
-    <None Remove="Database Connections\SqlServerConnection.xaml" />
+    <None Remove="DatabaseConnection.xaml" />
     <None Remove="DbConnectPage.xaml" />
+    <None Remove="GeminiConnection.xaml" />
     <None Remove="LoadingControl.xaml" />
     <None Remove="MainPage.xaml" />
+    <None Remove="TableSelection.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -87,7 +89,13 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
-    <Page Update="Database Connections\SqlServerConnection.xaml">
+    <Page Update="TableSelection.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="GeminiConnection.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="DatabaseConnection.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="LoadingControl.xaml">
