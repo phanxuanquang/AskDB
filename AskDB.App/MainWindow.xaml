@@ -13,6 +13,32 @@
     </Window.SystemBackdrop>
 
     <Grid>
-        <Frame x:Name="MainFrame"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <CommandBar Background="Transparent" IsOpen="False" DefaultLabelPosition="Right">
+            <AppBarButton Icon="Setting" Label="General Settings"/>
+            <AppBarButton Icon="Edit" Label="Custom Instructions">
+                <AppBarButton.Flyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Text="Reset to Default"/>
+                        <MenuFlyoutSeparator/>
+                        <MenuFlyoutItem Text="Query Optimization"/>
+                        <MenuFlyoutItem Text="Natural Language to SQL Convertion"/>
+                        <MenuFlyoutItem Text="Data Analysis"/>
+                    </MenuFlyout>
+                </AppBarButton.Flyout>
+            </AppBarButton>
+            <AppBarButton Icon="Permissions" Label="Credentials Management">
+                <AppBarButton.Flyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Text="Gemini API Keys"/>
+                        <MenuFlyoutItem Text="Database Credentials"/>
+                    </MenuFlyout>
+                </AppBarButton.Flyout>
+            </AppBarButton>
+        </CommandBar>
+        <Frame Grid.Row="1" x:Name="MainFrame"/>
     </Grid>
 </Window>

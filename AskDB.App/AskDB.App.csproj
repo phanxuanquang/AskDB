@@ -52,6 +52,7 @@
     <None Remove="GeminiConnection.xaml" />
     <None Remove="LoadingControl.xaml" />
     <None Remove="MainPage.xaml" />
+    <None Remove="MainPanel.xaml" />
     <None Remove="TableSelection.xaml" />
   </ItemGroup>
 
@@ -89,6 +90,9 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+    <Page Update="MainPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Update="TableSelection.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -18,7 +18,7 @@
             CornerRadius="{StaticResource OverlayCornerRadius}"
             Padding="40">
             <StackPanel>
-                <local:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20"/>
+                <local:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <StackPanel Spacing="16" x:Name="mainPanel">
                     <TextBlock Text="Connect to Gemini" Style="{StaticResource TitleTextBlockStyle}"  FontWeight="Bold"/>
                     <RichTextBlock LineHeight="{StaticResource SubtitleTextBlockFontSize}">

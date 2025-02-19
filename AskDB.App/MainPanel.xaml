@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AskDB.App.MainPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:AskDB.App"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    NavigationCacheMode="Required">
+
+    <Grid x:Name="RootGrid">
+        <Border
+             HorizontalAlignment="Center"
+             VerticalAlignment="Center"
+             Background="{StaticResource LayerFillColorAlt}"
+             CornerRadius="{StaticResource OverlayCornerRadius}"
+             Padding="40"
+             MinWidth="1000">
+            <StackPanel Spacing="12">
+                <Expander x:Name="selectTableExpander" MaxHeight="400" IsExpanded="False" HorizontalAlignment="Stretch" IsTabStop="False">
+                    <Expander.Header>
+                        <ContentControl FontWeight="SemiBold">Select tables to ask</ContentControl>
+                    </Expander.Header>
+                    <Expander.Content>
+                        <StackPanel>
+                            <CheckBox Content="Select all tables" x:Name="selectAllCheckbox"/>
+                            <ListView 
+                                x:Name="tablesListView" 
+                                SelectionMode="Multiple" 
+                                BorderThickness="2"
+                                BorderBrush="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}"
+                                UseLayoutRounding="True"
+                                Width="800"
+                                MaxHeight="300"
+                                HorizontalAlignment="Stretch"/> 
+                        </StackPanel>
+                    </Expander.Content>
+                </Expander>
+                <Grid RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <RichEditBox x:Name="questionBox" PlaceholderText="Ask me everything about your database" Grid.Row="0" Height="100"/>
+                    <Grid Grid.Row="1" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto" MinWidth="100"/>
+                            <ColumnDefinition Width="Auto" MinWidth="100"/>
+                            <ColumnDefinition Width="Auto" MinWidth="100"/>
+                            <ColumnDefinition Width="Auto" MinWidth="100"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Name="executeButton" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xF4A5;" />
+                                <TextBlock Text="Execute" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                            </StackPanel>
+                        </Button>
+                        <ToggleButton Grid.Column="1" Name="enhanceQueryButton" ToolTipService.ToolTip="Enhance Your Query" HorizontalAlignment="Stretch">
+                            <FontIcon Glyph="&#xEC4A;" />
+                        </ToggleButton>
+                        <Button Grid.Column="2" Name="showSqlButton" ToolTipService.ToolTip="Reveal SQL Query" HorizontalAlignment="Stretch">
+                            <FontIcon Glyph="&#xE7B3;" />
+                        </Button>
+                        <Button Grid.Column="3" Name="exportButton" ToolTipService.ToolTip="Export Query Result" HorizontalAlignment="Stretch">
+                            <SymbolIcon Symbol="SaveLocal"/>
+                        </Button>
+                        <Button Grid.Column="4" Name="quickInsightButton" ToolTipService.ToolTip="Quick Insight" HorizontalAlignment="Stretch">
+                            <FontIcon Glyph="&#xEB50;" />
+                        </Button>
+                    </Grid>
+                </Grid>
+                
+                <controls:DataGrid x:Name="resultTable" MaxHeight="900" IsReadOnly="True" AutoGenerateColumns="False"/>
+                <TextBlock FontStyle="Italic" Text="Query execution takes 10000 miliseconds." Style="{StaticResource CaptionTextBlockStyle}" HorizontalAlignment="Right"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <HyperlinkButton Grid.Column="0" Background="{StaticResource AcrylicInAppFillColorBaseBrush}" Content="Find the project on GitHub" NavigateUri="https://github.com/phanxuanquang/AskDB" Margin="0,0,10,0"/>
+                    <HyperlinkButton Grid.Column="1" Background="{StaticResource AcrylicInAppFillColorBaseBrush}" Content="Buy me a coffee" NavigateUri="https://i.imgur.com/XYXfisQ.jpeg" />
+                </Grid>
+            </StackPanel>
+        </Border>   
+    </Grid>
+</Page>
