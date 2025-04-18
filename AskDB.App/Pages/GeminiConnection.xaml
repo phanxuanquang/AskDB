@@ -7,7 +7,6 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Required">
 
     <Grid x:Name="RootGrid">
@@ -29,16 +28,19 @@
                             <Hyperlink FontWeight="Bold" NavigateUri="https://www.youtube.com/embed/z8-S9P2SFU8">this tutorial video</Hyperlink> .
                         </Paragraph>
                     </RichTextBlock>
-                    <TextBox PlaceholderText="AIzaSy..." x:Name="geminiApiKeyBox" Grid.Column="0"/>
-                    <CheckBox Content="Remember the API key for the future runs" x:Name="rememberConnectionCheckbox" IsChecked="True" />
-                    <Grid ColumnSpacing="8" HorizontalAlignment="Right">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <Button Content="Continue" Grid.Column="2" x:Name="continueButton" MinWidth="150" Style="{StaticResource AccentButtonStyle}"/>
-
-                    </Grid>
+                    <StackPanel Spacing="4">
+                        <TextBox PlaceholderText="AIzaSy..." x:Name="geminiApiKeyBox" Grid.Column="0"/>
+                        <CheckBox Content="Remember the API key" x:Name="rememberConnectionCheckbox" IsChecked="True" />
+                    </StackPanel>
+                    <StackPanel Spacing="4">
+                        <Button HorizontalAlignment="Stretch" Content="Continue" Grid.Column="2" x:Name="continueButton" MinWidth="150" Style="{StaticResource AccentButtonStyle}" Padding="8"/>
+                        <RichTextBlock LineHeight="{StaticResource SubtitleTextBlockFontSize}" TextAlignment="Center">
+                            <Paragraph>By continuing, you agree to the
+                                <Hyperlink FontWeight="SemiBold" NavigateUri="https://ai.google.dev/gemini-api/terms">Gemini API Additional Terms of Service</Hyperlink> .
+                            </Paragraph>
+                        </RichTextBlock>
+                    </StackPanel>
+                   
                 </StackPanel>
             </StackPanel>
         </Border>

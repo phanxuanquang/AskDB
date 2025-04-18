@@ -48,12 +48,9 @@
 	</Target>
   <ItemGroup>
     <None Remove="DatabaseConnection.xaml" />
-    <None Remove="DbConnectPage.xaml" />
     <None Remove="GeminiConnection.xaml" />
     <None Remove="LoadingControl.xaml" />
-    <None Remove="MainPage.xaml" />
     <None Remove="MainPanel.xaml" />
-    <None Remove="TableSelection.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -93,7 +90,7 @@
     <Page Update="MainPanel.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Update="TableSelection.xaml">
+    <Page Update="QuerySuggestion.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="GeminiConnection.xaml">
@@ -107,14 +104,8 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="DbConnectPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="MainPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
+    <Folder Include="Local Controls\" />
+    <Folder Include="Pages\" />
   </ItemGroup>
 
   <!--

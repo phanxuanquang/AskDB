@@ -1,11 +1,11 @@
-using DatabaseAnalyzer.Extractors;
 using DatabaseAnalyzer;
+using DatabaseAnalyzer.Extractors;
 using DatabaseAnalyzer.Models;
+using Helper;
 using Microsoft.UI.Xaml.Controls;
 using System;
-using Windows.Storage.Pickers;
 using System.Linq;
-using Helper;
+using Windows.Storage.Pickers;
 
 namespace AskDB.App
 {
@@ -34,10 +34,10 @@ namespace AskDB.App
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(serverBox.Text) 
-                || string.IsNullOrWhiteSpace(usernameBox.Text) 
-                || string.IsNullOrWhiteSpace(passwordBox.Password) 
-                || string.IsNullOrWhiteSpace(databaseBox.Text))
+            if (databaseTypeComboBox.SelectedIndex != (int)DatabaseType.SQLite && (string.IsNullOrWhiteSpace(serverBox.Text)
+                || string.IsNullOrWhiteSpace(usernameBox.Text)
+                || string.IsNullOrWhiteSpace(passwordBox.Password)
+                || string.IsNullOrWhiteSpace(databaseBox.Text)))
             {
                 await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Please fill all the fields.");
                 return;
@@ -45,17 +45,19 @@ namespace AskDB.App
 
             var databaseType = (DatabaseType)databaseTypeComboBox.SelectedIndex;
 
-            var connectionString = databaseType switch
-            {
-                DatabaseType.MySQL => $"Server={serverBox.Text};Port={portBox.Text};Database={databaseBox.Text};Uid={usernameBox.Text};Pwd={passwordBox.Password};Connection Timeout={connectionTimeoutBox.Value};SslMode={(enableSslTlsCheckBox.IsChecked == true ? "Required" : "None")};",
-                DatabaseType.PostgreSQL => $"Host={serverBox.Text};Port={portBox.Text};Username={usernameBox.Text};Password={passwordBox.Password};Database={databaseBox.Text};Pooling=true;MinPoolSize=0;MaxPoolSize=100;CommandTimeout={connectionTimeoutBox.Value};Timeout={connectionTimeoutBox.Value};{(enableSslTlsCheckBox.IsChecked == true ? "SSL Mode=Require;" : string.Empty)}Trust Server Certificate=true;",
-                DatabaseType.SqlServer => $"Integrated Security=True;Server={serverBox.Text};Database={databaseBox.Text};Connection Timeout={connectionTimeoutBox.Value};{(enableSslTlsCheckBox.IsChecked == true ? "Encrypt=True;" : string.Empty)}{(authenticationBox.Text == "Windows Authentication" ? "Integrated Security=true;" : string.Empty)}TrustServerCertificate=True;",
-                DatabaseType.SQLite => $"Data Source={databaseFileBox.Text}",
-                _ => throw new InvalidOperationException("Unsupported database type."),
-            };
+            var connectionString = string.IsNullOrEmpty(connectionStringBox.Text)
+                ? databaseType switch
+                {
+                    DatabaseType.MySQL => $"Server={serverBox.Text};Port={portBox.Text};Database={databaseBox.Text};Uid={usernameBox.Text};Pwd={passwordBox.Password};Connection Timeout={connectionTimeoutBox.Value};SslMode={(enableSslTlsCheckBox.IsChecked == true ? "Required" : "None")};",
+                    DatabaseType.PostgreSQL => $"Host={serverBox.Text};Port={portBox.Text};Username={usernameBox.Text};Password={passwordBox.Password};Database={databaseBox.Text};Pooling=true;MinPoolSize=0;MaxPoolSize=100;CommandTimeout={connectionTimeoutBox.Value};Timeout={connectionTimeoutBox.Value};{(enableSslTlsCheckBox.IsChecked == true ? "SSL Mode=Require;" : string.Empty)}Trust Server Certificate=true;",
+                    DatabaseType.SqlServer => $"Server={serverBox.Text};Database={databaseBox.Text};User Id={usernameBox.Text};Password={passwordBox.Password};Connection Timeout={connectionTimeoutBox.Value};{(enableSslTlsCheckBox.IsChecked == true ? "Encrypt=True;" : string.Empty)}{(authenticationBox.Text == "Windows Authentication" ? "Integrated Security=true;" : string.Empty)}TrustServerCertificate=True;",
+                    DatabaseType.SQLite => $"Data Source={databaseFileBox.Text}",
+                    _ => throw new InvalidOperationException("Unsupported database type."),
+                }
+                : connectionStringBox.Text;
 
-            connectionStringBox.Text = Cache.ConnectionString = connectionString = "data source=kita.database.windows.net;initial catalog=StudMinDB;persist security info=True;user id=kita;password=ongnoipassword123@;MultipleActiveResultSets=True";
-            
+            connectionStringBox.Text = Cache.ConnectionString = connectionString;
+
             try
             {
                 Analyzer.DbExtractor = databaseType switch
@@ -70,7 +72,7 @@ namespace AskDB.App
                 Analyzer.DbExtractor.Tables = [.. Analyzer.DbExtractor.Tables.Where(t => t.Columns.Count > 0).OrderBy(t => t.Name)];
 
                 connectionStringBox.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-                Frame.Navigate(typeof(TableSelection), null, new Microsoft.UI.Xaml.Media.Animation.SlideNavigationTransitionInfo() { Effect = Microsoft.UI.Xaml.Media.Animation.SlideNavigationTransitionEffect.FromRight });
+                Frame.Navigate(typeof(QuerySuggestion), null, new Microsoft.UI.Xaml.Media.Animation.SlideNavigationTransitionInfo() { Effect = Microsoft.UI.Xaml.Media.Animation.SlideNavigationTransitionEffect.FromRight });
             }
             catch (Exception ex)
             {

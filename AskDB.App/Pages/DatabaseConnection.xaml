@@ -8,7 +8,6 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
     xmlns:animatedvisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Required">
 
     <Grid x:Name="RootGrid">
@@ -77,7 +76,7 @@
                             <CheckBox Content="Enable SSL/TLS" Grid.Row="1" x:Name="enableSslTlsCheckBox"/>
                         </Grid>
                     </Expander>
-                    <TextBox Header="Connection String" x:Name="connectionStringBox" Visibility="Collapsed"/>
+                    <TextBox Header="Connection String" x:Name="connectionStringBox" Visibility="Collapsed" ToolTipService.ToolTip="You can edit this connection string in case you can't connect to your database."/>
                 </StackPanel>
                 <Grid x:Name="sqliteComponents" Visibility="Collapsed">
                     <Grid ColumnSpacing="12">

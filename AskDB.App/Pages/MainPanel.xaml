@@ -44,7 +44,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <RichEditBox x:Name="questionBox" PlaceholderText="Ask me everything about your database" Grid.Row="0" Height="100"/>
+                    <AutoSuggestBox x:Name="queryBox" PlaceholderText="Ask me everything about your database" Grid.Row="0" Height="100"/>
                     <Grid Grid.Row="1" ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -53,7 +53,7 @@
                             <ColumnDefinition Width="Auto" MinWidth="100"/>
                             <ColumnDefinition Width="Auto" MinWidth="100"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Name="executeButton" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <Button Grid.Column="0" Name="sendButton" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <FontIcon Glyph="&#xF4A5;" />
                                 <TextBlock Text="Execute" Style="{StaticResource BodyStrongTextBlockStyle}"/>

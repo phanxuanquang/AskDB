@@ -1,8 +1,8 @@
 ﻿using DatabaseAnalyzer.Extractors;
 using DatabaseAnalyzer.Models;
 using Gemini.NET;
+using Gemini.NET.Helpers;
 using Helper;
-using Helpers;
 using Models.Enums;
 using System.Data;
 using System.Globalization;
@@ -77,20 +77,36 @@ I will provide the structure of my database, some sample data, and a query in na
 
 ```sql
 {SampleData}
-```
-
-### User Query:
-{question}
-
-### Generated {databaseType} Query:";
+```";
 
             var apiRequest = _apiRequestBuilder
-                .WithPrompt(prompt)
+                .WithSystemInstruction(prompt)
+                .WithPrompt(question)
+                .WithResponseSchema(new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        Output = new
+                        {
+                            type = "string"
+                        },
+                        IsSql = new
+                        {
+                            type = "boolean"
+                        },
+                    },
+                    required = new List<string>
+                    {
+                        "Output",
+                        "IsSql"
+                    }
+                })
                 .Build();
 
             _generator = new Generator(Cache.ApiKey);
 
-            var response = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Lite);
+            var response = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash);
 
             return JsonHelper.AsObject<SqlCommander>(response.Result);
         }
