@@ -1,5 +1,4 @@
-﻿using Gemini.NET;
-using Helper;
+﻿using Helper;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AskDB.Api.Controllers

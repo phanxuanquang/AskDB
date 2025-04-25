@@ -1,7 +1,7 @@
 ﻿using DatabaseAnalyzer.Extractors;
 using DatabaseAnalyzer.Models;
-using Gemini.NET;
-using Gemini.NET.Helpers;
+using GeminiDotNET;
+using GeminiDotNET.Helpers;
 using Helper;
 using Models.Enums;
 using System.Data;
@@ -25,7 +25,7 @@ namespace DatabaseAnalyzer
         public static async Task<SqlCommander> GetSql(string question)
         {
             var databaseType = DbExtractor.DatabaseType.ToString();
-            var prompt = $@"You are a highly skilled Database Administrator with over 20 years of experience working with {databaseType} databases in large-scale enterprise systems.
+            var intstruction = $@"You are a highly skilled Database Administrator with over 20 years of experience working with {databaseType} databases in large-scale enterprise systems.
 I am a beginner with no knowledge of SQL and need your help to translate plain-language queries into SQL queries for my {databaseType} database.
 I will provide the structure of my database, some sample data, and a query in natural language. Your job is to analyze the query, map it to the database schema, and return the corresponding SQL query if it’s possible.
 
@@ -67,21 +67,22 @@ I will provide the structure of my database, some sample data, and a query in na
 5. **Explain Invalid Queries**: When returning an invalid response, provide a short but clear explanation. Example: ""The query refers to a non-existent column."", or ""There is no table for 'products' in the schema."".
 6. **Only Relevant Data**: Focus only on the tables and fields provided in the schema and sample data. Do not make assumptions about data outside of what is presented.
 
-### Database Schema:
+### **Database Schema**:
 
 ```sql
 {TablesAsString(SelectedTables)}
 ```
 
-### Sample Data:
+### **Sample Data**:
 
 ```sql
 {SampleData}
 ```";
 
             var apiRequest = _apiRequestBuilder
-                .WithSystemInstruction(prompt)
+                .WithSystemInstruction(intstruction)
                 .WithPrompt(question)
+                .WithDefaultGenerationConfig(0.4F)
                 .WithResponseSchema(new
                 {
                     type = "object",
@@ -108,7 +109,7 @@ I will provide the structure of my database, some sample data, and a query in na
 
             var response = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash);
 
-            return JsonHelper.AsObject<SqlCommander>(response.Result);
+            return JsonHelper.AsObject<SqlCommander>(response.Content);
         }
 
         public static async Task<List<string>?> GetSuggestedQueries(bool useSql, sbyte totalSuggestedQueries = 20)
@@ -164,7 +165,7 @@ I will provide the structure of my database, some sample data, and a query in na
                 _generator = new Generator(Cache.ApiKey);
                 var response = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Lite);
 
-                return JsonHelper.AsObject<List<string>>(response.Result);
+                return JsonHelper.AsObject<List<string>>(response.Content);
             }
             catch
             {
@@ -201,7 +202,7 @@ I will provide the structure of my database, some sample data, and a query in na
 
             var response = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Thinking);
 
-            return StringTool.AsPlainText(response.Result);
+            return StringTool.AsPlainText(response.Content);
         }
 
         #region Helpers

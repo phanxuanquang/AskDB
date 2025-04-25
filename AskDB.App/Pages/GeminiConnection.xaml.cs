@@ -1,4 +1,4 @@
-using Gemini.NET;
+using GeminiDotNET;
 using Helper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -19,13 +19,13 @@ namespace AskDB.App
         {
             this.InitializeComponent();
 
-            this.continueButton.Click += ContinueButton_Click;
+            this.ContinueButton.Click += ContinueButton_Click;
         }
 
         private async void ContinueButton_Click(object sender, RoutedEventArgs e)
         {
             SetLoadingState(true, "Validating API Key...");
-            var apiKey = geminiApiKeyBox.Text;
+            var apiKey = GeminiApiKeyBox.Text;
 
             if (!Validator.CanBeValidApiKey(apiKey))
             {
@@ -48,10 +48,10 @@ namespace AskDB.App
         }
         private void SetLoadingState(bool isLoading, string message)
         {
-            continueButton.IsEnabled = !isLoading;
+            ContinueButton.IsEnabled = !isLoading;
             LoadingOverlay.SetLoading(message, isLoading);
             LoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
-            mainPanel.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
+            MainPanel.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
         }
     }
 }

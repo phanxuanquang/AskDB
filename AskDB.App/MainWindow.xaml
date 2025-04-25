@@ -12,33 +12,48 @@
         <DesktopAcrylicBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <CommandBar Background="Transparent" IsOpen="False" DefaultLabelPosition="Right">
-            <AppBarButton Icon="Setting" Label="General Settings"/>
-            <AppBarButton Icon="Edit" Label="Custom Instructions">
-                <AppBarButton.Flyout>
-                    <MenuFlyout>
-                        <MenuFlyoutItem Text="Reset to Default"/>
-                        <MenuFlyoutSeparator/>
-                        <MenuFlyoutItem Text="Query Optimization"/>
-                        <MenuFlyoutItem Text="Natural Language to SQL Convertion"/>
-                        <MenuFlyoutItem Text="Data Analysis"/>
-                    </MenuFlyout>
-                </AppBarButton.Flyout>
-            </AppBarButton>
-            <AppBarButton Icon="Permissions" Label="Credentials Management">
-                <AppBarButton.Flyout>
-                    <MenuFlyout>
-                        <MenuFlyoutItem Text="Gemini API Keys"/>
-                        <MenuFlyoutItem Text="Database Credentials"/>
-                    </MenuFlyout>
-                </AppBarButton.Flyout>
-            </AppBarButton>
-        </CommandBar>
-        <Frame Grid.Row="1" x:Name="MainFrame"/>
+    <Grid x:Name="RootGrid" RowSpacing="8">
+        <NavigationView 
+        IsBackButtonVisible="Visible"
+        PaneDisplayMode="LeftCompact"
+        x:Name="NavView">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="Home" Tag="home">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE80F;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItemHeader Content="Features"/>
+
+                <NavigationViewItem Content="Intelligent Dictionary" Tag="dictionary">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE82D;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Multilingual Translator" Tag="translator">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xF2B7;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Paraphrasing Master" Tag="paraphrase">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xEF15;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItemHeader Content="My Profile"/>
+
+                <NavigationViewItem Content="Update Profile" Tag="profile">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE77B;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="My Activities" Tag="history">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE81C;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+            <Frame x:Name="MainFrame"/>
+        </NavigationView>
     </Grid>
 </Window>

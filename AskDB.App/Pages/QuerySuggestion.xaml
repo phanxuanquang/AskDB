@@ -7,53 +7,49 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Required">
 
-    <Grid x:Name="RootGrid">
-        <Border
-             HorizontalAlignment="Center"
-             VerticalAlignment="Center"
-             Background="{StaticResource LayerFillColorAlt}"
-             CornerRadius="{StaticResource OverlayCornerRadius}"
-             Padding="40">
-            <StackPanel x:Name="mainPanel" Spacing="16">
-                <TextBlock Text="Query Suggestion" Style="{StaticResource TitleTextBlockStyle}"  FontWeight="Bold"/>
-                <RichTextBlock>
-                    <Paragraph>You can select the tables from your database for AskDB to suggest intelligent queries (in both SQL and natural language) in order to help you with better data querying.</Paragraph>
-                </RichTextBlock>
-                <Grid ColumnSpacing="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBox Grid.Column="0" PlaceholderText="Search for the tables to select" x:Name="tableSearchBox"/>
-                    <CheckBox Grid.Column="1" Content="Select All" x:Name="selectAllCheckbox"/>
-                </Grid>
-                <ListView 
+    <Grid x:Name="RootGrid" MaxWidth="1000" >
+        <StackPanel x:Name="mainPanel" Spacing="16"  
+            Padding="40" 
+            VerticalAlignment="Center"  
+            Background="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}" 
+            CornerRadius="{StaticResource OverlayCornerRadius}">
+            <TextBlock Text="Query Suggestion" Style="{StaticResource TitleTextBlockStyle}"  FontWeight="Bold"/>
+            <RichTextBlock>
+                <Paragraph>You can select the tables from your database for AskDB to suggest intelligent queries (in both SQL and natural language) in order to help you with better data querying.</Paragraph>
+            </RichTextBlock>
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0" PlaceholderText="Search for the tables to select" x:Name="tableSearchBox"/>
+                <CheckBox Grid.Column="1" Content="Select All" x:Name="selectAllCheckbox"/>
+            </Grid>
+            <ListView 
                     x:Name="tablesListView" 
                     SelectionMode="Multiple" 
                     BorderThickness="2"
                     BorderBrush="{ThemeResource LayerOnMicaBaseAltFillColorTransparent}"
                     MaxHeight="400">
-                    <ListView.ItemContainerTransitions>
-                        <TransitionCollection>
-                            <ContentThemeTransition />
-                        </TransitionCollection>
-                    </ListView.ItemContainerTransitions>
-                </ListView>
-                <Grid ColumnSpacing="8" HorizontalAlignment="Right">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
-                    <HyperlinkButton Content="Back" Grid.Column="1" x:Name="backButton" MinWidth="100"/>
-                    <HyperlinkButton Content="Skip" Grid.Column="2" x:Name="skipButton" MinWidth="100"/>
-                    <Button Content="Start" Grid.Column="3" x:Name="startButton" MinWidth="150" Style="{StaticResource AccentButtonStyle}"/>
-                </Grid>
-            </StackPanel>
-        </Border>
+                <ListView.ItemContainerTransitions>
+                    <TransitionCollection>
+                        <ContentThemeTransition />
+                    </TransitionCollection>
+                </ListView.ItemContainerTransitions>
+            </ListView>
+            <Grid ColumnSpacing="8" HorizontalAlignment="Right">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <HyperlinkButton Content="Back" Grid.Column="1" x:Name="backButton" MinWidth="100"/>
+                <HyperlinkButton Content="Skip" Grid.Column="2" x:Name="skipButton" MinWidth="100"/>
+                <Button Content="Start" Grid.Column="3" x:Name="startButton" MinWidth="150" Style="{StaticResource AccentButtonStyle}"/>
+            </Grid>
+        </StackPanel>
     </Grid>
 </Page>

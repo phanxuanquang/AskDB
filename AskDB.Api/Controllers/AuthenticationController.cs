@@ -1,5 +1,4 @@
 using AskDB.Api.Constants;
-using Gemini.NET;
 using Helper;
 using Microsoft.AspNetCore.Mvc;
 using Octokit;

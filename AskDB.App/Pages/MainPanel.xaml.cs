@@ -1,6 +1,6 @@
 using DatabaseAnalyzer;
 using DatabaseAnalyzer.Models;
-using Gemini.NET;
+using GeminiDotNET;
 using Helper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;

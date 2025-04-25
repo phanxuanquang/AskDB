@@ -9,40 +9,35 @@
     mc:Ignorable="d"
     NavigationCacheMode="Required">
 
-    <Grid x:Name="RootGrid">
-        <Border
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Background="{StaticResource LayerFillColorAlt}"
-            CornerRadius="{StaticResource OverlayCornerRadius}"
-            Padding="40">
-            <StackPanel>
-                <local:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <StackPanel Spacing="16" x:Name="mainPanel">
-                    <TextBlock Text="Connect to Gemini" Style="{StaticResource TitleTextBlockStyle}"  FontWeight="Bold"/>
-                    <RichTextBlock LineHeight="{StaticResource SubtitleTextBlockFontSize}">
-                        <Paragraph>AskDB ultilize Gemini as the AI engine for natural language processing. Please enter your API key that can be taken from the
-                            <Hyperlink FontWeight="Bold" NavigateUri="https://aistudio.google.com/app/apikey">Google AI Studio</Hyperlink> .
-                        </Paragraph>
-                        <Paragraph>In case you don't know how to get and use your API key, you can refer to
-                            <Hyperlink FontWeight="Bold" NavigateUri="https://www.youtube.com/embed/z8-S9P2SFU8">this tutorial video</Hyperlink> .
-                        </Paragraph>
-                    </RichTextBlock>
-                    <StackPanel Spacing="4">
-                        <TextBox PlaceholderText="AIzaSy..." x:Name="geminiApiKeyBox" Grid.Column="0"/>
-                        <CheckBox Content="Remember the API key" x:Name="rememberConnectionCheckbox" IsChecked="True" />
-                    </StackPanel>
-                    <StackPanel Spacing="4">
-                        <Button HorizontalAlignment="Stretch" Content="Continue" Grid.Column="2" x:Name="continueButton" MinWidth="150" Style="{StaticResource AccentButtonStyle}" Padding="8"/>
-                        <RichTextBlock LineHeight="{StaticResource SubtitleTextBlockFontSize}" TextAlignment="Center">
-                            <Paragraph>By continuing, you agree to the
-                                <Hyperlink FontWeight="SemiBold" NavigateUri="https://ai.google.dev/gemini-api/terms">Gemini API Additional Terms of Service</Hyperlink> .
-                            </Paragraph>
-                        </RichTextBlock>
-                    </StackPanel>
-                   
-                </StackPanel>
+    <Grid x:Name="RootGrid" MaxWidth="1000">
+        <local:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <StackPanel x:Name="MainPanel" 
+                    Spacing="16" 
+                    Padding="40" 
+                    VerticalAlignment="Center"  
+                    Background="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}" 
+                    CornerRadius="{StaticResource OverlayCornerRadius}">
+            <TextBlock Text="Connect to Gemini" Style="{StaticResource TitleTextBlockStyle}"  FontWeight="Bold"/>
+            <RichTextBlock LineHeight="{StaticResource SubtitleTextBlockFontSize}">
+                <Paragraph>AskDB ultilize Gemini as the AI engine for natural language processing. Please enter your API key that can be taken from the
+                    <Hyperlink FontWeight="Bold" NavigateUri="https://aistudio.google.com/app/apikey">Google AI Studio</Hyperlink> .
+                </Paragraph>
+                <Paragraph>In case you don't know how to get and use your API key, you can refer to
+                    <Hyperlink FontWeight="Bold" NavigateUri="https://www.youtube.com/embed/z8-S9P2SFU8">this tutorial video</Hyperlink> .
+                </Paragraph>
+            </RichTextBlock>
+            <StackPanel Spacing="4">
+                <TextBox PlaceholderText="AIzaSy..." x:Name="GeminiApiKeyBox" Grid.Column="0"/>
+                <CheckBox Content="Remember the API key" x:Name="rememberConnectionCheckbox" IsChecked="True" />
             </StackPanel>
-        </Border>
+            <StackPanel Spacing="4">
+                <Button HorizontalAlignment="Stretch" Content="Continue" Grid.Column="2" x:Name="ContinueButton" MinWidth="150" Style="{StaticResource AccentButtonStyle}" Padding="8"/>
+                <RichTextBlock LineHeight="{StaticResource SubtitleTextBlockFontSize}" TextAlignment="Center">
+                    <Paragraph>By continuing, you agree to the
+                        <Hyperlink FontWeight="SemiBold" NavigateUri="https://ai.google.dev/gemini-api/terms">Gemini API Additional Terms of Service</Hyperlink> .
+                    </Paragraph>
+                </RichTextBlock>
+            </StackPanel>
+        </StackPanel>
     </Grid>
 </Page>
