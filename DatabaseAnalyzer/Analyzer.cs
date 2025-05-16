@@ -200,7 +200,7 @@ I will provide the structure of my database, some sample data, and a query in na
                 .WithPrompt(promptBuilder.ToString())
                 .Build();
 
-            var response = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Thinking);
+            var response = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash);
 
             return StringTool.AsPlainText(response.Content);
         }

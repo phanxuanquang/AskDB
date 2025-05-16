@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+﻿using AskDB.App.Helpers;
 using Microsoft.UI.Xaml.Controls;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -16,7 +16,7 @@ namespace AskDB.App
         public void SetLoading(string message, bool isActivated, int radius = 50)
         {
             textBlock.Text = message;
-            loadingPanel.Visibility = isActivated ? Visibility.Visible : Visibility.Collapsed;
+            loadingPanel.Visibility = VisibilityHelper.SetVisible(isActivated);
             progressRing.Width = progressRing.Height = radius;
         }
     }

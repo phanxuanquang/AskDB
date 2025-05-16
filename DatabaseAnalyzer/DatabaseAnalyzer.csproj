@@ -18,8 +18,8 @@
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
-    <PackageReference Include="Gemini.NET" Version="3.2.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.4" />
+    <PackageReference Include="Gemini.NET" Version="3.3.4.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.5" />
     <PackageReference Include="MySql.Data" Version="9.3.0" />
     <PackageReference Include="Npgsql" Version="9.0.3" />
     <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />

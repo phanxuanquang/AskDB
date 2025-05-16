@@ -9,51 +9,53 @@
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     mc:Ignorable="d">
     <Window.SystemBackdrop>
-        <DesktopAcrylicBackdrop />
+        <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid x:Name="RootGrid" RowSpacing="8">
-        <NavigationView 
-        IsBackButtonVisible="Visible"
-        PaneDisplayMode="LeftCompact"
-        x:Name="NavView">
-            <NavigationView.MenuItems>
-                <NavigationViewItem Content="Home" Tag="home">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE80F;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-                <NavigationViewItemHeader Content="Features"/>
+    <Grid x:Name="RootGrid" RequestedTheme="Dark">
+        <Grid.BackgroundTransition>
+            <BrushTransition />
+        </Grid.BackgroundTransition>
 
-                <NavigationViewItem Content="Intelligent Dictionary" Tag="dictionary">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE82D;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-                <NavigationViewItem Content="Multilingual Translator" Tag="translator">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xF2B7;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-                <NavigationViewItem Content="Paraphrasing Master" Tag="paraphrase">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xEF15;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-                <NavigationViewItemHeader Content="My Profile"/>
-
-                <NavigationViewItem Content="Update Profile" Tag="profile">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE77B;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-                <NavigationViewItem Content="My Activities" Tag="history">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE81C;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-            </NavigationView.MenuItems>
-            <Frame x:Name="MainFrame"/>
-        </NavigationView>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <CommandBar Grid.Row="0" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" HorizontalAlignment="Left">
+            <AppBarButton LabelPosition="Collapsed" ToolTipService.ToolTip="Back" Click="BackButton_Click">
+                <AppBarButton.Icon>
+                    <FontIcon Glyph="&#xE72B;" />
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarButton LabelPosition="Collapsed" ToolTipService.ToolTip="Home" Click="HomeButton_Click">
+                <AppBarButton.Icon>
+                    <FontIcon Glyph="&#xE80F;" />
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarSeparator />
+            <AppBarToggleButton LabelPosition="Collapsed" ToolTipService.ToolTip="Change color mode" Click="ColorThemeToggle_Click">
+                <AppBarToggleButton.Icon>
+                    <FontIcon Glyph="&#xE793;" />
+                </AppBarToggleButton.Icon>
+            </AppBarToggleButton>
+            <AppBarButton LabelPosition="Collapsed" ToolTipService.ToolTip="My profile">
+                <AppBarButton.Icon>
+                    <FontIcon Glyph="&#xEF58;"/>
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <CommandBar.SecondaryCommands>
+                <AppBarButton Label="Send your feedback">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xED15;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton Label="About the developer" Click="GithubProfileButton_Click">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE8D4;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+            </CommandBar.SecondaryCommands>
+        </CommandBar>
+        <Frame Grid.Row="1" x:Name="MainFrame" Padding="16,0,16,24" />
     </Grid>
 </Window>

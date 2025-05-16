@@ -11,7 +11,7 @@
     NavigationCacheMode="Required">
 
     <Grid x:Name="RootGrid" MaxWidth="1000">
-        <StackPanel Spacing="16" VerticalAlignment="Center"
+        <StackPanel x:Name="MainPanel" Spacing="16" VerticalAlignment="Center"
             Background="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}"
             CornerRadius="{StaticResource OverlayCornerRadius}"
             Padding="40">
@@ -20,7 +20,7 @@
                 <Paragraph>AskDB needs to connect to your database to analyze its structure and execute database queries. Please fill the fields below to configure your database connection.</Paragraph>
             </RichTextBlock>
             <StackPanel/>
-            <ComboBox Header="Database Type" x:Name="databaseTypeComboBox" SelectedIndex="0" HorizontalAlignment="Stretch">
+            <ComboBox Header="Database Type" x:Name="DatabaseTypeComboBox" SelectedIndex="0" HorizontalAlignment="Stretch">
                 <ComboBox.Items>
                     <ComboBoxItem Content="SQL Server"/>
                     <ComboBoxItem Content="MySQL"/>
@@ -28,73 +28,41 @@
                     <ComboBoxItem Content="SQLite"/>
                 </ComboBox.Items>
             </ComboBox>
-            <StackPanel x:Name="notSqliteComponents" Spacing="16">
+               <StackPanel x:Name="NotSqliteComponents" Spacing="16">
                 <Grid ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBox Header="Server" x:Name="serverBox" Grid.Column="0"/>
-                    <NumberBox Header="Port" x:Name="portBox" Grid.Column="1" MinWidth="150"/>
-                    <TextBox Header="Database" Grid.Row="3" x:Name="databaseBox" Grid.Column="2" MinWidth="250"/>
-                </Grid>
-                <Grid ColumnSpacing="12">
-                    <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox Header="Username" x:Name="usernameBox" Grid.Column="0"/>
-                    <PasswordBox Header="Password" x:Name="passwordBox" AutomationProperties.Name="Simple PasswordBox" Grid.Column="1" MinWidth="250"/>
+                    <TextBox Header="Server" Grid.Column="0" Text="{x:Bind _dbCredential.Server, Mode=TwoWay}" PlaceholderText="localhost"/>
+                    <TextBox Header="Database" Grid.Row="1" Grid.Column="2" MinWidth="250" Text="{x:Bind _dbCredential.Database, Mode=TwoWay}"/>
                 </Grid>
-                <Expander x:Name="advancedOption" HorizontalAlignment="Stretch">
-                    <Expander.Header>
-                        <TextBlock>Advanced Options</TextBlock>
-                    </Expander.Header>
-                    <Grid RowSpacing="16">
-                        <Grid.RowDefinitions>
-                            <RowDefinition/>
-                            <RowDefinition/>
-                        </Grid.RowDefinitions>
-                        <Grid Grid.Row="0" ColumnSpacing="12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <NumberBox Header="Timeout (seconds)" x:Name="connectionTimeoutBox" PlaceholderText="15" Grid.Column="0" MinWidth="150" Value="15"/>
-                            <ComboBox Header="Authentication Method" SelectedIndex="0" x:Name="authenticationBox" PlaceholderText="Default" Grid.Column="1" MinWidth="250">
-                                <ComboBox.Items>
-                                    <ComboBoxItem Content="Default"/>
-                                    <ComboBoxItem Content="Windows Authentication"/>
-                                </ComboBox.Items>
-                            </ComboBox>
-                        </Grid>
-                        <CheckBox Content="Enable SSL/TLS" Grid.Row="1" x:Name="enableSslTlsCheckBox"/>
+                <StackPanel Spacing="2">
+                    <Grid ColumnSpacing="12" x:Name="CustomAuthenticationSpace" Padding="16" CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource LayerOnMicaBaseAltFillColorSecondaryBrush}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Header="Username" Grid.Column="0" Text="{x:Bind _dbCredential.Username,Mode=TwoWay}" PlaceholderText="{x:Bind _defaultUsername, Mode=TwoWay}"/>
+                        <PasswordBox Header="Password" AutomationProperties.Name="Simple PasswordBox" Grid.Column="1" MinWidth="250" Password="{x:Bind _dbCredential.Password, Mode=TwoWay}"/>
                     </Grid>
-                </Expander>
-                <TextBox Header="Connection String" x:Name="connectionStringBox" Visibility="Collapsed" ToolTipService.ToolTip="You can edit this connection string in case you can't connect to your database."/>
+                    <CheckBox Content="I want to use Windows Authentication." IsChecked="{x:Bind _useWindowsAuthentication, Mode=TwoWay}" Click="UseWindowsAuthenticationCheckbox_Click"/>
+                    <CheckBox Content="Enable SSL/TLS encryption." Grid.Row="1" IsChecked="{x:Bind _enableSslTls,Mode=TwoWay}"/>
+                </StackPanel>
+                <TextBox Header="Connection String" x:Name="ConnectionStringBox" Visibility="Collapsed" ToolTipService.ToolTip="You can edit this connection string in case you can't connect to your database."/>
             </StackPanel>
-            <Grid x:Name="sqliteComponents" Visibility="Collapsed">
+            <Grid x:Name="SqliteComponents" Visibility="Collapsed">
                 <Grid ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBox PlaceholderText="path\\to\\YourDatabaseFile.db" IsReadOnly="True" x:Name="databaseFileBox" Grid.Column="0"/>
-                    <Button Content="Browse" x:Name="browseButton" Grid.Column="1"/>
+                    <Button Content="Browse" x:Name="BrowseButton" Grid.Column="1"/>
                 </Grid>
             </Grid>
-            <CheckBox Content="Remember connection credentials" x:Name="rememberConnectionCheckbox" IsChecked="True" />
-            <Grid ColumnSpacing="8" HorizontalAlignment="Right">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <HyperlinkButton Content="Back" Grid.Column="1" x:Name="backButton" MinWidth="100"/>
-                <Button Content="Continue" Grid.Column="2" x:Name="continueButton" MinWidth="150" Style="{StaticResource AccentButtonStyle}"/>
-            </Grid>
+            <Button HorizontalAlignment="Stretch" x:Name="ContinueButton"  Content="Continue" Grid.Column="2" Style="{StaticResource AccentButtonStyle}" Padding="8"/>
         </StackPanel>
+        <local:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
     </Grid>
 </Page>

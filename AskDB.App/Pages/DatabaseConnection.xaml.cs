@@ -1,8 +1,11 @@
+using AskDB.App.Helpers;
+using AskDB.App.ViewModels;
 using DatabaseAnalyzer;
 using DatabaseAnalyzer.Extractors;
 using DatabaseAnalyzer.Models;
 using Helper;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Linq;
 using Windows.Storage.Pickers;
@@ -11,56 +14,75 @@ namespace AskDB.App
 {
     public sealed partial class DatabaseConnection : Page
     {
+        private DatabaseConnectionCredential _dbCredential { get; set; } = new();
+        private bool _useWindowsAuthentication = true;
+        private bool _enableSslTls = true;
+        private string _defaultUsername = string.Empty;
+
         public DatabaseConnection()
         {
             InitializeComponent();
-            SetDefaultValuesFor(DatabaseType.SqlServer);
-            databaseTypeComboBox.SelectionChanged += DatabaseTypeComboBox_SelectionChanged;
-            browseButton.Click += BrowseButton_Click;
-            continueButton.Click += ContinueButton_Click;
-            backButton.Click += BackButton_Click;
+            SetDefaultValuesFor(_dbCredential.DatabaseType);
+            CustomAuthenticationSpace.Visibility = VisibilityHelper.SetVisible(!_useWindowsAuthentication);
+            SetLoading(false);
+
+            DatabaseTypeComboBox.SelectionChanged += DatabaseTypeComboBox_SelectionChanged;
+            BrowseButton.Click += BrowseButton_Click;
+            ContinueButton.Click += ContinueButton_Click;
         }
 
-        private void BackButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        private void SetLoading(bool isLoading)
         {
-            Frame.GoBack();
+            LoadingOverlay.SetLoading("Connecting...", isLoading);
+            LoadingOverlay.Visibility = VisibilityHelper.SetVisible(isLoading);
+            MainPanel.Visibility = VisibilityHelper.SetVisible(!isLoading);
         }
 
         private async void ContinueButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         {
-            if (databaseTypeComboBox.SelectedIndex == (int)DatabaseType.SQLite && string.IsNullOrWhiteSpace(databaseFileBox.Text))
+            if (_dbCredential.DatabaseType == DatabaseType.SQLite && string.IsNullOrWhiteSpace(databaseFileBox.Text))
             {
                 await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Please select the database file.");
                 return;
             }
 
-            if (databaseTypeComboBox.SelectedIndex != (int)DatabaseType.SQLite && (string.IsNullOrWhiteSpace(serverBox.Text)
-                || string.IsNullOrWhiteSpace(usernameBox.Text)
-                || string.IsNullOrWhiteSpace(passwordBox.Password)
-                || string.IsNullOrWhiteSpace(databaseBox.Text)))
+            if (_dbCredential.DatabaseType != DatabaseType.SQLite)
             {
-                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Please fill all the fields.");
+                if (_useWindowsAuthentication && (string.IsNullOrWhiteSpace(_dbCredential.Username) || string.IsNullOrWhiteSpace(_dbCredential.Password)))
+                {
+                    await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Please input the username and the password.");
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(_dbCredential.Server) || string.IsNullOrWhiteSpace(_dbCredential.Database))
+                {
+                    await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Please fill all the fields.");
+                    return;
+                }
+            }
+            else if (string.IsNullOrWhiteSpace(databaseFileBox.Text))
+            {
+                await WinUiHelper.ShowDialog(RootGrid.XamlRoot, "Please select the database file.");
                 return;
             }
 
-            var databaseType = (DatabaseType)databaseTypeComboBox.SelectedIndex;
-
-            var connectionString = string.IsNullOrEmpty(connectionStringBox.Text)
-                ? databaseType switch
+            var connectionString = string.IsNullOrEmpty(ConnectionStringBox.Text)
+                ? _dbCredential.DatabaseType switch
                 {
-                    DatabaseType.MySQL => $"Server={serverBox.Text};Port={portBox.Text};Database={databaseBox.Text};Uid={usernameBox.Text};Pwd={passwordBox.Password};Connection Timeout={connectionTimeoutBox.Value};SslMode={(enableSslTlsCheckBox.IsChecked == true ? "Required" : "None")};",
-                    DatabaseType.PostgreSQL => $"Host={serverBox.Text};Port={portBox.Text};Username={usernameBox.Text};Password={passwordBox.Password};Database={databaseBox.Text};Pooling=true;MinPoolSize=0;MaxPoolSize=100;CommandTimeout={connectionTimeoutBox.Value};Timeout={connectionTimeoutBox.Value};{(enableSslTlsCheckBox.IsChecked == true ? "SSL Mode=Require;" : string.Empty)}Trust Server Certificate=true;",
-                    DatabaseType.SqlServer => $"Server={serverBox.Text};Database={databaseBox.Text};User Id={usernameBox.Text};Password={passwordBox.Password};Connection Timeout={connectionTimeoutBox.Value};{(enableSslTlsCheckBox.IsChecked == true ? "Encrypt=True;" : string.Empty)}{(authenticationBox.Text == "Windows Authentication" ? "Integrated Security=true;" : string.Empty)}TrustServerCertificate=True;",
+                    DatabaseType.MySQL => $"Server={_dbCredential.Database};Database={_dbCredential.Database};Uid={_dbCredential.Username};Pwd={_dbCredential.Password};Connection Timeout=15;SslMode={(_enableSslTls ? "Required" : "None")};",
+                    DatabaseType.PostgreSQL => $"Host={_dbCredential.Database};Database={_dbCredential.Database};Username={_dbCredential.Username};Password={_dbCredential.Password};Pooling=true;MinPoolSize=0;MaxPoolSize=100;CommandTimeout=15;Timeout=15;{(_enableSslTls ? "SSL Mode=Require;" : string.Empty)}Trust Server Certificate=true;",
+                    DatabaseType.SqlServer => $"Server={_dbCredential.Database};Database={_dbCredential.Database};User Id={_dbCredential.Username};Password={_dbCredential.Password};Connection Timeout=15;{(_enableSslTls ? "Encrypt=True;" : string.Empty)}{(_useWindowsAuthentication ? "Integrated Security=true;" : string.Empty)}TrustServerCertificate=True;",
                     DatabaseType.SQLite => $"Data Source={databaseFileBox.Text}",
                     _ => throw new InvalidOperationException("Unsupported database type."),
                 }
-                : connectionStringBox.Text;
+                : ConnectionStringBox.Text;
 
-            connectionStringBox.Text = Cache.ConnectionString = connectionString;
+            ConnectionStringBox.Text = Cache.ConnectionString = connectionString;
 
             try
             {
-                Analyzer.DbExtractor = databaseType switch
+                SetLoading(true);
+                Analyzer.DbExtractor = _dbCredential.DatabaseType switch
                 {
                     DatabaseType.SqlServer => new SqlServerExtractor(connectionString),
                     DatabaseType.PostgreSQL => new PostgreSqlExtractor(connectionString),
@@ -71,14 +93,17 @@ namespace AskDB.App
                 await Analyzer.DbExtractor.ExtractTables();
                 Analyzer.DbExtractor.Tables = [.. Analyzer.DbExtractor.Tables.Where(t => t.Columns.Count > 0).OrderBy(t => t.Name)];
 
-                connectionStringBox.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-                Frame.Navigate(typeof(QuerySuggestion), null, new Microsoft.UI.Xaml.Media.Animation.SlideNavigationTransitionInfo() { Effect = Microsoft.UI.Xaml.Media.Animation.SlideNavigationTransitionEffect.FromRight });
+                ConnectionStringBox.Visibility = VisibilityHelper.SetVisible(false);
+                Frame.Navigate(typeof(QuerySuggestion), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
             }
             catch (Exception ex)
             {
                 await WinUiHelper.ShowDialog(RootGrid.XamlRoot, ex.Message);
-                connectionStringBox.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
-                return;
+                ConnectionStringBox.Visibility = VisibilityHelper.SetVisible(true);
+            }
+            finally
+            {
+                SetLoading(false);
             }
         }
 
@@ -104,7 +129,9 @@ namespace AskDB.App
 
         private void DatabaseTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            SetDefaultValuesFor((DatabaseType)(sender as ComboBox).SelectedIndex);
+            var comboBox = sender as ComboBox;
+            _dbCredential.DatabaseType = (DatabaseType)comboBox.SelectedIndex;
+            SetDefaultValuesFor(_dbCredential.DatabaseType);
         }
 
         private void SetDefaultValuesFor(DatabaseType type)
@@ -112,35 +139,26 @@ namespace AskDB.App
             switch (type)
             {
                 case DatabaseType.MySQL:
-                    portBox.PlaceholderText = "3306";
-                    serverBox.PlaceholderText = "localhost";
-                    usernameBox.PlaceholderText = "root";
+                    _defaultUsername = "root";
                     break;
                 case DatabaseType.PostgreSQL:
-                    portBox.PlaceholderText = "5432";
-                    serverBox.PlaceholderText = "localhost";
-                    usernameBox.PlaceholderText = "postgres";
+                    _defaultUsername = "postgres";
                     break;
                 case DatabaseType.SqlServer:
-                    portBox.PlaceholderText = "1433";
-                    serverBox.PlaceholderText = "localhost";
                     break;
                 case DatabaseType.SQLite:
-                    notSqliteComponents.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-                    sqliteComponents.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+                    NotSqliteComponents.Visibility = VisibilityHelper.SetVisible(false);
+                    SqliteComponents.Visibility = VisibilityHelper.SetVisible(true);
                     break;
             }
 
-            if (type != DatabaseType.SQLite)
-            {
-                notSqliteComponents.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
-                sqliteComponents.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-            }
-            else
-            {
-                notSqliteComponents.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-                sqliteComponents.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
-            }
+            NotSqliteComponents.Visibility = VisibilityHelper.SetVisible(type != DatabaseType.SQLite);
+            SqliteComponents.Visibility = VisibilityHelper.SetVisible(type == DatabaseType.SQLite);
+        }
+
+        private void UseWindowsAuthenticationCheckbox_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            CustomAuthenticationSpace.Visibility = VisibilityHelper.SetVisible(!_useWindowsAuthentication);
         }
     }
 }

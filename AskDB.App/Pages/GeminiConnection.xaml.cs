@@ -1,9 +1,10 @@
+using AskDB.App.Helpers;
 using GeminiDotNET;
 using Helper;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
+using Page = Microsoft.UI.Xaml.Controls.Page;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -15,43 +16,67 @@ namespace AskDB.App
     /// </summary>
     public sealed partial class GeminiConnection : Page
     {
+        private string _geminiApiKey;
         public GeminiConnection()
         {
             this.InitializeComponent();
 
-            this.ContinueButton.Click += ContinueButton_Click;
+            SetLoading(false);
+            SetError(null);
+        }
+
+
+
+        private void SetLoading(bool isLoading)
+        {
+            LoadingOverlay.SetLoading("Validating API Key...", isLoading);
+            LoadingOverlay.Visibility = VisibilityHelper.SetVisible(isLoading);
+            MainPanel.Visibility = VisibilityHelper.SetVisible(!isLoading);
+        }
+
+        private void SetError(string message = null)
+        {
+            ErrorLabel.Visibility = VisibilityHelper.SetVisible(!string.IsNullOrEmpty(message));
+            ErrorLabel.Text = message ?? string.Empty;
         }
 
         private async void ContinueButton_Click(object sender, RoutedEventArgs e)
         {
-            SetLoadingState(true, "Validating API Key...");
-            var apiKey = GeminiApiKeyBox.Text;
-
-            if (!Validator.CanBeValidApiKey(apiKey))
+            try
             {
-                await WinUiHelper.ShowDialog(this.RootGrid.XamlRoot, "Invalid or expired API Key. Please try again with another API key.");
-                return;
+                SetLoading(true);
+                if (string.IsNullOrEmpty(_geminiApiKey) || string.IsNullOrWhiteSpace(_geminiApiKey))
+                {
+                    throw new InvalidOperationException("Please enter your Gemini API key");
+                }
+
+                try
+                {
+                    var generator = new Generator(_geminiApiKey);
+                    var apiRequest = new ApiRequestBuilder()
+                        .WithPrompt("Print out `Hello world`")
+                        .DisableAllSafetySettings()
+                        .WithDefaultGenerationConfig(0.2F, 400)
+                        .Build();
+
+                    await generator.GenerateContentAsync(apiRequest);
+                }
+                catch
+                {
+                    throw new InvalidOperationException("Invalid or expired API key. Please try again with another API key.");
+                }
+
+                Cache.ApiKey = _geminiApiKey;
+                this.Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
             }
-
-            var isValidApiKey = await new Generator(apiKey).IsValidApiKeyAsync();
-
-            if (!isValidApiKey)
+            catch (Exception ex)
             {
-                await WinUiHelper.ShowDialog(this.RootGrid.XamlRoot, "Invalid or expired API Key. Please try again with another API key.");
-                SetLoadingState(false, "Validating API Key...");
-                return;
+                SetError(ex.Message);
             }
-
-            Cache.ApiKey = apiKey;
-            SetLoadingState(false, "Validating API Key...");
-            this.Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
-        }
-        private void SetLoadingState(bool isLoading, string message)
-        {
-            ContinueButton.IsEnabled = !isLoading;
-            LoadingOverlay.SetLoading(message, isLoading);
-            LoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
-            MainPanel.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
+            finally
+            {
+                SetLoading(false);
+            }
         }
     }
 }
