@@ -5,7 +5,6 @@ using DatabaseAnalyzer.Extractors;
 using DatabaseAnalyzer.Models;
 using Helper;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Linq;
 using Windows.Storage.Pickers;
@@ -94,7 +93,6 @@ namespace AskDB.App
                 Analyzer.DbExtractor.Tables = [.. Analyzer.DbExtractor.Tables.Where(t => t.Columns.Count > 0).OrderBy(t => t.Name)];
 
                 ConnectionStringBox.Visibility = VisibilityHelper.SetVisible(false);
-                Frame.Navigate(typeof(QuerySuggestion), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
             }
             catch (Exception ex)
             {

@@ -51,6 +51,7 @@
     <None Remove="GeminiConnection.xaml" />
     <None Remove="LoadingControl.xaml" />
     <None Remove="MainPanel.xaml" />
+    <None Remove="Pages\ChatWithDatabase.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -65,6 +66,7 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.WinUI.UI.Controls.DataGrid" Version="7.1.2" />
+    <PackageReference Include="CommunityToolkit.WinUI.UI.Controls.Markdown" Version="7.1.2" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.3916" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250401001" />
     <Manifest Include="$(ApplicationManifest)" />
@@ -80,6 +82,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DatabaseAnalyzer\DatabaseAnalyzer.csproj" />
+    <ProjectReference Include="..\DatabaseInteractor\DatabaseInteractor.csproj" />
     <ProjectReference Include="..\Helper\Helper.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -87,6 +90,9 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+    <Page Update="Pages\ChatWithDatabase.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Update="MainPanel.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -105,7 +111,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Local Controls\" />
-    <Folder Include="Pages\" />
   </ItemGroup>
 
   <!--

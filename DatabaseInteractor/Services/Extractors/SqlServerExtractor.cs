@@ -1,6 +1,4 @@
-﻿using DatabaseInteractor.Models;
-using DatabaseInteractor.Models.Enums;
-using System.Collections.Concurrent;
+﻿using DatabaseInteractor.Models.Enums;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -12,134 +10,6 @@ namespace DatabaseInteractor.Services.Extractors
         {
             DatabaseType = DatabaseType.SqlServer;
         }
-
-        public override async Task<DataTable> GetSampleData(string tableName, string? schema, short maxRows = 10)
-        {
-            var query = $@"SELECT TOP {maxRows} * FROM [{schema ?? "dbo"}].[{tableName}] TABLESAMPLE ({maxRows * 3} ROWS);";
-            return await ExecuteQueryAsync(query);
-        }
-
-        public override async Task<List<Table>> GetTablesAsync(string? tableNameFilter, string schema, int maxTables = 100)
-        {
-            using SqlConnection connection = new(ConnectionString);
-            await connection.OpenAsync();
-
-            var query = @$"
-                DECLARE @SchemaName NVARCHAR(128) = '{schema ?? "dbo"}'; 
-                DECLARE @TableNameFilter NVARCHAR(128) = '{tableNameFilter}'; 
-                DECLARE @MaxRow INT = {maxTables}; 
-
-                WITH TopTables AS (
-                    SELECT TOP @MaxRow
-                        t.object_id,
-                        t.name AS TableName,
-                        s.name AS SchemaName
-                    FROM 
-                        sys.tables t
-                    JOIN 
-                        sys.schemas s ON t.schema_id = s.schema_id
-                    WHERE 
-                        t.is_ms_shipped = 0
-                        AND s.name = @SchemaName
-                        AND t.name LIKE '%' + @TableNameFilter + '%'
-                )
-
-                SELECT 
-                    tt.SchemaName,
-                    tt.TableName,
-                    c.name AS ColumnName,
-                    ty.name AS DataType,
-                    c.max_length AS MaxLength,
-                    c.is_nullable AS IsNullable,
-                    c.default_object_id,
-                    pk.PrimaryKey,
-                    fk.FK_Name,
-                    fk.ParentColumn,
-                    fk.ReferencedTable,
-                    fk.ReferencedColumn
-                FROM 
-                    TopTables tt
-                JOIN 
-                    sys.columns c ON c.object_id = tt.object_id
-                JOIN 
-                    sys.types ty ON c.user_type_id = ty.user_type_id
-                LEFT JOIN (
-                    SELECT 
-                        ic.object_id,
-                        ic.column_id,
-                        i.name AS PrimaryKey
-                    FROM 
-                        sys.indexes i
-                    JOIN 
-                        sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-                    WHERE 
-                        i.is_primary_key = 1
-                ) pk ON pk.object_id = c.object_id AND pk.column_id = c.column_id
-                LEFT JOIN (
-                    SELECT 
-                        fk.name AS FK_Name,
-                        fkc.parent_object_id,
-                        fkc.parent_column_id,
-                        fkc.referenced_object_id,
-                        fkc.referenced_column_id,
-                        cp.name AS ParentColumn,
-                        OBJECT_NAME(fkc.referenced_object_id) AS ReferencedTable,
-                        cr.name AS ReferencedColumn
-                    FROM 
-                        sys.foreign_keys fk
-                    JOIN 
-                        sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
-                    JOIN 
-                        sys.columns cp ON cp.object_id = fkc.parent_object_id AND cp.column_id = fkc.parent_column_id
-                    JOIN 
-                        sys.columns cr ON cr.object_id = fkc.referenced_object_id AND cr.column_id = fkc.referenced_column_id
-                ) fk ON fk.parent_object_id = c.object_id AND fk.parent_column_id = c.column_id";
-
-            using SqlCommand command = new(query, connection);
-            using SqlDataReader reader = await command.ExecuteReaderAsync();
-            var tables = new ConcurrentDictionary<string, Table>();
-
-            while (await reader.ReadAsync())
-            {
-                var schemaName = await reader.IsDBNullAsync(0) ? null : reader.GetString(0);
-                var tableName = reader.GetString(1);
-                var columnName = reader.GetString(2);
-                var dataType = reader.GetString(3);
-                var maxLength = await reader.IsDBNullAsync(4) ? (int?)null : reader.GetInt32(4);
-                var isNullable = reader.GetString(5) == "YES";
-                var defaultValue = await reader.IsDBNullAsync(6) ? null : reader.GetString(6);
-                var primaryKey = await reader.IsDBNullAsync(7) ? null : reader.GetString(7);
-                var fkName = await reader.IsDBNullAsync(8) ? null : reader.GetString(8);
-                var parentColumn = await reader.IsDBNullAsync(9) ? null : reader.GetString(9);
-                var referencedTable = await reader.IsDBNullAsync(10) ? null : reader.GetString(10);
-                var referencedColumn = await reader.IsDBNullAsync(11) ? null : reader.GetString(11);
-
-                var column = new Column
-                {
-                    Name = columnName,
-                    DataType = dataType,
-                    MaxLength = maxLength,
-                    IsNullable = isNullable,
-                    DefaultValue = defaultValue,
-                    PrimaryKey = primaryKey,
-                    ForeignKeyName = fkName,
-                    ParentColumn = parentColumn,
-                    ReferencedTable = referencedTable,
-                    ReferencedColumn = referencedColumn
-                };
-
-                tables.AddOrUpdate(tableName,
-                    new Table { Schema = schemaName, Name = tableName, Columns = [column] },
-                    (_, table) =>
-                    {
-                        table.Columns.Add(column);
-                        return table;
-                    });
-            }
-
-            return [.. tables.Values];
-        }
-
         public override async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
         {
             using var connection = new SqlConnection(ConnectionString);
@@ -150,6 +20,216 @@ namespace DatabaseInteractor.Services.Extractors
 
             using var reader = await command.ExecuteReaderAsync();
             dataTable.Load(reader);
+
+            return dataTable;
+        }
+
+        public override async Task ExecuteNonQueryAsync(string sqlQuery)
+        {
+            using var connection = new SqlConnection(ConnectionString);
+            using var command = new SqlCommand(sqlQuery, connection);
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
+        }
+
+        public override async Task<List<string>> GetUserPermissionsAsync()
+        {
+            var permissions = new List<string>();
+            var query = "SELECT permission_name FROM fn_my_permissions(NULL, 'DATABASE')";
+
+            using (var connection = new SqlConnection(ConnectionString))
+            {
+                using var command = new SqlCommand(query, connection);
+                await connection.OpenAsync();
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    permissions.Add(reader.GetString(0));
+                }
+            }
+            return permissions;
+        }
+
+        public override async Task<List<string>> GetDatabaseSchemaNamesAsync(string? keyword)
+        {
+            var schemas = new List<string>();
+            var query = "SELECT schema_name FROM information_schema.schemata";
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                query += " WHERE schema_name LIKE @keyword";
+            }
+            using (var connection = new SqlConnection(ConnectionString))
+            {
+                using var command = new SqlCommand(query, connection);
+                if (!string.IsNullOrEmpty(keyword))
+                {
+                    command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
+                }
+
+                await connection.OpenAsync();
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    schemas.Add(reader.GetString(0));
+                }
+            }
+            return schemas;
+        }
+
+        public override async Task<DataTable> GetSchemaInfoAsync(string schema, string table)
+        {
+            var dataTable = new DataTable("SchemaInfo");
+
+            using var connection = new SqlConnection(ConnectionString);
+            await connection.OpenAsync();
+
+            // Query for columns
+            var columnsQuery = @"
+                SELECT 
+                    c.COLUMN_NAME,
+                    c.DATA_TYPE,
+                    c.IS_NULLABLE,
+                    c.CHARACTER_MAXIMUM_LENGTH,
+                    c.COLUMN_DEFAULT
+                FROM INFORMATION_SCHEMA.COLUMNS c
+                WHERE c.TABLE_SCHEMA = @schema AND c.TABLE_NAME = @table
+                ORDER BY c.ORDINAL_POSITION";
+
+            // Query for primary keys
+            var pkQuery = @"
+                SELECT k.COLUMN_NAME
+                FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS t
+                INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE k
+                    ON t.CONSTRAINT_NAME = k.CONSTRAINT_NAME
+                    AND t.TABLE_SCHEMA = k.TABLE_SCHEMA
+                    AND t.TABLE_NAME = k.TABLE_NAME
+                WHERE t.TABLE_SCHEMA = @schema AND t.TABLE_NAME = @table AND t.CONSTRAINT_TYPE = 'PRIMARY KEY'";
+
+            // Query for foreign keys
+            var fkQuery = @"
+                SELECT 
+                    fk.CONSTRAINT_NAME,
+                    kcu.COLUMN_NAME,
+                    fkcu.TABLE_SCHEMA AS REFERENCED_SCHEMA,
+                    fkcu.TABLE_NAME AS REFERENCED_TABLE,
+                    fkcu.COLUMN_NAME AS REFERENCED_COLUMN
+                FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS fk
+                INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+                    ON fk.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+                    AND fk.CONSTRAINT_SCHEMA = kcu.CONSTRAINT_SCHEMA
+                INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE fkcu
+                    ON fk.UNIQUE_CONSTRAINT_NAME = fkcu.CONSTRAINT_NAME
+                    AND fk.UNIQUE_CONSTRAINT_SCHEMA = fkcu.CONSTRAINT_SCHEMA
+                    AND kcu.ORDINAL_POSITION = fkcu.ORDINAL_POSITION
+                WHERE kcu.TABLE_SCHEMA = @schema AND kcu.TABLE_NAME = @table";
+
+            // Query for constraints
+            var constraintsQuery = @"
+                SELECT 
+                    tc.CONSTRAINT_NAME,
+                    tc.CONSTRAINT_TYPE
+                FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+                WHERE tc.TABLE_SCHEMA = @schema AND tc.TABLE_NAME = @table";
+
+            // Prepare result table structure
+            dataTable.Columns.Add("ColumnName", typeof(string));
+            dataTable.Columns.Add("DataType", typeof(string));
+            dataTable.Columns.Add("IsNullable", typeof(string));
+            dataTable.Columns.Add("MaxLength", typeof(int));
+            dataTable.Columns.Add("DefaultValue", typeof(string));
+            dataTable.Columns.Add("IsPrimaryKey", typeof(bool));
+            dataTable.Columns.Add("IsForeignKey", typeof(bool));
+            dataTable.Columns.Add("ForeignKeyName", typeof(string));
+            dataTable.Columns.Add("ReferencedSchema", typeof(string));
+            dataTable.Columns.Add("ReferencedTable", typeof(string));
+            dataTable.Columns.Add("ReferencedColumn", typeof(string));
+            dataTable.Columns.Add("Constraints", typeof(string));
+
+            // Get columns
+            var columns = new List<(string Name, string DataType, string IsNullable, int? MaxLength, string DefaultValue)>();
+            using (var cmd = new SqlCommand(columnsQuery, connection))
+            {
+                cmd.Parameters.AddWithValue("@schema", schema);
+                cmd.Parameters.AddWithValue("@table", table);
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    columns.Add((
+                        reader.GetString(0),
+                        reader.GetString(1),
+                        reader.GetString(2),
+                        reader.IsDBNull(3) ? null : reader.GetInt32(3),
+                        reader.IsDBNull(4) ? null : reader.GetString(4)
+                    ));
+                }
+            }
+
+            // Get primary keys
+            var primaryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            using (var cmd = new SqlCommand(pkQuery, connection))
+            {
+                cmd.Parameters.AddWithValue("@schema", schema);
+                cmd.Parameters.AddWithValue("@table", table);
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    primaryKeys.Add(reader.GetString(0));
+                }
+            }
+
+            // Get foreign keys
+            var foreignKeys = new Dictionary<string, (string FKName, string RefSchema, string RefTable, string RefColumn)>(StringComparer.OrdinalIgnoreCase);
+            using (var cmd = new SqlCommand(fkQuery, connection))
+            {
+                cmd.Parameters.AddWithValue("@schema", schema);
+                cmd.Parameters.AddWithValue("@table", table);
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    var column = reader.GetString(1);
+                    foreignKeys[column] = (
+                        reader.GetString(0),
+                        reader.GetString(2),
+                        reader.GetString(3),
+                        reader.GetString(4)
+                    );
+                }
+            }
+
+            // Get constraints
+            var constraints = new List<string>();
+            using (var cmd = new SqlCommand(constraintsQuery, connection))
+            {
+                cmd.Parameters.AddWithValue("@schema", schema);
+                cmd.Parameters.AddWithValue("@table", table);
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    constraints.Add($"{reader.GetString(0)} ({reader.GetString(1)})");
+                }
+            }
+            var constraintsStr = string.Join("; ", constraints);
+
+            // Compose result
+            foreach (var (Name, DataType, IsNullable, MaxLength, DefaultValue) in columns)
+            {
+                var isPK = primaryKeys.Contains(Name);
+                var isFK = foreignKeys.TryGetValue(Name, out var fkInfo);
+                dataTable.Rows.Add(
+                    Name,
+                    DataType,
+                    IsNullable,
+                    MaxLength ?? (object)DBNull.Value,
+                    DefaultValue ?? (object)DBNull.Value,
+                    isPK,
+                    isFK,
+                    isFK ? fkInfo.FKName : null,
+                    isFK ? fkInfo.RefSchema : null,
+                    isFK ? fkInfo.RefTable : null,
+                    isFK ? fkInfo.RefColumn : null,
+                    constraintsStr
+                );
+            }
 
             return dataTable;
         }

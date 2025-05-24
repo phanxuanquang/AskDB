@@ -1,8 +1,5 @@
-﻿using Dapper;
-using DatabaseInteractor.Models;
-using DatabaseInteractor.Models.Enums;
+﻿using DatabaseInteractor.Models.Enums;
 using Microsoft.Data.Sqlite;
-using System.Collections.Concurrent;
 using System.Data;
 
 namespace DatabaseInteractor.Services.Extractors
@@ -34,57 +31,6 @@ namespace DatabaseInteractor.Services.Extractors
             DatabaseType = DatabaseType.SQLite;
         }
 
-        public override async Task<List<Table>> GetTablesAsync(string? tableNameFilter, string schema, int maxTables = 100)
-        {
-            using var connection = new SqliteConnection(ConnectionString);
-            await connection.OpenAsync();
-
-            var tables = new ConcurrentDictionary<string, Table>();
-            var tableNameList = await connection.QueryAsync<string>(@"SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'");
-
-            foreach (var tableName in tableNameList)
-            {
-                var columnInfors = await connection.QueryAsync<ColumnInfor>($"PRAGMA table_info({tableName})");
-
-                var foreignKeyInfors = await connection.QueryAsync<ForeignKeyInfo>($"PRAGMA foreign_key_list({tableName})");
-
-                var table = new Table
-                {
-                    Schema = null,
-                    Name = tableName,
-                    Columns = columnInfors
-                        .Select(column =>
-                        {
-                            var foreignKeyInfor = foreignKeyInfors.FirstOrDefault(fk => fk.From.Equals(column.Name));
-
-                            return new Column
-                            {
-                                Name = column.Name,
-                                DataType = column.Type,
-                                IsNullable = !column.NotNull,
-                                DefaultValue = column.DefaultValue,
-                                PrimaryKey = column.Pk == 1 ? column.Name : null,
-                                ForeignKeyName = foreignKeyInfor?.Table,
-                                ParentColumn = foreignKeyInfor?.From,
-                                ReferencedTable = foreignKeyInfor?.Table,
-                                ReferencedColumn = foreignKeyInfor?.To
-                            };
-                        })
-                        .ToList()
-                };
-
-                tables.TryAdd(tableName, table);
-            }
-
-            return [.. tables.Values];
-        }
-
-        public override async Task<DataTable> GetSampleData(string tableName, string? schema, short maxRows = 10)
-        {
-            var query = $@"SELECT * FROM {tableName} ORDER BY RANDOM() LIMIT {maxRows}";
-            return await ExecuteQueryAsync(query);
-        }
-
         public override async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
         {
             using var connection = new SqliteConnection(ConnectionString);
@@ -97,6 +43,29 @@ namespace DatabaseInteractor.Services.Extractors
             dataTable.Load(reader);
 
             return dataTable;
+        }
+
+        public override async Task ExecuteNonQueryAsync(string sqlQuery)
+        {
+            using var connection = new SqliteConnection(ConnectionString);
+            using var command = new SqliteCommand(sqlQuery, connection);
+            await connection.OpenAsync();
+            await command.ExecuteNonQueryAsync();
+        }
+
+        public override Task<List<string>> GetUserPermissionsAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<List<string>> GetDatabaseSchemaNamesAsync(string? keyword)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<DataTable> GetSchemaInfoAsync(string schema, string table)
+        {
+            throw new NotImplementedException();
         }
     }
 }
