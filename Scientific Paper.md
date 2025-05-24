@@ -153,3 +153,39 @@ While the aforementioned areas have seen substantial progress, several gaps rema
 4.  **Focus on Practical DBA Task Assistance Beyond Pure Automation:** Gemini-SQL-DBA emphasizes not just automation, but also providing explanations, generating scripts for review, and offering guidance, aligning with a human-in-the-loop philosophy where the agent augments rather than entirely replaces the DBA or knowledgeable user for critical tasks.
 
 The novelty of Gemini-SQL-DBA lies in its synergistic approach: combining robust NL2SQL capabilities with intelligent assistance for a curated set of core SQL Server DBA tasks, all powered by the advanced reasoning and generative power of the Gemini LLM, and delivered through an interactive, conversational interface. Our work focuses on the practical design, implementation, and evaluation of such an agent specifically for the SQL Server ecosystem.
+
+```mermaid
+flowchart TD
+    A[User Input Received] --> B[Read System Instruction and Function Declarations]
+    B --> C[Build API Request]
+    C --> D[Call Gemini Model<br/>GenerateContentAsync]
+    D --> E{Model Response<br/>Has Function Calls?}
+    E -- No --> F[Display Model Response to User]
+    E -- Yes --> G[For Each Function Call]
+    G --> H{Function Type}
+    H -- ExecuteQueryAsync --> I[Run SQL Query<br/>Show Progress]
+    H -- ExecuteNonQueryAsync --> J[Run Non-Query<br/>Show Progress]
+    H -- GetSchemaInfoAsync --> K[Get Table Schema Info<br/>Show Progress]
+    H -- GetDatabaseSchemaNamesAsync --> L[Get Schema Names<br/>Show Progress]
+    H -- GetUserPermissionsAsync --> M[Get User Permissions<br/>Show Progress]
+    I & J & K & L & M --> N[Collect Function Responses]
+    N --> O[Build New API Request<br/>with Function Responses]
+    O --> P[Call Gemini Model Again]
+    P --> Q{More Function Calls?}
+    Q -- No --> F
+    Q -- Yes --> G
+    D -->|Error| R[Show Error Message]
+    G -->|Error| S[Show Function Error Message]
+```
+
+```mermaid
+flowchart TD
+    A[User Input] --> B[Agent analyzes user intent]
+    B --> C[Agent creates function declaration]
+    C --> D[Agent executes function]
+    D --> E[Agent receives function response]
+    E --> F[Agent analyzes response]
+    F --> G{Is another function needed?}
+    G -- Yes --> C
+    G -- No --> H[Return final response to user]
+```
