@@ -177,6 +177,7 @@ flowchart TD
     D -->|Error| R[Show Error Message]
     G -->|Error| S[Show Function Error Message]
 ```
+*Figure 3: Detailed flow chart*
 
 ```mermaid
 flowchart TD
@@ -189,3 +190,4 @@ flowchart TD
     G -- Yes --> C
     G -- No --> H[Return final response to user]
 ```
+*Figure4: Overall workflow of the agent*
