@@ -12,9 +12,9 @@ using GeminiDotNET.Helpers;
 using Helper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Navigation;
-using Microsoft.Windows.BadgeNotifications;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -22,16 +22,16 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
+using Windows.System;
 using WinRT.Interop;
 
 namespace AskDB.App.Pages
 {
     public sealed partial class ChatWithDatabase : Page
     {
-        private ObservableCollection<ChatMessage> Messages = [];
-        private ObservableCollection<ProgressContent> ProgressContents = [];
+        private readonly ObservableCollection<ChatMessage> Messages = [];
+        private readonly ObservableCollection<ProgressContent> ProgressContents = [];
 
-        private string _userInputText = string.Empty;
         private Generator _generator;
         private ExtractorBase _extractor;
 
@@ -40,6 +40,7 @@ namespace AskDB.App.Pages
             this.InitializeComponent();
         }
 
+        #region Event Handlers
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
@@ -104,22 +105,98 @@ namespace AskDB.App.Pages
                 Required = ["query"]
             });
         }
-
-        private async void SendButton_Click(object sender, RoutedEventArgs e)
+        private void DataGrid_Loaded(object sender, RoutedEventArgs e)
         {
-            var userInput = _userInputText.Trim();
+            var dataGrid = sender as DataGrid;
+            var dataTable = (dataGrid?.DataContext as ProgressContent)?.Data;
 
-            if (!string.IsNullOrEmpty(userInput))
+            if (dataTable == null)
             {
-                SetMessage(userInput, true);
+                return;
+            }
 
-                await HandleUserInputAsync(userInput);
+            dataGrid.Columns.Clear();
+            for (int i = 0; i < dataTable.Columns.Count; i++)
+            {
+                dataGrid.Columns.Add(new DataGridTextColumn()
+                {
+                    Header = dataTable.Columns[i].ColumnName,
+                    Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
+                });
+            }
+
+            var collectionObjects = new ObservableCollection<object>(dataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray));
+
+            dataGrid.ItemsSource = collectionObjects;
+        }
+        private async void ExportButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var button = sender as Button;
+                var dataTable = (button?.DataContext as ProgressContent)?.Data;
+
+                var savePicker = new FileSavePicker
+                {
+                    SuggestedStartLocation = PickerLocationId.Desktop,
+                    SuggestedFileName = DateTime.Now.ToString("yy.MM.dd-HH.mm.ss").Replace(".", string.Empty)
+                };
+                savePicker.FileTypeChoices.Add("CSV", [".csv"]);
+
+                nint windowHandle = WindowNative.GetWindowHandle(App.Window);
+                InitializeWithWindow.Initialize(savePicker, windowHandle);
+
+                var file = await savePicker.PickSaveFileAsync();
+
+                if (file != null)
+                {
+                    Extractor.ExportCsv(dataTable, file.Path);
+                    await DialogHelper.ShowSuccessAsync("CSV file has been exported to your selected location.");
+                }
+            }
+            catch (Exception ex)
+            {
+                await DialogHelper.ShowErrorAsync(ex.Message);
             }
         }
+        private void ShowProgressToggle_Click(object sender, RoutedEventArgs e)
+        {
+            var toggleButton = sender as ToggleButton;
+            MainView.IsPaneOpen = toggleButton?.IsChecked == true;
+        }
+        private void QueryBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (e.Key == VirtualKey.Enter)
+            {
+                SendButton_Click(sender, e);
+                e.Handled = true;
+            }
+        }
+        private async void SendButton_Click(object sender, RoutedEventArgs e)
+        {
+            var userInput = QueryBox.Text.Trim();
+            QueryBox.Text = string.Empty;
+
+            if (string.IsNullOrEmpty(userInput))
+            {
+                return;
+            }
+
+            SetMessage(userInput, true);
+
+            try
+            {
+                await HandleUserInputAsync(userInput);
+            }
+            catch (Exception ex)
+            {
+                SetMessage($"Error: {ex.Message}. {ex.InnerException?.Message}", false);
+            }
+        }
+        #endregion
 
         private async Task HandleUserInputAsync(string userInput)
         {
-            BadgeNotificationManager.Current.SetBadgeAsGlyph(BadgeNotificationGlyph.Activity);
             var instruction = await Extractor.ReadFile("Instructions/Global.md");
             instruction = instruction.Replace("{Database_Type}", _extractor.DatabaseType.ToString());
             var functionDeclarations = FunctionCallingManager.FunctionDeclarations;
@@ -128,93 +205,82 @@ namespace AskDB.App.Pages
                 .WithSystemInstruction(instruction)
                 .WithPrompt(userInput)
                 .DisableAllSafetySettings()
-                .WithFunctionDeclarations(functionDeclarations, FunctionCallingMode.ANY)
+                .WithFunctionDeclarations(functionDeclarations, FunctionCallingMode.AUTO)
                 .Build();
 
-            try
+            var modelResponse = await _generator.GenerateContentAsync(apiRequest, "gemini-2.5-flash-preview-05-20");
+
+            var functionCalls = (modelResponse.FunctionCalls == null || modelResponse.FunctionCalls.Count == 0) ? [] : modelResponse.FunctionCalls;
+
+            if (functionCalls.Count == 0)
             {
-                var modelResponse = await _generator.GenerateContentAsync(apiRequest, "gemini-2.5-flash-preview-05-20");
+                SetMessage(modelResponse.Content, false);
+                return;
+            }
 
-                var functionCalls = (modelResponse.FunctionCalls == null || modelResponse.FunctionCalls.Count == 0) ? [] : modelResponse.FunctionCalls;
-
-                if (functionCalls.Count == 0)
+            while (functionCalls.Count > 0)
+            {
+                try
                 {
-                    SetMessage(modelResponse.Content, false);
-                    return;
-                }
+                    var functionResponses = new List<FunctionResponse>();
 
-                while (functionCalls.Count > 0)
-                {
-                    try
+                    foreach (var function in functionCalls)
                     {
-                        var functionResponses = new List<FunctionResponse>();
-
-                        foreach (var function in functionCalls)
+                        try
                         {
-                            try
+                            var functionResponse = await CallFunctionAsync(function);
+                            if (functionResponse != null)
                             {
-                                var functionResponse = await CallFunctionAsync(function);
-                                if (functionResponse != null)
-                                {
-                                    functionResponses.Add(functionResponse);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                var output = $"**Error in function {function.Name}:**\n\n```plaintext\n{ex.Message}. {ex.InnerException?.Message}\n```\n\nPlease try with another approarch!";
-
-                                functionResponses.Add(new FunctionResponse
-                                {
-                                    Name = function.Name,
-                                    Response = new Response
-                                    {
-                                        Output = output,
-                                    }
-                                });
-                                SetProgressContent(output, null, false, null);
+                                functionResponses.Add(functionResponse);
                             }
                         }
+                        catch (Exception ex)
+                        {
+                            var output = $"**Error in function {function.Name}:**\n\n```plaintext\n{ex.Message}. {ex.InnerException?.Message}\n```\n\nPlease try with another approarch!";
 
-                        var apiRequestWithFunctions = new ApiRequestBuilder()
-                            .WithSystemInstruction(instruction)
-                            .DisableAllSafetySettings()
-                            .WithFunctionDeclarations(functionDeclarations, FunctionCallingMode.ANY)
-                            .WithFunctionResponses(functionResponses)
-                            .Build();
-
-                        var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash_Lite);
-
-                        SetProgressContent(modelResponseForFunction.Content, null, false, null);
-                        await Task.Delay(1000);
-
-                        functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
+                            functionResponses.Add(new FunctionResponse
+                            {
+                                Name = function.Name,
+                                Response = new Response
+                                {
+                                    Output = output,
+                                }
+                            });
+                            SetProgressContent(output, null, false, null);
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        SetMessage($"Error: {ex.Message}. {ex.InnerException?.Message}", false);
-                        functionCalls = [];
-                    }
+
+                    var apiRequestWithFunctions = new ApiRequestBuilder()
+                        .WithSystemInstruction(instruction)
+                        .DisableAllSafetySettings()
+                        .WithFunctionDeclarations(functionDeclarations, FunctionCallingMode.AUTO)
+                        .WithFunctionResponses(functionResponses)
+                        .Build();
+
+                    var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash_Lite);
+
+                    SetProgressContent(modelResponseForFunction.Content, null, false, null);
+                    await Task.Delay(1000);
+
+                    functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
                 }
-
-                var apiRequestForConclusion = new ApiRequestBuilder()
-                    .WithSystemInstruction(instruction)
-                    .WithPrompt("Now summarize your actions, then provide any final insights or recommendations for the next steps.")
-                    .DisableAllSafetySettings()
-                    .Build();
-
-                var modelResponseForConclusion = await _generator.GenerateContentAsync(apiRequestForConclusion, "gemini-2.0-flash");
-                if (!string.IsNullOrEmpty(modelResponseForConclusion.Content))
+                catch (Exception ex)
                 {
-                    SetMessage(modelResponseForConclusion.Content, false);
+                    SetMessage($"Error: {ex.Message}. {ex.InnerException?.Message}", false);
+                    functionCalls = [];
                 }
             }
-            catch (Exception ex)
+
+            var apiRequestForConclusion = new ApiRequestBuilder()
+                .WithSystemInstruction(instruction)
+                .WithPrompt("Now summarize your actions, then provide any final insights or recommendations for the next steps.")
+                .DisableAllSafetySettings()
+                .Build();
+
+            var modelResponseForConclusion = await _generator.GenerateContentAsync(apiRequestForConclusion, "gemini-2.0-flash");
+            if (!string.IsNullOrEmpty(modelResponseForConclusion.Content))
             {
-                SetMessage($"Error: {ex.Message}", false);
-            }
-            finally
-            {
-                BadgeNotificationManager.Current.SetBadgeAsGlyph(BadgeNotificationGlyph.None);
+                SetMessage(modelResponseForConclusion.Content, false);
             }
         }
 
@@ -241,30 +307,7 @@ namespace AskDB.App.Pages
             ProgressContents.Add(progressContent);
         }
 
-        private void DataGrid_Loaded(object sender, RoutedEventArgs e)
-        {
-            var dataGrid = sender as DataGrid;
-            var dataTable = (dataGrid?.DataContext as ProgressContent)?.Data;
 
-            if (dataTable == null)
-            {
-                return;
-            }
-
-            dataGrid.Columns.Clear();
-            for (int i = 0; i < dataTable.Columns.Count; i++)
-            {
-                dataGrid.Columns.Add(new DataGridTextColumn()
-                {
-                    Header = dataTable.Columns[i].ColumnName,
-                    Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
-                });
-            }
-
-            var collectionObjects = new ObservableCollection<object>(dataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray));
-
-            dataGrid.ItemsSource = collectionObjects;
-        }
 
         private async Task<FunctionResponse> CallFunctionAsync(FunctionCall function)
         {
@@ -350,35 +393,6 @@ namespace AskDB.App.Pages
             }
         }
 
-        private async void ExportButton_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var button = sender as Button;
-                var dataTable = (button?.DataContext as ProgressContent)?.Data;
 
-                var savePicker = new FileSavePicker
-                {
-                    SuggestedStartLocation = PickerLocationId.Desktop,
-                    SuggestedFileName = DateTime.Now.ToString("yy.MM.dd-HH.mm.ss").Replace(".", string.Empty)
-                };
-                savePicker.FileTypeChoices.Add("CSV", [".csv"]);
-
-                nint windowHandle = WindowNative.GetWindowHandle(App.Window);
-                InitializeWithWindow.Initialize(savePicker, windowHandle);
-
-                var file = await savePicker.PickSaveFileAsync();
-
-                if (file != null)
-                {
-                    Extractor.ExportCsv(dataTable, file.Path);
-                    await DialogHelper.ShowSuccessAsync("CSV file has been exported to your selected location.");
-                }
-            }
-            catch (Exception ex)
-            {
-                await DialogHelper.ShowErrorAsync(ex.Message);
-            }
-        }
     }
 }

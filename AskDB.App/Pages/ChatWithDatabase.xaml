@@ -9,7 +9,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls" xmlns:view_models="using:AskDB.App.View_Models"
     mc:Ignorable="d">
 
-    <SplitView IsPaneOpen="True" OpenPaneLength="800" PanePlacement="Right" DisplayMode="Inline" PaneBackground="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+    <SplitView IsPaneOpen="False" x:Name="MainView" OpenPaneLength="640" PanePlacement="Right" DisplayMode="Inline" PaneBackground="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
         <SplitView.Pane>
             <Grid Padding="8" RowSpacing="16">
                 <Grid.RowDefinitions>
@@ -96,17 +96,6 @@
                                 InlineCodeBackground="{ThemeResource SystemFillColorCautionBackgroundBrush}"
                                 QuoteBackground="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
                                 QuotePadding="6"/>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="{x:Bind Alignment}" Spacing="6">
-                                <Button Padding="6">
-                                    <FontIcon Glyph="&#xF4A5;" FontSize="14"/>
-                                </Button>
-                                <Button Padding="6">
-                                    <FontIcon Glyph="&#xE8C8;" FontSize="14"/>
-                                </Button>
-                                <Button Padding="6">
-                                    <FontIcon Glyph="&#xE896;" FontSize="14"/>
-                                </Button>
-                            </StackPanel>
                         </StackPanel>
                     </DataTemplate>
                 </ListView.ItemTemplate>
@@ -117,15 +106,14 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox MaxHeight="100" VerticalAlignment="Stretch" PlaceholderText="Enter your question here" AcceptsReturn="True" Text="{x:Bind _userInputText,Mode=TwoWay}"/>
+                <TextBox MaxHeight="100" VerticalAlignment="Stretch" PlaceholderText="Enter your question here" AcceptsReturn="True" x:Name="QueryBox" KeyUp="QueryBox_KeyUp"/>
                 <Button Grid.Column="1" Click="SendButton_Click" VerticalAlignment="Bottom" Style="{ThemeResource AccentButtonStyle}">
                     <FontIcon Glyph="&#xF4A5;" />
                 </Button>
-                <ToggleButton Grid.Column="2" VerticalAlignment="Bottom" ToolTipService.ToolTip="Show AskDb's progress">
+                <ToggleButton Grid.Column="2" VerticalAlignment="Bottom" ToolTipService.ToolTip="Show AskDb's progress" Click="ShowProgressToggle_Click">
                     <FontIcon Glyph="&#xE8A0;" />
                 </ToggleButton>
             </Grid>
         </Grid>
     </SplitView>
-    
 </Page>

@@ -1,4 +1,5 @@
-﻿using Microsoft.UI;
+﻿using AskDB.App.Pages;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using System;
 using Windows.System;
@@ -20,7 +21,7 @@ namespace AskDB.App
             this.AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
             this.AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
 
-            MainFrame.Navigate(typeof(GeminiConnection));
+            MainFrame.Navigate(typeof(ChatWithDatabase));
         }
 
         private async void GithubProfileButton_Click(object sender, RoutedEventArgs e)
