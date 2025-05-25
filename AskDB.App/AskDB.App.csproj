@@ -81,7 +81,6 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DatabaseAnalyzer\DatabaseAnalyzer.csproj" />
     <ProjectReference Include="..\DatabaseInteractor\DatabaseInteractor.csproj" />
     <ProjectReference Include="..\Helper\Helper.csproj" />
   </ItemGroup>

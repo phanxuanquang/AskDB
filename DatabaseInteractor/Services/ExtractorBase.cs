@@ -6,7 +6,7 @@ namespace DatabaseInteractor.Services
     public abstract class ExtractorBase(string connectionString)
     {
         protected string ConnectionString = connectionString;
-        protected DatabaseType DatabaseType;
+        public DatabaseType DatabaseType { get; protected set; }
 
         /// <summary>
         /// Executes the specified SQL query asynchronously and retrieves the results as a <see cref="DataTable"/>.
@@ -47,11 +47,15 @@ namespace DatabaseInteractor.Services
         public abstract Task<List<string>> GetDatabaseSchemaNamesAsync(string? keyword);
 
         /// <summary>
-        /// Retrieves schema information for a specified table within a given schema, including table structure, constraints, relationships, primary keys, and foreign keys.
+        /// Asynchronously retrieves schema information for the specified table and schema.
         /// </summary>
-        /// <param name="schema">The name of the schema containing the table. Cannot be null or empty.</param>
+        /// <remarks>This method is intended to provide metadata about the structure of a database table,
+        /// such as column names, data types, and constraints. The exact structure of the returned <see
+        /// cref="DataTable"/> may vary depending on the database provider.</remarks>
         /// <param name="table">The name of the table for which to retrieve schema information. Cannot be null or empty.</param>
-        /// <returns>The schema information for the specified table.</returns>
-        public abstract Task<DataTable> GetSchemaInfoAsync(string schema, string table);
+        /// <param name="schema">The name of the schema to which the table belongs. Can be null to use the default schema.</param>
+        /// <returns>A <see cref="DataTable"/> containing schema information for the specified table and schema. The table will
+        /// be empty if no schema information is found.</returns>
+        public abstract Task<DataTable> GetSchemaInfoAsync(string table, string? schema);
     }
 }

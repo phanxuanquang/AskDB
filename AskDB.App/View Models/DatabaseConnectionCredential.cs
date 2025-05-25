@@ -1,4 +1,4 @@
-﻿using DatabaseAnalyzer.Models;
+﻿using DatabaseInteractor.Models.Enums;
 
 namespace AskDB.App.ViewModels
 {

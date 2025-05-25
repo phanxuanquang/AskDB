@@ -1,8 +1,6 @@
 using AskDB.App.Helpers;
 using AskDB.App.ViewModels;
-using DatabaseAnalyzer;
-using DatabaseAnalyzer.Extractors;
-using DatabaseAnalyzer.Models;
+using DatabaseInteractor.Models.Enums;
 using Helper;
 using Microsoft.UI.Xaml.Controls;
 using System;
@@ -81,16 +79,16 @@ namespace AskDB.App
             try
             {
                 SetLoading(true);
-                Analyzer.DbExtractor = _dbCredential.DatabaseType switch
-                {
-                    DatabaseType.SqlServer => new SqlServerExtractor(connectionString),
-                    DatabaseType.PostgreSQL => new PostgreSqlExtractor(connectionString),
-                    DatabaseType.SQLite => new SqliteExtractor(connectionString),
-                    DatabaseType.MySQL => new MySqlExtractor(connectionString),
-                    _ => throw new NotSupportedException("Not Supported"),
-                };
-                await Analyzer.DbExtractor.ExtractTables();
-                Analyzer.DbExtractor.Tables = [.. Analyzer.DbExtractor.Tables.Where(t => t.Columns.Count > 0).OrderBy(t => t.Name)];
+                //Analyzer.DbExtractor = _dbCredential.DatabaseType switch
+                //{
+                //    DatabaseType.SqlServer => new SqlServerExtractor(connectionString),
+                //    DatabaseType.PostgreSQL => new PostgreSqlExtractor(connectionString),
+                //    DatabaseType.SQLite => new SqliteExtractor(connectionString),
+                //    DatabaseType.MySQL => new MySqlExtractor(connectionString),
+                //    _ => throw new NotSupportedException("Not Supported"),
+                //};
+                //await Analyzer.DbExtractor.ExtractTables();
+                //Analyzer.DbExtractor.Tables = [.. Analyzer.DbExtractor.Tables.Where(t => t.Columns.Count > 0).OrderBy(t => t.Name)];
 
                 ConnectionStringBox.Visibility = VisibilityHelper.SetVisible(false);
             }
