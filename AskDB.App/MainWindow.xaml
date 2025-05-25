@@ -27,11 +27,6 @@
                     <FontIcon Glyph="&#xE72B;" />
                 </AppBarButton.Icon>
             </AppBarButton>
-            <AppBarButton LabelPosition="Collapsed" ToolTipService.ToolTip="Home" Click="HomeButton_Click">
-                <AppBarButton.Icon>
-                    <FontIcon Glyph="&#xE80F;" />
-                </AppBarButton.Icon>
-            </AppBarButton>
             <AppBarSeparator />
             <AppBarToggleButton LabelPosition="Collapsed" ToolTipService.ToolTip="Change color mode" Click="ColorThemeToggle_Click">
                 <AppBarToggleButton.Icon>

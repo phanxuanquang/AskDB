@@ -4,14 +4,8 @@ using Microsoft.UI.Xaml;
 using System;
 using Windows.System;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
-
 namespace AskDB.App
 {
-    /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class MainWindow : Window
     {
         public MainWindow()
@@ -33,11 +27,6 @@ namespace AskDB.App
         private void ColorThemeToggle_Click(object sender, RoutedEventArgs e)
         {
             RootGrid.RequestedTheme = RootGrid.RequestedTheme == ElementTheme.Dark ? ElementTheme.Light : ElementTheme.Dark;
-        }
-
-        private void HomeButton_Click(object sender, RoutedEventArgs e)
-        {
-
         }
 
         private void BackButton_Click(object sender, RoutedEventArgs e)

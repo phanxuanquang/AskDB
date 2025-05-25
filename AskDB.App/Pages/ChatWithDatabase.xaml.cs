@@ -195,6 +195,30 @@ namespace AskDB.App.Pages
         }
         #endregion
 
+        #region Message and Progress Content Bindings
+        private void SetMessage(string message, bool isFromUser = false)
+        {
+            var chatMessage = new ChatMessage
+            {
+                Content = message,
+                Alignment = isFromUser ? HorizontalAlignment.Right : HorizontalAlignment.Left
+            };
+            Messages.Add(chatMessage);
+        }
+        private void SetProgressContent(string message, string sqlCommand, bool isActionButtonVisible, DataTable dataTable = null)
+        {
+            var progressContent = new ProgressContent
+            {
+                Message = message,
+                SqlCommand = sqlCommand ?? $"```sql\n{sqlCommand}\n```",
+                ActionButtonVisibility = VisibilityHelper.SetVisible(isActionButtonVisible),
+                Data = dataTable
+            };
+
+            ProgressContents.Add(progressContent);
+        }
+        #endregion
+
         private async Task HandleUserInputAsync(string userInput)
         {
             var instruction = await Extractor.ReadFile("Instructions/Global.md");
@@ -284,31 +308,6 @@ namespace AskDB.App.Pages
             }
         }
 
-        private void SetMessage(string message, bool isFromUser = false)
-        {
-            var chatMessage = new ChatMessage
-            {
-                Content = message,
-                Alignment = isFromUser ? HorizontalAlignment.Right : HorizontalAlignment.Left
-            };
-            Messages.Add(chatMessage);
-        }
-
-        private void SetProgressContent(string message, string sqlCommand, bool isActionButtonVisible, DataTable dataTable = null)
-        {
-            var progressContent = new ProgressContent
-            {
-                Message = message,
-                SqlCommand = sqlCommand ?? $"```sql\n{sqlCommand}\n```",
-                ActionButtonVisibility = VisibilityHelper.SetVisible(isActionButtonVisible),
-                Data = dataTable
-            };
-
-            ProgressContents.Add(progressContent);
-        }
-
-
-
         private async Task<FunctionResponse> CallFunctionAsync(FunctionCall function)
         {
             static FunctionResponse CreateResponse(string name, string output) => new()
@@ -392,7 +391,5 @@ namespace AskDB.App.Pages
                     return null;
             }
         }
-
-
     }
 }
