@@ -4,8 +4,7 @@
     {
         private static string _cacheFilePath = Path.Combine(Path.GetTempPath(), "AskDB.tmp");
         private static HashSet<string> _cachedData = [];
-        public static string ConnectionString { get; set; }
-        public static string ApiKey { get; set; } = "abc";
+        public static string ApiKey { get; set; }
 
         private static async Task EnsureCacheFileCreated()
         {

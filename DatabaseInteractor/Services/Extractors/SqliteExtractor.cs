@@ -6,26 +6,6 @@ namespace DatabaseInteractor.Services.Extractors
 {
     public class SqliteExtractor : ExtractorBase
     {
-        #region Internal Classes
-        internal class ColumnInfor
-        {
-            internal int Cid { get; set; }
-            internal required string Name { get; set; }
-            internal required string Type { get; set; }
-            internal bool NotNull { get; set; }
-            internal string? DefaultValue { get; set; }
-            internal int? Pk { get; set; }
-        }
-
-        internal class ForeignKeyInfo
-        {
-            internal int Id { get; set; }
-            internal string Table { get; set; }
-            internal string From { get; set; }
-            internal string To { get; set; }
-        }
-        #endregion
-
         public SqliteExtractor(string connectionString) : base(connectionString)
         {
             DatabaseType = DatabaseType.SQLite;
@@ -53,9 +33,12 @@ namespace DatabaseInteractor.Services.Extractors
             await command.ExecuteNonQueryAsync();
         }
 
-        public override Task<List<string>> GetUserPermissionsAsync()
+        public override async Task<List<string>> GetUserPermissionsAsync()
         {
-            throw new NotImplementedException();
+            return
+            [
+                "SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER", "INDEX", "TRIGGER"
+            ];
         }
 
         public override Task<List<string>> GetDatabaseSchemaNamesAsync(string? keyword)
@@ -66,6 +49,19 @@ namespace DatabaseInteractor.Services.Extractors
         public override Task<DataTable> GetSchemaInfoAsync(string table, string? schema)
         {
             throw new NotImplementedException();
+        }
+
+        public override async Task EnsureDatabaseConnectionAsync()
+        {
+            using var connection = new SqliteConnection(ConnectionString);
+            try
+            {
+                await connection.OpenAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(ex.Message, ex.InnerException);
+            }
         }
     }
 }

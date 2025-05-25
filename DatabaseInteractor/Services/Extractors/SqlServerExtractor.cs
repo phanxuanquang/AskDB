@@ -114,5 +114,25 @@ namespace DatabaseInteractor.Services.Extractors
             dataTable.Load(reader);
             return dataTable;
         }
+
+        public override async Task EnsureDatabaseConnectionAsync()
+        {
+            using var connection = new SqlConnection(ConnectionString);
+            try
+            {
+                await connection.OpenAsync();
+            }
+            catch (SqlException ex)
+            {
+                throw new InvalidOperationException(ex.Message, ex.InnerException);
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open)
+                {
+                    await connection.CloseAsync();
+                }
+            }
+        }
     }
 }

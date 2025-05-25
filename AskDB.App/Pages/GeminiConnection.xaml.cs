@@ -25,8 +25,6 @@ namespace AskDB.App
             SetError(null);
         }
 
-
-
         private void SetLoading(bool isLoading)
         {
             LoadingOverlay.SetLoading("Validating API Key...", isLoading);
@@ -60,6 +58,8 @@ namespace AskDB.App
                         .Build();
 
                     await generator.GenerateContentAsync(apiRequest);
+
+                    Cache.ApiKey = _geminiApiKey;
                 }
                 catch
                 {

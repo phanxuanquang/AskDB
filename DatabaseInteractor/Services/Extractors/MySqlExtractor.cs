@@ -59,5 +59,22 @@ namespace DatabaseInteractor.Services.Extractors
         {
             throw new NotImplementedException();
         }
+
+        public override async Task EnsureDatabaseConnectionAsync()
+        {
+            using var connection = new MySqlConnection(ConnectionString);
+            try
+            {
+                await connection.OpenAsync();
+            }
+            catch (MySqlException ex)
+            {
+                throw new InvalidOperationException(ex.Message, ex.InnerException);
+            }
+            finally
+            {
+                await connection.CloseAsync();
+            }
+        }
     }
 }

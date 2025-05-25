@@ -60,5 +60,18 @@ namespace DatabaseInteractor.Services.Extractors
         {
             throw new NotImplementedException();
         }
+
+        public override async Task EnsureDatabaseConnectionAsync()
+        {
+            using var connection = new NpgsqlConnection(ConnectionString);
+            try
+            {
+                await connection.OpenAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(ex.Message, ex.InnerException);
+            }
+        }
     }
 }

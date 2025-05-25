@@ -14,12 +14,15 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.Windows.BadgeNotifications;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.Storage.Pickers;
+using WinRT.Interop;
 
 namespace AskDB.App.Pages
 {
@@ -39,18 +42,23 @@ namespace AskDB.App.Pages
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
-            _generator = new Generator("AIzaSyAekYlgCpAGJXFFiekDqbQAB9SLIkyTIL4").EnableChatHistory(50);
-            var connectionString = "Server=tcp:movie-rs.database.windows.net,1433;Initial Catalog=MovieRS;Persist Security Info=False;User ID=mimi;Password=ameowor1d#;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
-            var dataType = DatabaseType.SqlServer;
+            base.OnNavigatedTo(e);
 
-            _extractor = dataType switch
+            if (e.Parameter is not DatabaseConnectionInfo request)
             {
-                DatabaseType.MySQL => new MySqlExtractor(connectionString),
-                DatabaseType.PostgreSQL => new PostgreSqlExtractor(connectionString),
-                DatabaseType.SqlServer => new SqlServerExtractor(connectionString),
-                DatabaseType.SQLite => new SqliteExtractor(connectionString),
-                _ => throw new NotSupportedException($"Database type {dataType} is not supported."),
+                return;
+            }
+
+            _extractor = request.DatabaseType switch
+            {
+                DatabaseType.SqlServer => new SqlServerExtractor(request.ConnectionString),
+                DatabaseType.MySQL => new MySqlExtractor(request.ConnectionString),
+                DatabaseType.PostgreSQL => new PostgreSqlExtractor(request.ConnectionString),
+                DatabaseType.SQLite => new SqliteExtractor(request.ConnectionString),
+                _ => throw new NotImplementedException(),
             };
+
+            _generator = new Generator(Cache.ApiKey).EnableChatHistory(50);
 
             FunctionCallingManager.RegisterFunction(nameof(_extractor.GetUserPermissionsAsync), "Get the current user's permissions in the database.");
             FunctionCallingManager.RegisterFunction(nameof(_extractor.GetDatabaseSchemaNamesAsync), "Search for the database schema names based on the given keyword", new GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling.Parameters
@@ -62,7 +70,8 @@ namespace AskDB.App.Pages
                         type = "string",
                         description = "The keyword to filter the schema names. If empty, all schema names are returned."
                     }
-                }
+                },
+                Required = ["keyword"]
             });
             FunctionCallingManager.RegisterFunction(nameof(_extractor.GetSchemaInfoAsync), "Get schema information for a specified table within a given schema, including table structure, constraints, relationships, primary keys, and foreign keys", new GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling.Parameters
             {
@@ -71,14 +80,15 @@ namespace AskDB.App.Pages
                     schema = new
                     {
                         type = "string",
-                        description = "The name of the schema containing the table, can be empty."
+                        description = "The name of the schema containing the table. If not provided by the user, it should be the default schema of the database type (for example: `dbo` for SQL Server)"
                     },
                     table = new
                     {
                         type = "string",
-                        description = "The name of the table for which to retrieve schema information. Cannot be null or empty."
+                        description = "The name of the table for which to retrieve schema information. "
                     }
-                }
+                },
+                Required = ["table"]
             });
             FunctionCallingManager.RegisterFunction("RequestForActionPlan", "Request an action plan based on the current situation. This can be used when you got error or does not know what to do/how to do next", null);
             FunctionCallingManager.RegisterFunction("RequestForInternetSearch", "Request an internet search to gather more information or context about a specific topic or query.", new GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling.Parameters
@@ -88,9 +98,10 @@ namespace AskDB.App.Pages
                     query = new
                     {
                         type = "string",
-                        description = "Detailed description for the information to search on the internet, including the keywords and expected outcomes"
+                        description = "Detailed description for the information to search on the internet, including the current context summarization, the information to search, and expected outcomes"
                     }
-                }
+                },
+                Required = ["query"]
             });
         }
 
@@ -108,7 +119,8 @@ namespace AskDB.App.Pages
 
         private async Task HandleUserInputAsync(string userInput)
         {
-            var instruction = await Extractor.ReadFile("Instructions/Database Query.md");
+            BadgeNotificationManager.Current.SetBadgeAsGlyph(BadgeNotificationGlyph.Activity);
+            var instruction = await Extractor.ReadFile("Instructions/Global.md");
             instruction = instruction.Replace("{Database_Type}", _extractor.DatabaseType.ToString());
             var functionDeclarations = FunctionCallingManager.FunctionDeclarations;
 
@@ -125,7 +137,7 @@ namespace AskDB.App.Pages
 
                 var functionCalls = (modelResponse.FunctionCalls == null || modelResponse.FunctionCalls.Count == 0) ? [] : modelResponse.FunctionCalls;
 
-                if(functionCalls.Count == 0)
+                if (functionCalls.Count == 0)
                 {
                     SetMessage(modelResponse.Content, false);
                     return;
@@ -141,154 +153,10 @@ namespace AskDB.App.Pages
                         {
                             try
                             {
-                                if (function.Name == FunctionCallingManager.ExecuteQueryAsyncFunction.Name)
+                                var functionResponse = await CallFunctionAsync(function);
+                                if (functionResponse != null)
                                 {
-                                    var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
-                                    SetProgressContent("Let me check your database.", null, false, null);
-                                    var dataTable = await _extractor.ExecuteQueryAsync(sqlQuery);
-                                    functionResponses.Add(new FunctionResponse
-                                    {
-                                        Name = "ExecuteQueryAsync",
-                                        Response = new Response
-                                        {
-                                            Output = dataTable.ToMarkdown(),
-                                        }
-                                    });
-                                    SetProgressContent("Let me take a look into this data", sqlQuery, true, dataTable);
-                                }
-                                else if (function.Name == FunctionCallingManager.ExecuteNonQueryAsyncFunction.Name)
-                                {
-                                    var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
-                                    SetProgressContent("Let me check your database.", sqlQuery, false, null);
-                                    await _extractor.ExecuteNonQueryAsync(sqlQuery);
-                                    functionResponses.Add(new FunctionResponse
-                                    {
-                                        Name = "ExecuteNonQueryAsync",
-                                        Response = new Response
-                                        {
-                                            Output = "Command executed successfully.",
-                                        }
-                                    });
-                                    SetProgressContent("Command executed successfully.", null, false, null);
-                                }
-                                else if (function.Name == nameof(_extractor.GetSchemaInfoAsync))
-                                {
-                                    var schema = FunctionCallingHelper.GetParameterValue<string>(function, "schema");
-                                    var table = FunctionCallingHelper.GetParameterValue<string>(function, "table");
-                                    SetProgressContent($"Let me check the schema information for the table`{schema}.{table}`", null, false, null);
-                                    var schemaInfo = await _extractor.GetSchemaInfoAsync(table, schema);
-                                    functionResponses.Add(new FunctionResponse
-                                    {
-                                        Name = nameof(_extractor.GetSchemaInfoAsync),
-                                        Response = new Response
-                                        {
-                                            Output = schemaInfo.ToMarkdown(),
-                                        }
-                                    });
-                                    SetProgressContent("Let me take a look into this data", null, false, schemaInfo);
-                                }
-                                else if (function.Name == nameof(_extractor.GetDatabaseSchemaNamesAsync))
-                                {
-                                    var keyword = FunctionCallingHelper.GetParameterValue<string>(function, "keyword");
-                                    SetProgressContent($"Let me check the database schema names with the keyword `{keyword}`", null, false, null);
-                                    var schemaNames = await _extractor.GetDatabaseSchemaNamesAsync(keyword);
-                                    var schemaNamesInMarkdown = string.Join(", ", schemaNames.Select(x => $"`{x}`"));
-                                    functionResponses.Add(new FunctionResponse
-                                    {
-                                        Name = nameof(_extractor.GetDatabaseSchemaNamesAsync),
-                                        Response = new Response
-                                        {
-                                            Output = schemaNamesInMarkdown,
-                                        }
-                                    });
-                                    SetProgressContent($"I found these schemas: {schemaNamesInMarkdown}", null, false, null);
-                                }
-                                else if (function.Name == nameof(_extractor.GetUserPermissionsAsync))
-                                {
-                                    SetProgressContent("Let me check your permissions.", null, false, null);
-                                    var permissions = await _extractor.GetUserPermissionsAsync();
-                                    var permissionsInMarkdown = string.Join(", ", permissions.Select(x => $"`{x}`"));
-                                    functionResponses.Add(new FunctionResponse
-                                    {
-                                        Name = nameof(_extractor.GetUserPermissionsAsync),
-                                        Response = new Response
-                                        {
-                                            Output = permissionsInMarkdown,
-                                        }
-                                    });
-                                    SetProgressContent($"I found these permissions: {permissionsInMarkdown}", null, false, null);
-                                }
-                                else if(function.Name == "RequestForActionPlan")
-                                {
-                                    SetProgressContent("Let me think about the next steps.", null, false, null);
-                                    var actionPlanRequest = new ApiRequestBuilder()
-                                        .WithSystemInstruction(instruction)
-                                        .DisableAllSafetySettings()
-                                        .WithPrompt(@"We have encountered a deviation from the expected outcome or a point of uncertainty. I require you to execute the following structured problem-solving and action planning protocol:
-
-1.  **Problem Statement Definition:**
-    *   Based on the current context, my previous request, and any errors or unexpected results observed, explicitly define the precise problem or knowledge gap you are currently facing.
-
-2.  **Root Cause Analysis (Leveraging Reasoning):**
-    *   Conduct a thorough analysis to identify the most probable root cause(s) of the defined problem. Consider factors such as:
-        *   Misinterpretation of my previous instructions.
-        *   Incorrect assumptions made.
-        *   Data inconsistencies or limitations.
-        *   Tool usage errors or limitations.
-        *   Logical flaws in the previous plan.
-    *   State your deduced root cause(s).
-
-3.  **Goal Reaffirmation:**
-    *   Briefly restate my original, overarching goal for this interaction (e.g., ""[briefly restate your initial objective, like 'retrieve sales data for Q1 for X product']""). This is to ensure your plan aligns with it.
-
-4.  **Proposed Action Plan Formulation:**
-    *   Develop a new, step-by-step action plan designed to:
-        a.  Directly address the identified root cause(s).
-        b.  Progress towards achieving the reaffirmed goal.
-    *   Each step in your plan must be concrete, actionable, and logical.
-    *   For each step, specify:
-        *   The action to be taken.
-        *   (If applicable) The specific tool you intend to use.
-        *   (If applicable) The information you expect to gain or the state you expect to achieve.
-
-5.  **Rationale for the Plan:**
-    *   For the overall action plan, provide a concise justification explaining *why* you believe this sequence of steps is the most effective and logical path forward, given your root cause analysis and the reaffirmed goal.
-
-Please present your response clearly, addressing each of the five points above in sequence.")
-                                        .Build();
-
-                                    var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, "gemini-2.5-flash-preview-05-20");
-                                    functionResponses.Add(new FunctionResponse
-                                    {
-                                        Name = "RequestForActionPlan",
-                                        Response = new Response
-                                        {
-                                            Output = actionPlanResponse.Content,
-                                        }
-                                    });
-                                    SetMessage(actionPlanResponse.Content, false);
-                                }
-                                else if (function.Name == "RequestForInternetSearch")
-                                {
-                                    var query = FunctionCallingHelper.GetParameterValue<string>(function, "query");
-                                    SetProgressContent($"Let me search the internet:\n\n {query}", null, false, null);
-                                    var searchRequest = new ApiRequestBuilder()
-                                        .WithSystemInstruction(instruction)
-                                        .EnableGrounding()
-                                        .DisableAllSafetySettings()
-                                        .WithPrompt(query)
-                                        .Build();
-
-                                    var searchResponse = await _generator.GenerateContentAsync(searchRequest, ModelVersion.Gemini_20_Flash_Lite);
-                                    functionResponses.Add(new FunctionResponse
-                                    {
-                                        Name = "RequestForInternetSearch",
-                                        Response = new Response
-                                        {
-                                            Output = searchResponse.Content,
-                                        }
-                                    });
-                                    SetMessage(searchResponse.Content, false);
+                                    functionResponses.Add(functionResponse);
                                 }
                             }
                             catch (Exception ex)
@@ -316,22 +184,15 @@ Please present your response clearly, addressing each of the five points above i
 
                         var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash_Lite);
 
-                        functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
+                        SetProgressContent(modelResponseForFunction.Content, null, false, null);
+                        await Task.Delay(1000);
 
-                        if(functionCalls.Count == 0)
-                        {
-                            SetMessage(modelResponseForFunction.Content, false);
-                        }
-                        else
-                        {
-                            SetProgressContent(modelResponseForFunction.Content, null, false, null);
-                            await Task.Delay(1000); 
-                        }
+                        functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
                     }
                     catch (Exception ex)
                     {
                         SetMessage($"Error: {ex.Message}. {ex.InnerException?.Message}", false);
-                        functionCalls = []; 
+                        functionCalls = [];
                     }
                 }
 
@@ -350,6 +211,10 @@ Please present your response clearly, addressing each of the five points above i
             catch (Exception ex)
             {
                 SetMessage($"Error: {ex.Message}", false);
+            }
+            finally
+            {
+                BadgeNotificationManager.Current.SetBadgeAsGlyph(BadgeNotificationGlyph.None);
             }
         }
 
@@ -376,7 +241,6 @@ Please present your response clearly, addressing each of the five points above i
             ProgressContents.Add(progressContent);
         }
 
-
         private void DataGrid_Loaded(object sender, RoutedEventArgs e)
         {
             var dataGrid = sender as DataGrid;
@@ -400,6 +264,121 @@ Please present your response clearly, addressing each of the five points above i
             var collectionObjects = new ObservableCollection<object>(dataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray));
 
             dataGrid.ItemsSource = collectionObjects;
+        }
+
+        private async Task<FunctionResponse> CallFunctionAsync(FunctionCall function)
+        {
+            static FunctionResponse CreateResponse(string name, string output) => new()
+            {
+                Name = name,
+                Response = new Response { Output = output }
+            };
+
+            switch (function.Name)
+            {
+                case var name when name == FunctionCallingManager.ExecuteQueryAsyncFunction.Name:
+                    {
+                        var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
+                        SetProgressContent("Let me check your database.", null, false, null);
+                        var dataTable = await _extractor.ExecuteQueryAsync(sqlQuery);
+                        SetProgressContent("Let me take a look into this data", sqlQuery, true, dataTable);
+                        return CreateResponse(FunctionCallingManager.ExecuteQueryAsyncFunction.Name, dataTable.ToMarkdown());
+                    }
+                case var name when name == FunctionCallingManager.ExecuteNonQueryAsyncFunction.Name:
+                    {
+                        var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
+                        SetProgressContent("Let me check your database.", sqlQuery, false, null);
+                        await _extractor.ExecuteNonQueryAsync(sqlQuery);
+                        SetProgressContent("Command executed successfully.", null, false, null);
+                        return CreateResponse(FunctionCallingManager.ExecuteNonQueryAsyncFunction.Name, "Command executed successfully.");
+                    }
+                case var name when name == nameof(_extractor.GetSchemaInfoAsync):
+                    {
+                        var schema = FunctionCallingHelper.GetParameterValue<string>(function, "schema");
+                        var table = FunctionCallingHelper.GetParameterValue<string>(function, "table");
+                        SetProgressContent($"Let me check the schema information for the table`{schema}.{table}`", null, false, null);
+                        var schemaInfo = await _extractor.GetSchemaInfoAsync(table, schema);
+                        SetProgressContent("Let me take a look into this data", null, false, schemaInfo);
+                        return CreateResponse(nameof(_extractor.GetSchemaInfoAsync), schemaInfo.ToMarkdown());
+                    }
+                case var name when name == nameof(_extractor.GetDatabaseSchemaNamesAsync):
+                    {
+                        var keyword = FunctionCallingHelper.GetParameterValue<string>(function, "keyword");
+                        SetProgressContent($"Let me check the database schema names with the keyword `{keyword}`", null, false, null);
+                        var schemaNames = await _extractor.GetDatabaseSchemaNamesAsync(keyword);
+                        var schemaNamesInMarkdown = string.Join(", ", schemaNames.Select(x => $"`{x}`"));
+                        SetProgressContent($"I found these schemas: {schemaNamesInMarkdown}", null, false, null);
+                        return CreateResponse(nameof(_extractor.GetDatabaseSchemaNamesAsync), schemaNamesInMarkdown);
+                    }
+                case var name when name == nameof(_extractor.GetUserPermissionsAsync):
+                    {
+                        SetProgressContent("Let me check your permissions.", null, false, null);
+                        var permissions = await _extractor.GetUserPermissionsAsync();
+                        var permissionsInMarkdown = string.Join(", ", permissions.Select(x => $"`{x}`"));
+                        SetProgressContent($"I found these permissions: {permissionsInMarkdown}", null, false, null);
+                        return CreateResponse(nameof(_extractor.GetUserPermissionsAsync), permissionsInMarkdown);
+                    }
+                case "RequestForActionPlan":
+                    {
+                        SetProgressContent("Let me think about the next steps.", null, false, null);
+                        var actionPlanRequest = new ApiRequestBuilder()
+                            .WithSystemInstruction(await Extractor.ReadFile("Instructions/Global.md"))
+                            .DisableAllSafetySettings()
+                            .WithPrompt(await Extractor.ReadFile("Instructions/Action Planning.md"))
+                            .Build();
+                        var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, "gemini-2.5-flash-preview-05-20");
+                        SetMessage(actionPlanResponse.Content, false);
+                        return CreateResponse("RequestForActionPlan", actionPlanResponse.Content);
+                    }
+                case "RequestForInternetSearch":
+                    {
+                        var query = FunctionCallingHelper.GetParameterValue<string>(function, "query");
+                        SetProgressContent($"Let me search the internet:\n\n {query}", null, false, null);
+                        var searchRequest = new ApiRequestBuilder()
+                            .WithSystemInstruction(await Extractor.ReadFile("Instructions/Global.md"))
+                            .EnableGrounding()
+                            .DisableAllSafetySettings()
+                            .WithPrompt($"Now do an **in-depth internet research** and provide the result based on this description:\n\n{query}")
+                            .Build();
+                        var generator = new Generator(Cache.ApiKey);
+                        var searchResponse = await generator.GenerateContentAsync(searchRequest, ModelVersion.Gemini_20_Flash_Lite);
+                        SetMessage(searchResponse.Content, false);
+                        return CreateResponse("RequestForInternetSearch", searchResponse.Content);
+                    }
+                default:
+                    return null;
+            }
+        }
+
+        private async void ExportButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var button = sender as Button;
+                var dataTable = (button?.DataContext as ProgressContent)?.Data;
+
+                var savePicker = new FileSavePicker
+                {
+                    SuggestedStartLocation = PickerLocationId.Desktop,
+                    SuggestedFileName = DateTime.Now.ToString("yy.MM.dd-HH.mm.ss").Replace(".", string.Empty)
+                };
+                savePicker.FileTypeChoices.Add("CSV", [".csv"]);
+
+                nint windowHandle = WindowNative.GetWindowHandle(App.Window);
+                InitializeWithWindow.Initialize(savePicker, windowHandle);
+
+                var file = await savePicker.PickSaveFileAsync();
+
+                if (file != null)
+                {
+                    Extractor.ExportCsv(dataTable, file.Path);
+                    await DialogHelper.ShowSuccessAsync("CSV file has been exported to your selected location.");
+                }
+            }
+            catch (Exception ex)
+            {
+                await DialogHelper.ShowErrorAsync(ex.Message);
+            }
         }
     }
 }

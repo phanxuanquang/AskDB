@@ -7,14 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Instructions\Database Query.md">
+    <Content Include="Instructions\Action Planning.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Instructions\Global.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
-    <PackageReference Include="Gemini.NET" Version="3.4.5" />
+    <PackageReference Include="Gemini.NET" Version="3.4.5.1" />
     <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="9.0.5" />
     <PackageReference Include="MySql.Data" Version="9.3.0" />
     <PackageReference Include="Npgsql" Version="9.0.3" />

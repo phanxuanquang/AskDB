@@ -1,10 +1,19 @@
-﻿namespace DatabaseInteractor.Models.Enums
+﻿using System.ComponentModel;
+
+namespace DatabaseInteractor.Models.Enums
 {
     public enum DatabaseType
     {
-        SqlServer = 0,
-        PostgreSQL = 1,
-        MySQL = 2,
-        SQLite = 3,
+        [Description("SQL Server")]
+        SqlServer,
+
+        [Description("PostgreSQL")]
+        PostgreSQL,
+
+        [Description("MySQL")]
+        MySQL,
+
+        [Description("SQLite")]
+        SQLite
     }
 }
