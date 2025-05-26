@@ -7,7 +7,11 @@ namespace DatabaseInteractor.Services
         public static readonly FunctionDeclaration ExecuteQueryAsyncFunction = new()
         {
             Name = "ExecuteQueryAsync",
-            Description = "Execute a SQL query and return the result set. This is used for data retrieval operations (SELECT statements). You can also use it for schema introspection (e.g., checking table structures, column names, etc.), for data analysis tasks, for inspecting data, and for any other read-only operations.",
+            Description = @"
+This function is used **EXCLUSIVELY** for executing SQL queries or SQL cripts that are intended to retrieve data or inspect the database state WITHOUT making any changes. 
+This primarily includes SELECT statements.
+**DO NOT** use this function for `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `ALTER`, `DROP`, `TRUNCATE`, or any other SQL command that modifies data or schema. For such operations, use `ExecuteNonQueryAsyncFunction` function instead.
+The result will be a dataset (e.g., a list of rows and columns).",
             Parameters = new Parameters
             {
                 Properties = new
@@ -15,16 +19,30 @@ namespace DatabaseInteractor.Services
                     sqlQuery = new
                     {
                         type = "string",
-                        description = "The SQL query to execute. It can be a SELECT statement or any other SQL command that returns a result set."
+                        description = "The complete, syntactically correct SQL query (typically a `SELECT` statement or a read-only system procedure call) to be executed."
                     }
-                }
+                },
+                Required = ["sqlQuery"] 
             }
         };
 
         public static readonly FunctionDeclaration ExecuteNonQueryAsyncFunction = new()
         {
             Name = "ExecuteNonQueryAsync",
-            Description = "Execute a SQL query that performs data-changing or schema-altering operations (INSERT, UPDATE, DELETE, CREATE, ALTER, etc.). This is used for any operation that modifies the database state, such as inserting new records, updating existing ones, or creating new tables. You can also use it for any other write-only operations.",
+            Description = @"
+This function is used **EXCLUSIVELY** for executing SQL commands or SQL scripts that modify the database data or schema.
+This includes, but is not limited to:
+- INSERT statements: To add new records to a table.
+- UPDATE statements: To modify existing records in a table.
+- DELETE statements: To remove records from a table.
+- CREATE statements: To create new database objects (e.g., tables, views, indexes).
+- ALTER statements: To modify the structure of existing database objects.
+- DROP statements: To remove database objects.
+- TRUNCATE TABLE statements: To remove all rows from a table (faster than DELETE without WHERE, but less recoverable and doesn't fire triggers).
+Any other DML (Data Manipulation Language) or DDL (Data Definition Language) command that changes the database state but does not primarily return a data result set.
+This function typically returns the number of rows affected, not a dataset.
+CRITICAL SAFETY NOTE: Always ensure any data modification (INSERT, UPDATE, DELETE) or destructive (DROP, TRUNCATE) operations executed via this function have been explicitly planned and confirmed by the user according to the Core Problem-Solving & Confidence Protocol.
+**DO NOT** use this function for SELECT statements or other read-only queries that are expected to return data; use ExecuteQueryAsyncFunction for those.",
             Parameters = new Parameters
             {
                 Properties = new
@@ -32,9 +50,10 @@ namespace DatabaseInteractor.Services
                     sqlQuery = new
                     {
                         type = "string",
-                        description = "The SQL query to execute. It can be an INSERT, UPDATE, DELETE, or any other SQL command that does not return a result set."
+                        description = "The complete, syntactically correct SQL command or SQL scripts (e.g., INSERT, UPDATE, DELETE, CREATE, ALTER) to be executed. Ensure the query is specific to the user-confirmed action plan."
                     }
-                }
+                },
+                Required = ["sqlQuery"] 
             }
         };
 

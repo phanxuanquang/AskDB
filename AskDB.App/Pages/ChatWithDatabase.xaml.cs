@@ -68,45 +68,81 @@ namespace AskDB.App.Pages
 
             _generator = new Generator(Cache.ApiKey).EnableChatHistory(50);
 
-            FunctionCallingManager.RegisterFunction(nameof(_extractor.GetUserPermissionsAsync), "Get the current user's permissions in the database.");
-            FunctionCallingManager.RegisterFunction(nameof(_extractor.GetDatabaseSchemaNamesAsync), "Search for the database schema names based on the given keyword", new Parameters
+            FunctionCallingManager.RegisterFunction(nameof(_extractor.GetUserPermissionsAsync), @"Use this function to retrieve a list of the database permissions currently granted to the application's user session.
+This information can be crucial for:
+- Understanding why certain operations might be failing due to insufficient privileges.
+- Assessing if a requested action is permissible before attempting it.
+- Informing the user about their current capabilities within the database if they inquire or if it's relevant to a problem.
+The output will describe the user's permissions in the database.");
+            FunctionCallingManager.RegisterFunction(nameof(_extractor.GetDatabaseSchemaNamesAsync), @"Use this function to retrieve a list of available schema names within the connected database.
+This function is useful when:
+- The user refers to a table but doesn't specify a schema, and you need to identify potential schemas.
+- You need to present a list of schemas to the user for selection.
+- You are trying to fully qualify a table name (schema.table) and need to confirm schema existence.
+- The user explicitly asks to list schemas.
+You can filter the list using a keyword. If the keyword is an empty string, all accessible schema names will be returned.
+The output will be a list of schema names.", new Parameters
             {
                 Properties = new
                 {
                     keyword = new
                     {
                         type = "string",
-                        description = "The keyword to filter the schema names. If empty, all schema names are returned."
+                        description = "A keyword to filter the schema names. For example, `prod` might return `Production_schema`, `prod_data`. If an empty string is provided, all accessible schema names are returned. The search is typically case-insensitive and looks for the keyword within the schema names."
                     }
                 },
                 Required = ["keyword"]
             });
-            FunctionCallingManager.RegisterFunction(nameof(_extractor.GetSchemaInfoAsync), "Get schema information for a specified table within a given schema, including table structure, constraints, relationships, primary keys, and foreign keys", new Parameters
+            FunctionCallingManager.RegisterFunction(nameof(_extractor.GetSchemaInfoAsync), @"Use this function to retrieve structural information for a specific table.
+The information returned includes:
+- Column names, data types, nullability, and default values.
+This tool is CRITICAL for:
+- Formulating accurate and safe SQL queries, especially when constructing WHERE clauses or JOIN conditions.
+- Understanding data types before attempting INSERT or UPDATE operations.
+- Verifying table and column existence before referencing them in queries.
+- Helping the user understand their data structure if they ask.
+- Assessing potential impacts of queries (e.g., understanding relationships before a DELETE).
+If the user does not specify a schema, and the database type has a common default (e.g., `dbo` for SQL Server, `public` for PostgreSQL), you should use that default schema. If unsure about the schema, consider using `GetDatabaseSchemaNamesAsync` function first or asking the user for the clarification.", new Parameters
             {
                 Properties = new
                 {
                     schema = new
                     {
                         type = "string",
-                        description = "The name of the schema containing the table. If not provided by the user, it should be the default schema of the database type (for example: `dbo` for SQL Server)"
+                        description = "The name of the schema containing the table. This is often case-sensitive depending on the database. If not explicitly provided by the user or clear from context, attempt to use the database's default schema (e.g., 'dbo' for SQL Server, 'public' for PostgreSQL). If still uncertain, clarify with the user or use 'GetDatabaseSchemaNamesAsync' to find possible schemas."
                     },
                     table = new
                     {
                         type = "string",
-                        description = "The name of the table for which to retrieve schema information. "
+                        description = "The name of the table for which to retrieve detailed schema information. This is often case-sensitive depending on the database."
                     }
                 },
-                Required = ["table"]
+                Required = [ "schema", "table"]
             });
-            FunctionCallingManager.RegisterFunction("RequestForActionPlan", "Request an action plan based on the current situation. This can be used when you got error or does not know what to do/how to do next", null);
-            FunctionCallingManager.RegisterFunction("RequestForInternetSearch", "Request an internet search to gather more information or context about a specific topic or query.", new Parameters
+            FunctionCallingManager.RegisterFunction("RequestForActionPlan", @"Use this function when you, the AI Agent, encounter a situation where you are unsure how to proceed, have encountered an unexpected error from another tool that you cannot resolve, or believe the user's request requires a sequence of actions that needs higher-level strategic planning beyond simple SQL execution.
+This tool signals a need for collaborative problem-solving or guidance.
+Specifically, use this when:
+- A tool call results in an error you cannot diagnose or fix by simply retrying or slightly modifying parameters (e.g., persistent permission issues, unexpected database state).
+- The user's request is very high-level or ambiguous, and initial clarifications haven't led to a concrete, safe series of steps.
+- You need to perform a complex task that might involve multiple tool calls and conditional logic, and you require confirmation or a structured approach.
+- You assess that the current path is too risky, and you need to escalate for a revised strategy.
+You should clearly summarize the current problem or situation when you explain *why* you are calling this tool.", null);
+            FunctionCallingManager.RegisterFunction("RequestForInternetSearch", @"Use this function ONLY when you need external information from the internet using Google Search engine to better understand or fulfill a user's database-related request.
+This is NOT for general web browsing.
+Situations for use include:
+- The user asks a question about a feature, error code, or concept that is not within your current knowledge base and cannot be determined through schema inspection or existing tools.
+- The user's query implies knowledge of external factors that might influence data interpretation (e.g., 'Find customers affected by the recent policy change announced on [website]').
+- You need to understand a specific technical term or standard practice related to the SQL database that is blocking your ability to form a safe and effective plan.
+**DO NOT** use this for information readily available through schema tools (like `GetSchemaInfoAsync`) or simple SQL queries.
+Always prioritize internal knowledge and database introspection tools first.
+When calling, provide a very specific query detailing the information needed and the context.", new Parameters
             {
                 Properties = new
                 {
                     query = new
                     {
                         type = "string",
-                        description = "Detailed description for the information to search on the internet, including the current context summarization, the information to search, and expected outcomes"
+                        description = "A highly specific and detailed natural language query for the internet search in markdown format. It MUST include: 1. A brief summarization of the current user request or problem. 2. The specific information you are trying to find. 3. How this information will help you address the user's database-related task. Example: 'User wants to implement versioning for a table in SQL Server. Search for best practices and common patterns for implementing table versioning or temporal tables specifically for {Database_Type}. Expected outcome: Understanding of typical approaches like history tables or system-versioned tables to propose a solution.'"
                     }
                 },
                 Required = ["query"]
@@ -251,7 +287,7 @@ namespace AskDB.App.Pages
                 .WithFunctionDeclarations(functionDeclarations, FunctionCallingMode.AUTO)
                 .Build();
 
-            var modelResponse = await _generator.GenerateContentAsync(apiRequest, "gemini-2.0-flash");
+            var modelResponse = await _generator.GenerateContentAsync(apiRequest, Cache.ReasoningModelAlias);
 
             var functionCalls = (modelResponse.FunctionCalls == null || modelResponse.FunctionCalls.Count == 0) ? [] : modelResponse.FunctionCalls;
 
@@ -376,9 +412,11 @@ namespace AskDB.App.Pages
                         var actionPlanRequest = new ApiRequestBuilder()
                             .WithSystemInstruction(_globalInstruction)
                             .DisableAllSafetySettings()
-                            .WithPrompt(await FileHelper.ReadFileAsync("Instructions/Action Planning.md"))
+                            .WithFunctionDeclarations(FunctionCallingManager.FunctionDeclarations, FunctionCallingMode.NONE)
+                            .WithPrompt("I have some blocking points here and need you to make an action plan to overcome. Now think deeply step-by-step about the current situation, then provide a clear and detailed action plan.")
                             .Build();
-                        var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, "gemini-2.5-flash-preview-05-20");
+
+                        var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, Cache.ReasoningModelAlias);
                         SetMessage(actionPlanResponse.Content, false);
                         return CreateResponse("RequestForActionPlan", actionPlanResponse.Content);
                     }
@@ -389,7 +427,7 @@ namespace AskDB.App.Pages
                             .WithSystemInstruction(_globalInstruction)
                             .EnableGrounding()
                             .DisableAllSafetySettings()
-                            .WithPrompt($"Now do an **in-depth internet research** and provide the result based on this description:\n\n{query}")
+                            .WithPrompt($"Now do an **in-depth internet research**, then provide a detailed reported in markdown format. The search result MUST satify the below description:\n\n{query}")
                             .Build();
                         var generator = new Generator(Cache.ApiKey);
                         var searchResponse = await generator.GenerateContentAsync(searchRequest, ModelVersion.Gemini_20_Flash);
