@@ -5,7 +5,6 @@ using AskDB.Commons.Enums;
 using AskDB.Commons.Extensions;
 using AskDB.Database;
 using AskDB.Database.Extensions;
-using AskDB.Database.Models;
 using DatabaseInteractor.Services;
 using DatabaseInteractor.Services.Extractors;
 using Microsoft.UI.Xaml.Controls;
@@ -20,7 +19,7 @@ namespace AskDB.App.Pages
     public sealed partial class ExistingDatabaseConnection : Page
     {
         private ObservableCollection<ExistingDatabaseConnectionInfo> ExistingDatabaseConnectionInfors = [];
-        private ObservableCollection<ConnectionString> ExistingConnectionStrings = [];
+        private ObservableCollection<ExistingConnectionStringInfor> ExistingConnectionStringInfors = [];
 
         private readonly AppDbContext _db;
 
@@ -45,21 +44,45 @@ namespace AskDB.App.Pages
             SetLoading(true);
 
             var existingCredentials = await _db.GetDatabaseCredentialsAsync();
-
-            ExistingDatabaseConnectionInfors = new ObservableCollection<ExistingDatabaseConnectionInfo>(existingCredentials.Select(credential => new ExistingDatabaseConnectionInfo
-            {
-                Id = credential.Id,
-                Host = credential.Host,
-                Database = credential.Database,
-                DatabaseType = credential.DatabaseType,
-                DatabaseTypeDisplayName = credential.DatabaseType.GetAttributeValue<string>("Description"),
-                LastAccess = credential.LastAccessTime,
-                ConnectionString = credential.BuildConnectionString()
-            }));
-
             var existingConnectionStrings = await _db.GetConnectionStringsAsync();
 
-            ExistingConnectionStrings = new ObservableCollection<ConnectionString>(existingConnectionStrings);
+            if (existingCredentials.Count > 0)
+            {
+                ExistingDatabaseConnectionInfors = new ObservableCollection<ExistingDatabaseConnectionInfo>(existingCredentials.Select(credential => new ExistingDatabaseConnectionInfo
+                {
+                    Id = credential.Id,
+                    Host = credential.Host,
+                    Database = credential.Database,
+                    DatabaseType = credential.DatabaseType,
+                    DatabaseTypeDisplayName = credential.DatabaseType.GetDescription(),
+                    LastAccess = credential.LastAccessTime,
+                    ConnectionString = credential.BuildConnectionString()
+                }));
+                ConnectionCredentialsPanel.Visibility = VisibilityHelper.SetVisible(true);
+            }
+            else
+            {
+                ConnectionCredentialsPanel.Visibility = VisibilityHelper.SetVisible(false);
+            }
+
+            if (existingConnectionStrings.Count > 0)
+            {
+                ExistingConnectionStringInfors = new ObservableCollection<ExistingConnectionStringInfor>(existingConnectionStrings.Select(x => new ExistingConnectionStringInfor
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Value = x.Value,
+                    DatabaseType = x.DatabaseType,
+                    DatabaseTypeDisplayName = x.DatabaseType.GetDescription(),
+                    LastAccess = x.LastAccessTime
+                }));
+                ConnectionStringsPanel.Visibility = VisibilityHelper.SetVisible(true);
+            }
+            else
+            {
+                ConnectionStringsPanel.Visibility = VisibilityHelper.SetVisible(false);
+            }
+
             SetLoading(false);
         }
 
@@ -106,7 +129,7 @@ namespace AskDB.App.Pages
 
         private async void ConnectionStringItemsView_ItemInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
         {
-            var data = args.InvokedItem as ConnectionString;
+            var data = args.InvokedItem as ExistingConnectionStringInfor;
 
             if (data == null)
             {
@@ -134,7 +157,7 @@ namespace AskDB.App.Pages
             }
             catch (Exception ex)
             {
-                ExistingConnectionStrings.Remove(data);
+                ExistingConnectionStringInfors.Remove(data);
                 await _db.RemoveConnectionStringAsync(data.Id);
                 await DialogHelper.ShowErrorAsync(ex.Message);
             }

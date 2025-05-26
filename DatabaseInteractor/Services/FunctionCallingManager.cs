@@ -22,7 +22,7 @@ The result will be a dataset (e.g., a list of rows and columns).",
                         description = "The complete, syntactically correct SQL query (typically a `SELECT` statement or a read-only system procedure call) to be executed."
                     }
                 },
-                Required = ["sqlQuery"] 
+                Required = ["sqlQuery"]
             }
         };
 
@@ -53,7 +53,7 @@ CRITICAL SAFETY NOTE: Always ensure any data modification (INSERT, UPDATE, DELET
                         description = "The complete, syntactically correct SQL command or SQL scripts (e.g., INSERT, UPDATE, DELETE, CREATE, ALTER) to be executed. Ensure the query is specific to the user-confirmed action plan."
                     }
                 },
-                Required = ["sqlQuery"] 
+                Required = ["sqlQuery"]
             }
         };
 

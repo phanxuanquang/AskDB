@@ -72,49 +72,55 @@
                 </ListView>
             </Grid>
         </SplitView.Pane>
-        <Grid RowSpacing="8" Margin="0,0,8,0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Grid Grid.Row="0">
-                <Image Source="/Assets/icon.png" MaxHeight="200" Opacity="0.05"/>
+
+        <Grid>
+            <Grid RowSpacing="8" Margin="0,0,8,0" x:Name="MessageSpace" Padding="12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0">
+                    <Image Source="/Assets/icon.png" MaxHeight="200" Opacity="0.05"/>
+                </Grid>
+                <ListView Grid.Row="0" IsItemClickEnabled="False" CanDragItems="False" CanReorderItems="False" SelectionMode="None" ItemsSource="{x:Bind Messages}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="view_models:ChatMessage">
+                            <StackPanel
+                    Margin="0,12"
+                    Padding="16,12"
+                    Spacing="12"
+                    CornerRadius="{StaticResource OverlayCornerRadius}"
+                    Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
+                    HorizontalAlignment="{x:Bind Alignment}">
+                                <controls1:MarkdownTextBlock 
+                        TextWrapping="WrapWholeWords" 
+                        Text="{x:Bind Content}" 
+                        Background="Transparent" 
+                        CodePadding="12"
+                        InlineCodeBackground="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                        QuoteBackground="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
+                        QuotePadding="6"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <Grid Grid.Row="1" Background="Transparent" ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox MaxHeight="100" VerticalAlignment="Stretch" PlaceholderText="Enter your question here" AcceptsReturn="True" x:Name="QueryBox" KeyUp="QueryBox_KeyUp"/>
+                    <Button Grid.Column="1" Click="SendButton_Click" VerticalAlignment="Bottom" Style="{ThemeResource AccentButtonStyle}">
+                        <FontIcon Glyph="&#xF4A5;" />
+                    </Button>
+                    <ToggleButton Grid.Column="2" VerticalAlignment="Bottom" ToolTipService.ToolTip="Show AskDb's progress" Click="ShowProgressToggle_Click">
+                        <FontIcon Glyph="&#xE8A0;" />
+                    </ToggleButton>
+                </Grid>
             </Grid>
-            <ListView Grid.Row="0" IsItemClickEnabled="False" CanDragItems="False" CanReorderItems="False" SelectionMode="None" ItemsSource="{x:Bind Messages}">
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="view_models:ChatMessage">
-                        <StackPanel
-                            Margin="0,12"
-                            Padding="16,12"
-                            Spacing="12"
-                            CornerRadius="{StaticResource OverlayCornerRadius}"
-                            Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
-                            HorizontalAlignment="{x:Bind Alignment}">
-                            <controls1:MarkdownTextBlock 
-                                TextWrapping="WrapWholeWords" 
-                                Text="{x:Bind Content}" 
-                                Background="Transparent" 
-                                CodePadding="12"
-                                InlineCodeBackground="{ThemeResource SystemFillColorCautionBackgroundBrush}"
-                                QuoteBackground="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
-                                QuotePadding="6"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
-            <Grid Grid.Row="1" Background="Transparent" ColumnSpacing="8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBox MaxHeight="100" VerticalAlignment="Stretch" PlaceholderText="Enter your question here" AcceptsReturn="True" x:Name="QueryBox" KeyUp="QueryBox_KeyUp"/>
-                <Button Grid.Column="1" Click="SendButton_Click" VerticalAlignment="Bottom" Style="{ThemeResource AccentButtonStyle}">
-                    <FontIcon Glyph="&#xF4A5;" />
-                </Button>
-                <ToggleButton Grid.Column="2" VerticalAlignment="Bottom" ToolTipService.ToolTip="Show AskDb's progress" Click="ShowProgressToggle_Click">
-                    <FontIcon Glyph="&#xE8A0;" />
-                </ToggleButton>
+            <Grid x:Name="LoadingOverlay" Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}" CornerRadius="{StaticResource OverlayCornerRadius}" >
+                <controls:LoadingControl x:Name="LoadingIndicator" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Grid>
         </Grid>
     </SplitView>

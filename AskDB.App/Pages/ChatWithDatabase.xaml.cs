@@ -23,7 +23,6 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using Windows.Globalization;
 using Windows.Storage.Pickers;
 using Windows.System;
 using WinRT.Interop;
@@ -42,6 +41,7 @@ namespace AskDB.App.Pages
         public ChatWithDatabase()
         {
             this.InitializeComponent();
+            SetLoading(false);
         }
 
         #region Event Handlers
@@ -55,7 +55,7 @@ namespace AskDB.App.Pages
             }
 
             _globalInstruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
-            _globalInstruction = _globalInstruction.Replace("{Database_Type}", request.DatabaseType.GetAttributeValue<string>("Description")).Replace("{Language}", "English");
+            _globalInstruction = _globalInstruction.Replace("{Database_Type}", request.DatabaseType.GetDescription()).Replace("{Language}", "English");
 
             _extractor = request.DatabaseType switch
             {
@@ -74,7 +74,7 @@ This information can be crucial for:
 - Assessing if a requested action is permissible before attempting it.
 - Informing the user about their current capabilities within the database if they inquire or if it's relevant to a problem.
 The output will describe the user's permissions in the database.");
-            FunctionCallingManager.RegisterFunction(nameof(_extractor.GetDatabaseSchemaNamesAsync), @"Use this function to retrieve a list of available schema names within the connected database.
+            FunctionCallingManager.RegisterFunction(nameof(_extractor.SearchSchemasByNameAsync), @"Use this function to retrieve a list of available schema names within the connected database.
 This function is useful when:
 - The user refers to a table but doesn't specify a schema, and you need to identify potential schemas.
 - You need to present a list of schemas to the user for selection.
@@ -93,23 +93,40 @@ The output will be a list of schema names.", new Parameters
                 },
                 Required = ["keyword"]
             });
-            FunctionCallingManager.RegisterFunction(nameof(_extractor.GetSchemaInfoAsync), @"Use this function to retrieve structural information for a specific table.
-The information returned includes:
-- Column names, data types, nullability, and default values.
-This tool is CRITICAL for:
-- Formulating accurate and safe SQL queries, especially when constructing WHERE clauses or JOIN conditions.
-- Understanding data types before attempting INSERT or UPDATE operations.
-- Verifying table and column existence before referencing them in queries.
-- Helping the user understand their data structure if they ask.
-- Assessing potential impacts of queries (e.g., understanding relationships before a DELETE).
-If the user does not specify a schema, and the database type has a common default (e.g., `dbo` for SQL Server, `public` for PostgreSQL), you should use that default schema. If unsure about the schema, consider using `GetDatabaseSchemaNamesAsync` function first or asking the user for the clarification.", new Parameters
+            FunctionCallingManager.RegisterFunction(nameof(_extractor.SearchTablesByNameAsync), @"Use this function to retrieve a list of table names within a specific schema in the connected database. This be useful when you want to obtain tables within a given schema context while filtering based on the schema name. You can supply a keyword to narrow down the results.", new Parameters
             {
                 Properties = new
                 {
                     schema = new
                     {
                         type = "string",
-                        description = "The name of the schema containing the table. This is often case-sensitive depending on the database. If not explicitly provided by the user or clear from context, attempt to use the database's default schema (e.g., 'dbo' for SQL Server, 'public' for PostgreSQL). If still uncertain, clarify with the user or use 'GetDatabaseSchemaNamesAsync' to find possible schemas."
+                        description = "The name of the schema containing the table. This is often case-sensitive depending on the database. If not explicitly provided by the user or clear from context, attempt to use the database's default schema (e.g., 'dbo' for SQL Server, 'public' for PostgreSQL). If still uncertain, clarify with the user or use 'SearchSchemasByNameAsync' to find possible schemas."
+                    },
+                    keyword = new
+                    {
+                        type = "string",
+                        description = "A keyword to filter the table names. For example, `user` might return `Users`, `UserAccounts`. If an empty string is provided, all accessible table names in the specified schema are returned. The search is typically case-insensitive and looks for the keyword within the table names."
+                    }
+                },
+                Required = ["schema"]
+            });
+            FunctionCallingManager.RegisterFunction(nameof(_extractor.GetTableSchemaInfoAsync), @"Use this function to retrieve structural information for a specific table.
+The information returned includes:
+- Column names, data types, nullability, constraints, foreign keys, references.
+This tool is CRITICAL for:
+- Formulating accurate and safe SQL queries, especially when constructing WHERE clauses or JOIN conditions.
+- Understanding data types before attempting INSERT or UPDATE operations.
+- Verifying table and column existence before referencing them in queries.
+- Helping the user understand their data structure if they ask.
+- Assessing potential impacts of queries (e.g., understanding relationships before a DELETE).
+If the user does not specify a schema, and the database type has a common default (e.g., `dbo` for SQL Server, `public` for PostgreSQL), you should use that default schema. If unsure about the schema, consider using `SearchSchemasByNameAsync` function first or asking the user for the clarification.", new Parameters
+            {
+                Properties = new
+                {
+                    schema = new
+                    {
+                        type = "string",
+                        description = "The name of the schema containing the table. This is often case-sensitive depending on the database. If not explicitly provided by the user or clear from context, attempt to use the database's default schema (e.g., 'dbo' for SQL Server, 'public' for PostgreSQL). If still uncertain, clarify with the user or use 'SearchSchemasByNameAsync' to find possible schemas."
                     },
                     table = new
                     {
@@ -117,7 +134,7 @@ If the user does not specify a schema, and the database type has a common defaul
                         description = "The name of the table for which to retrieve detailed schema information. This is often case-sensitive depending on the database."
                     }
                 },
-                Required = [ "schema", "table"]
+                Required = ["schema", "table"]
             });
             FunctionCallingManager.RegisterFunction("RequestForActionPlan", @"Use this function when you, the AI Agent, encounter a situation where you are unsure how to proceed, have encountered an unexpected error from another tool that you cannot resolve, or believe the user's request requires a sequence of actions that needs higher-level strategic planning beyond simple SQL execution.
 This tool signals a need for collaborative problem-solving or guidance.
@@ -229,6 +246,7 @@ When calling, provide a very specific query detailing the information needed and
                 return;
             }
 
+            SetLoading(true);
             SetMessage(userInput, true);
 
             try
@@ -238,6 +256,10 @@ When calling, provide a very specific query detailing the information needed and
             catch (Exception ex)
             {
                 SetMessage($"Error: {ex.Message}. {ex.InnerException?.Message}", false);
+            }
+            finally
+            {
+                SetLoading(false);
             }
         }
         private void QueryBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
@@ -251,6 +273,12 @@ When calling, provide a very specific query detailing the information needed and
         #endregion
 
         #region Message and Progress Content Bindings
+        private void SetLoading(bool isLoading)
+        {
+            LoadingIndicator.SetLoading("Analyzing", isLoading);
+            LoadingOverlay.Visibility = VisibilityHelper.SetVisible(isLoading);
+            MessageSpace.Opacity = isLoading ? 0.2 : 1;
+        }
         private void SetMessage(string message, bool isFromUser = false)
         {
             var chatMessage = new ChatMessage
@@ -287,7 +315,7 @@ When calling, provide a very specific query detailing the information needed and
                 .WithFunctionDeclarations(functionDeclarations, FunctionCallingMode.AUTO)
                 .Build();
 
-            var modelResponse = await _generator.GenerateContentAsync(apiRequest, Cache.ReasoningModelAlias);
+            var modelResponse = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash);
 
             var functionCalls = (modelResponse.FunctionCalls == null || modelResponse.FunctionCalls.Count == 0) ? [] : modelResponse.FunctionCalls;
 
@@ -382,23 +410,33 @@ When calling, provide a very specific query detailing the information needed and
                         SetProgressContent("Command executed successfully.", null, false, null);
                         return CreateResponse(FunctionCallingManager.ExecuteNonQueryAsyncFunction.Name, $"Command executed successfully.\n\n```sql\n{sqlQuery}\n```");
                     }
-                case var name when name == nameof(_extractor.GetSchemaInfoAsync):
+                case var name when name == nameof(_extractor.GetTableSchemaInfoAsync):
                     {
                         var schema = FunctionCallingHelper.GetParameterValue<string>(function, "schema");
                         var table = FunctionCallingHelper.GetParameterValue<string>(function, "table");
-                        SetProgressContent($"Let me check the schema information for the table`{schema}.{table}`", null, false, null);
-                        var schemaInfo = await _extractor.GetSchemaInfoAsync(table, schema);
+                        SetProgressContent($"Let me check the schema information for the table `{schema}.{table}`", null, false, null);
+                        var schemaInfo = await _extractor.GetTableSchemaInfoAsync(schema, table);
                         SetProgressContent("Let me take a look into this data", null, false, schemaInfo);
-                        return CreateResponse(nameof(_extractor.GetSchemaInfoAsync), schemaInfo.ToMarkdown());
+                        return CreateResponse(nameof(_extractor.GetTableSchemaInfoAsync), schemaInfo.ToMarkdown());
                     }
-                case var name when name == nameof(_extractor.GetDatabaseSchemaNamesAsync):
+                case var name when name == nameof(_extractor.SearchSchemasByNameAsync):
                     {
                         var keyword = FunctionCallingHelper.GetParameterValue<string>(function, "keyword");
                         SetProgressContent($"Let me check the database schema names with the keyword `{keyword}`", null, false, null);
-                        var schemaNames = await _extractor.GetDatabaseSchemaNamesAsync(keyword);
+                        var schemaNames = await _extractor.SearchSchemasByNameAsync(keyword);
                         var schemaNamesInMarkdown = string.Join(", ", schemaNames.Select(x => $"`{x}`"));
                         SetProgressContent($"I found these schemas: {schemaNamesInMarkdown}", null, false, null);
-                        return CreateResponse(nameof(_extractor.GetDatabaseSchemaNamesAsync), schemaNamesInMarkdown);
+                        return CreateResponse(nameof(_extractor.SearchSchemasByNameAsync), schemaNamesInMarkdown);
+                    }
+                case var name when name == nameof(_extractor.SearchTablesByNameAsync):
+                    {
+                        var schema = FunctionCallingHelper.GetParameterValue<string>(function, "schema");
+                        var keyword = FunctionCallingHelper.GetParameterValue<string>(function, "keyword");
+                        SetProgressContent($"Let me check the database tables in the schema `{schema}` with the keyword `{keyword}`", null, false, null);
+                        var tableNames = await _extractor.SearchTablesByNameAsync(schema, keyword);
+                        var tableNamesInMarkdown = string.Join(", ", tableNames.Select(x => $"`{x}`"));
+                        SetProgressContent($"I found these tables: {tableNamesInMarkdown}", null, false, null);
+                        return CreateResponse(nameof(_extractor.SearchTablesByNameAsync), tableNamesInMarkdown);
                     }
                 case var name when name == nameof(_extractor.GetUserPermissionsAsync):
                     {
@@ -416,7 +454,7 @@ When calling, provide a very specific query detailing the information needed and
                             .WithPrompt("I have some blocking points here and need you to make an action plan to overcome. Now think deeply step-by-step about the current situation, then provide a clear and detailed action plan.")
                             .Build();
 
-                        var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, Cache.ReasoningModelAlias);
+                        var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, ModelVersion.Gemini_20_Flash);
                         SetMessage(actionPlanResponse.Content, false);
                         return CreateResponse("RequestForActionPlan", actionPlanResponse.Content);
                     }

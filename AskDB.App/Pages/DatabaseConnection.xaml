@@ -29,7 +29,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBox Grid.Column="0" Header="Host" PlaceholderText="127.0.0.1" Text="{x:Bind ConnectionCredential.Host, Mode=TwoWay}"/>
-                            <NumberBox Grid.Column="1" Header="Port" MinWidth="120" Value="{x:Bind ConnectionCredential.Port, Mode=TwoWay}"/>
+                            <NumberBox Grid.Column="1" Header="Port" Minimum="0" MinWidth="120" SpinButtonPlacementMode="Compact" SmallChange="1" LargeChange="10" Value="{x:Bind ConnectionCredential.Port, Mode=TwoWay}"/>
                         </Grid>
                         <Grid ColumnSpacing="12">
                             <Grid.ColumnDefinitions>

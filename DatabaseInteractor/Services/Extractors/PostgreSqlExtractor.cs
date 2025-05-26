@@ -51,12 +51,12 @@ namespace DatabaseInteractor.Services.Extractors
             return permissions;
         }
 
-        public override Task<List<string>> GetDatabaseSchemaNamesAsync(string? keyword)
+        public override Task<List<string>> SearchSchemasByNameAsync(string? keyword)
         {
             throw new NotImplementedException();
         }
 
-        public override Task<DataTable> GetSchemaInfoAsync(string table, string? schema)
+        public override Task<DataTable> GetTableSchemaInfoAsync(string schema, string table)
         {
             throw new NotImplementedException();
         }
@@ -72,6 +72,32 @@ namespace DatabaseInteractor.Services.Extractors
             {
                 throw new InvalidOperationException(ex.Message, ex.InnerException);
             }
+        }
+
+        public override async Task<List<string>> SearchTablesByNameAsync(string schema, string? keyword)
+        {
+            var tables = new List<string>();
+            var query = "SELECT table_name FROM information_schema.tables WHERE table_schema = @schema";
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                query += " AND table_name ILIKE @keyword";
+            }
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                using var command = new NpgsqlCommand(query, connection);
+                command.Parameters.AddWithValue("@schema", schema);
+                if (!string.IsNullOrEmpty(keyword))
+                {
+                    command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
+                }
+                await connection.OpenAsync();
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    tables.Add(reader.GetString(0));
+                }
+            }
+            return tables;
         }
     }
 }

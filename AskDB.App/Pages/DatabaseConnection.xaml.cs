@@ -1,6 +1,7 @@
 using AskDB.App.Helpers;
 using AskDB.App.Pages;
 using AskDB.App.ViewModels;
+using AskDB.Commons.Attributes;
 using AskDB.Commons.Enums;
 using AskDB.Commons.Extensions;
 using AskDB.Database;
@@ -19,7 +20,7 @@ namespace AskDB.App
 {
     public sealed partial class DatabaseConnection : Page
     {
-        private ObservableCollection<string> DatabaseTypes { get; set; } = new ObservableCollection<string>(EnumExtensions.GetValues<DatabaseType>().Select(x => x.GetAttributeValue<string>("Description")));
+        private ObservableCollection<string> DatabaseTypes { get; set; } = new ObservableCollection<string>(EnumExtensions.GetValues<DatabaseType>().Select(x => x.GetDescription()));
 
         private string _sqliteFilePath;
         private bool _useConnectionString = false;
@@ -63,14 +64,6 @@ namespace AskDB.App
                 }
                 else
                 {
-                    ConnectionCredential.Port = ConnectionCredential.Port == default
-                    ? ConnectionCredential.DatabaseType.GetAttributeValue<int>("DefaultPort")
-                    : ConnectionCredential.Port;
-
-                    ConnectionCredential.Host = string.IsNullOrWhiteSpace(ConnectionCredential.Host)
-                        ? ConnectionCredential.DatabaseType.GetAttributeValue<string>("DefaultHost")
-                        : ConnectionCredential.Host;
-
                     if (ConnectionCredential.DatabaseType == DatabaseType.SQLite && string.IsNullOrWhiteSpace(_sqliteFilePath))
                     {
                         await DialogHelper.ShowErrorAsync("Please select the SQLite database file.");
@@ -134,6 +127,14 @@ namespace AskDB.App
         private void DatabaseTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ConnectionCredential.DatabaseType = (DatabaseType)(sender as ComboBox).SelectedIndex;
+
+            ConnectionCredential.Port = ConnectionCredential.Port == default
+                        ? ConnectionCredential.DatabaseType.GetAttributeValue<DefaultPortAttribute>().Port
+                        : ConnectionCredential.Port;
+
+            ConnectionCredential.Host = string.IsNullOrWhiteSpace(ConnectionCredential.Host)
+                ? ConnectionCredential.DatabaseType.GetAttributeValue<DefaultHostAttribute>().Host
+                : ConnectionCredential.Host;
 
             if (!_useConnectionString)
             {

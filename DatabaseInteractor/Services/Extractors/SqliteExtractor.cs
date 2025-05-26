@@ -41,12 +41,12 @@ namespace DatabaseInteractor.Services.Extractors
             ];
         }
 
-        public override Task<List<string>> GetDatabaseSchemaNamesAsync(string? keyword)
+        public override Task<List<string>> SearchSchemasByNameAsync(string? keyword)
         {
             throw new NotImplementedException();
         }
 
-        public override Task<DataTable> GetSchemaInfoAsync(string table, string? schema)
+        public override Task<DataTable> GetTableSchemaInfoAsync(string schema, string table)
         {
             throw new NotImplementedException();
         }
@@ -62,6 +62,22 @@ namespace DatabaseInteractor.Services.Extractors
             {
                 throw new InvalidOperationException(ex.Message, ex.InnerException);
             }
+        }
+
+        public override async Task<List<string>> SearchTablesByNameAsync(string schema, string? keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                keyword = string.Empty;
+            }
+            using var connection = new SqliteConnection(ConnectionString);
+            using var command = new SqliteCommand($"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE @keyword", connection);
+            command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
+            var dataTable = new DataTable();
+            await connection.OpenAsync();
+            using var reader = await command.ExecuteReaderAsync();
+            dataTable.Load(reader);
+            return dataTable.AsEnumerable().Select(row => row.Field<string>("name")).ToList();
         }
     }
 }
