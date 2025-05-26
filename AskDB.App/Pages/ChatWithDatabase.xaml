@@ -6,7 +6,7 @@
     xmlns:local="using:AskDB.App.Pages"
     xmlns:controls="using:AskDB.App"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls" xmlns:view_models="using:AskDB.App.View_Models"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls" xmlns:view_models="using:AskDB.App.ViewModels"
     mc:Ignorable="d">
 
     <SplitView IsPaneOpen="False" x:Name="MainView" OpenPaneLength="640" PanePlacement="Right" DisplayMode="Inline" PaneBackground="{ThemeResource CardBackgroundFillColorSecondaryBrush}">

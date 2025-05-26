@@ -1,6 +1,6 @@
 ﻿using Microsoft.UI.Xaml;
 
-namespace AskDB.App.View_Models
+namespace AskDB.App.ViewModels
 {
     public class ChatMessage
     {

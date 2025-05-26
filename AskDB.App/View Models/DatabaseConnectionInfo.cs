@@ -1,6 +1,6 @@
-﻿using DatabaseInteractor.Models.Enums;
+﻿using AskDB.Commons.Enums;
 
-namespace AskDB.App.View_Models
+namespace AskDB.App.ViewModels
 {
     public class DatabaseConnectionInfo
     {

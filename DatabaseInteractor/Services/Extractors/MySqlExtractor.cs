@@ -1,4 +1,4 @@
-﻿using DatabaseInteractor.Models.Enums;
+﻿using AskDB.Commons.Enums;
 using MySql.Data.MySqlClient;
 using System.Data;
 

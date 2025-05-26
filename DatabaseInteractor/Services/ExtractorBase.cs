@@ -1,4 +1,4 @@
-﻿using DatabaseInteractor.Models.Enums;
+﻿using AskDB.Commons.Enums;
 using DatabaseInteractor.Services.Extractors;
 using System.Data;
 

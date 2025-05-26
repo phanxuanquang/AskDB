@@ -1,6 +1,6 @@
 using AskDB.App.Helpers;
+using AskDB.Database;
 using GeminiDotNET;
-using Helper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
@@ -11,9 +11,11 @@ namespace AskDB.App
     public sealed partial class GeminiConnection : Page
     {
         private string _geminiApiKey;
+        private readonly AppDbContext _db;
         public GeminiConnection()
         {
             this.InitializeComponent();
+            _db = App.GetService<AppDbContext>();
 
             SetLoading(false);
             SetError(null);
@@ -53,15 +55,15 @@ namespace AskDB.App
 
                     await generator.GenerateContentAsync(apiRequest);
 
+                    await _db.CreateUserAsync(_geminiApiKey);
+
                     Cache.ApiKey = _geminiApiKey;
+                    this.Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
                 }
                 catch
                 {
                     throw new InvalidOperationException("Invalid or expired API key. Please try again with another API key.");
                 }
-
-                Cache.ApiKey = _geminiApiKey;
-                this.Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
             }
             catch (Exception ex)
             {

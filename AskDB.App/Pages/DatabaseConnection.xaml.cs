@@ -1,11 +1,13 @@
 using AskDB.App.Helpers;
 using AskDB.App.Pages;
-using AskDB.App.View_Models;
 using AskDB.App.ViewModels;
-using DatabaseInteractor.Models.Enums;
+using AskDB.Commons.Enums;
+using AskDB.Commons.Extensions;
+using AskDB.Database;
+using AskDB.Database.Extensions;
+using AskDB.Database.Models;
 using DatabaseInteractor.Services;
 using DatabaseInteractor.Services.Extractors;
-using Helper;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
@@ -17,14 +19,15 @@ namespace AskDB.App
 {
     public sealed partial class DatabaseConnection : Page
     {
-        private DatabaseConnectionCredential ConnectionCredential { get; set; } = new();
-        private ObservableCollection<string> DatabaseTypes { get; set; } = new ObservableCollection<string>(Enum.GetValues(typeof(DatabaseType)).Cast<DatabaseType>().Select(x => Extractor.GetEnumDescription(x)));
+        private DatabaseCredential ConnectionCredential { get; set; } = new();
+        private ObservableCollection<string> DatabaseTypes { get; set; } = new ObservableCollection<string>(EnumExtensions.GetValues<DatabaseType>().Select(x => x.GetAttributeValue<string>("Description")));
         private string _sqliteFilePath;
+        private readonly AppDbContext _db;
 
         public DatabaseConnection()
         {
+            _db = App.GetService<AppDbContext>();
             InitializeComponent();
-            SetLoading(false);
         }
 
         private void SetLoading(bool isLoading)
@@ -48,20 +51,22 @@ namespace AskDB.App
 
                 var extractor = ConnectionCredential.DatabaseType switch
                 {
-                    DatabaseType.SqlServer => (ExtractorBase)new SqlServerExtractor(ConnectionCredential.AsConnectionString(5)),
-                    DatabaseType.MySQL => new MySqlExtractor(ConnectionCredential.AsConnectionString(5)),
-                    DatabaseType.PostgreSQL => new PostgreSqlExtractor(ConnectionCredential.AsConnectionString(5)),
+                    DatabaseType.SqlServer => (ExtractorBase)new SqlServerExtractor(ConnectionCredential.BuildConnectionString(5)),
+                    DatabaseType.MySQL => new MySqlExtractor(ConnectionCredential.BuildConnectionString(5)),
+                    DatabaseType.PostgreSQL => new PostgreSqlExtractor(ConnectionCredential.BuildConnectionString(5)),
                     DatabaseType.SQLite => new SqliteExtractor(_sqliteFilePath),
                     _ => throw new NotImplementedException(),
                 };
 
                 await extractor.EnsureDatabaseConnectionAsync();
 
+                await _db.SaveDatabaseCredentialAsync(ConnectionCredential);
+
                 Frame.Navigate(
                     typeof(ChatWithDatabase),
                     new DatabaseConnectionInfo
                     {
-                        ConnectionString = ConnectionCredential.AsConnectionString(),
+                        ConnectionString = ConnectionCredential.BuildConnectionString(),
                         DatabaseType = extractor.DatabaseType,
                     },
                     new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });

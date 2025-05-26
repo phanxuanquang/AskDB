@@ -1,15 +1,15 @@
 using AskDB.App.Helpers;
-using AskDB.App.View_Models;
+using AskDB.App.ViewModels;
+using AskDB.Commons.Enums;
+using AskDB.Commons.Helpers;
+using AskDB.Database.Extensions;
 using CommunityToolkit.WinUI.UI.Controls;
-using DatabaseInteractor.Helper;
-using DatabaseInteractor.Models.Enums;
 using DatabaseInteractor.Services;
 using DatabaseInteractor.Services.Extractors;
 using GeminiDotNET;
 using GeminiDotNET.ApiModels.Enums;
 using GeminiDotNET.ApiModels.Response.Success.FunctionCalling;
 using GeminiDotNET.Helpers;
-using Helper;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -150,7 +150,7 @@ namespace AskDB.App.Pages
 
                 if (file != null)
                 {
-                    Extractor.ExportCsv(dataTable, file.Path);
+                    await dataTable.ToCsvAsync(file.Path);
                     await DialogHelper.ShowSuccessAsync("CSV file has been exported to your selected location.");
                 }
             }
@@ -221,7 +221,7 @@ namespace AskDB.App.Pages
 
         private async Task HandleUserInputAsync(string userInput)
         {
-            var instruction = await Extractor.ReadFile("Instructions/Global.md");
+            var instruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
             instruction = instruction.Replace("{Database_Type}", _extractor.DatabaseType.ToString());
             var functionDeclarations = FunctionCallingManager.FunctionDeclarations;
 
@@ -364,9 +364,9 @@ namespace AskDB.App.Pages
                     {
                         SetProgressContent("Let me think about the next steps.", null, false, null);
                         var actionPlanRequest = new ApiRequestBuilder()
-                            .WithSystemInstruction(await Extractor.ReadFile("Instructions/Global.md"))
+                            .WithSystemInstruction(await FileHelper.ReadFileAsync("Instructions/Global.md"))
                             .DisableAllSafetySettings()
-                            .WithPrompt(await Extractor.ReadFile("Instructions/Action Planning.md"))
+                            .WithPrompt(await FileHelper.ReadFileAsync("Instructions/Action Planning.md"))
                             .Build();
                         var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, "gemini-2.5-flash-preview-05-20");
                         SetMessage(actionPlanResponse.Content, false);
@@ -377,7 +377,7 @@ namespace AskDB.App.Pages
                         var query = FunctionCallingHelper.GetParameterValue<string>(function, "query");
                         SetProgressContent($"Let me search the internet:\n\n {query}", null, false, null);
                         var searchRequest = new ApiRequestBuilder()
-                            .WithSystemInstruction(await Extractor.ReadFile("Instructions/Global.md"))
+                            .WithSystemInstruction(await FileHelper.ReadFileAsync("Instructions/Global.md"))
                             .EnableGrounding()
                             .DisableAllSafetySettings()
                             .WithPrompt($"Now do an **in-depth internet research** and provide the result based on this description:\n\n{query}")

@@ -1,6 +1,7 @@
-﻿using AskDB.App.Pages;
+﻿using AskDB.App.Helpers;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using Windows.System;
 
@@ -15,7 +16,13 @@ namespace AskDB.App
             this.AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
             this.AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
 
-            MainFrame.Navigate(typeof(ChatWithDatabase));
+            if (string.IsNullOrEmpty(Cache.ApiKey))
+            {
+                MainFrame.Navigate(typeof(GeminiConnection), null, new DrillInNavigationTransitionInfo());
+                return;
+            }
+
+            MainFrame.Navigate(typeof(DatabaseConnection));
         }
 
         private async void GithubProfileButton_Click(object sender, RoutedEventArgs e)
