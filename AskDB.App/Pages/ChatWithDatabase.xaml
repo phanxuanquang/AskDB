@@ -81,7 +81,6 @@
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="view_models:ChatMessage">
                         <StackPanel
-                            MinWidth="200"
                             Margin="0,12"
                             Padding="16,12"
                             Spacing="12"

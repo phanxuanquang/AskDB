@@ -60,7 +60,8 @@ namespace AskDB.App
                 await db.Database.EnsureCreatedAsync().ConfigureAwait(false);
             }
 
-            Cache.ApiKey = await db.GetApiKeyAsync();
+            Cache.ApiKey = await db.GetApiKeyAsync().ConfigureAwait(false);
+            Cache.HasUserEverConnectedToDatabase = await db.IsDatabaseCredentialOrConnectionStringExistsAsync();
         }
     }
 }

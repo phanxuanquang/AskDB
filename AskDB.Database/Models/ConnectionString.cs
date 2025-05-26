@@ -7,8 +7,9 @@ namespace AskDB.Database.Models
     {
         [Key]
         public Guid Id { get; protected set; } = Guid.NewGuid();
+        public string Name { get; set; }
         public DatabaseType DatabaseType { get; set; }
-        public required string Value { get; set; }
-        public DateTime LastModifiedTime { get; set; } = DateTime.Now;
+        public string Value { get; set; }
+        public DateTime LastAccessTime { get; set; } = DateTime.Now;
     }
 }

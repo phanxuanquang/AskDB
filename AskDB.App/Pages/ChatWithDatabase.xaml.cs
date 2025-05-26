@@ -7,6 +7,7 @@ using CommunityToolkit.WinUI.UI.Controls;
 using DatabaseInteractor.Services;
 using DatabaseInteractor.Services.Extractors;
 using GeminiDotNET;
+using GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling;
 using GeminiDotNET.ApiModels.Enums;
 using GeminiDotNET.ApiModels.Response.Success.FunctionCalling;
 using GeminiDotNET.Helpers;
@@ -34,6 +35,7 @@ namespace AskDB.App.Pages
 
         private Generator _generator;
         private ExtractorBase _extractor;
+        private string _globalInstruction;
 
         public ChatWithDatabase()
         {
@@ -41,7 +43,7 @@ namespace AskDB.App.Pages
         }
 
         #region Event Handlers
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
 
@@ -49,6 +51,8 @@ namespace AskDB.App.Pages
             {
                 return;
             }
+
+            _globalInstruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
 
             _extractor = request.DatabaseType switch
             {
@@ -62,7 +66,7 @@ namespace AskDB.App.Pages
             _generator = new Generator(Cache.ApiKey).EnableChatHistory(50);
 
             FunctionCallingManager.RegisterFunction(nameof(_extractor.GetUserPermissionsAsync), "Get the current user's permissions in the database.");
-            FunctionCallingManager.RegisterFunction(nameof(_extractor.GetDatabaseSchemaNamesAsync), "Search for the database schema names based on the given keyword", new GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling.Parameters
+            FunctionCallingManager.RegisterFunction(nameof(_extractor.GetDatabaseSchemaNamesAsync), "Search for the database schema names based on the given keyword", new Parameters
             {
                 Properties = new
                 {
@@ -74,7 +78,7 @@ namespace AskDB.App.Pages
                 },
                 Required = ["keyword"]
             });
-            FunctionCallingManager.RegisterFunction(nameof(_extractor.GetSchemaInfoAsync), "Get schema information for a specified table within a given schema, including table structure, constraints, relationships, primary keys, and foreign keys", new GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling.Parameters
+            FunctionCallingManager.RegisterFunction(nameof(_extractor.GetSchemaInfoAsync), "Get schema information for a specified table within a given schema, including table structure, constraints, relationships, primary keys, and foreign keys", new Parameters
             {
                 Properties = new
                 {
@@ -92,7 +96,7 @@ namespace AskDB.App.Pages
                 Required = ["table"]
             });
             FunctionCallingManager.RegisterFunction("RequestForActionPlan", "Request an action plan based on the current situation. This can be used when you got error or does not know what to do/how to do next", null);
-            FunctionCallingManager.RegisterFunction("RequestForInternetSearch", "Request an internet search to gather more information or context about a specific topic or query.", new GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling.Parameters
+            FunctionCallingManager.RegisterFunction("RequestForInternetSearch", "Request an internet search to gather more information or context about a specific topic or query.", new Parameters
             {
                 Properties = new
                 {
@@ -103,6 +107,18 @@ namespace AskDB.App.Pages
                     }
                 },
                 Required = ["query"]
+            });
+            FunctionCallingManager.RegisterFunction("ChangeTheConversationLanguage", "Force the AI agent to use the specific language for the conversation from now on", new Parameters
+            {
+                Properties = new
+                {
+                    language = new
+                    {
+                        type = "string",
+                        description = "The language to change (for example: English, Vietnamese, French, etc)"
+                    }
+                },
+                Required = ["language"]
             });
         }
         private void DataGrid_Loaded(object sender, RoutedEventArgs e)
@@ -283,10 +299,18 @@ namespace AskDB.App.Pages
 
                     var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash_Lite);
 
-                    SetProgressContent(modelResponseForFunction.Content, null, false, null);
-                    await Task.Delay(1000);
 
                     functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
+
+                    if (functionCalls.Count == 0)
+                    {
+                        SetMessage(modelResponseForFunction.Content, false);
+                    }
+                    else
+                    {
+                        SetProgressContent(modelResponseForFunction.Content, null, false, null);
+                        await Task.Delay(1000);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -364,7 +388,7 @@ namespace AskDB.App.Pages
                     {
                         SetProgressContent("Let me think about the next steps.", null, false, null);
                         var actionPlanRequest = new ApiRequestBuilder()
-                            .WithSystemInstruction(await FileHelper.ReadFileAsync("Instructions/Global.md"))
+                            .WithSystemInstruction(_globalInstruction)
                             .DisableAllSafetySettings()
                             .WithPrompt(await FileHelper.ReadFileAsync("Instructions/Action Planning.md"))
                             .Build();
@@ -377,7 +401,7 @@ namespace AskDB.App.Pages
                         var query = FunctionCallingHelper.GetParameterValue<string>(function, "query");
                         SetProgressContent($"Let me search the internet:\n\n {query}", null, false, null);
                         var searchRequest = new ApiRequestBuilder()
-                            .WithSystemInstruction(await FileHelper.ReadFileAsync("Instructions/Global.md"))
+                            .WithSystemInstruction(_globalInstruction)
                             .EnableGrounding()
                             .DisableAllSafetySettings()
                             .WithPrompt($"Now do an **in-depth internet research** and provide the result based on this description:\n\n{query}")
@@ -386,6 +410,14 @@ namespace AskDB.App.Pages
                         var searchResponse = await generator.GenerateContentAsync(searchRequest, ModelVersion.Gemini_20_Flash_Lite);
                         SetMessage(searchResponse.Content, false);
                         return CreateResponse("RequestForInternetSearch", searchResponse.Content);
+                    }
+                case "ChangeTheConversationLanguage":
+                    {
+                        var language = FunctionCallingHelper.GetParameterValue<string>(function, "language");
+                        SetProgressContent($"Changing the conversation language to `{language}`", null, false, null);
+                        _globalInstruction = _globalInstruction.Replace("{Language}", language);
+                        SetMessage($"From now on, AskDb will talk with you using {language}.", false);
+                        return CreateResponse("ChangeTheConversationLanguage", $"The conversation language has been changed to `{language}`. From now on, the agent **must use {language}** for the conversation.");
                     }
                 default:
                     return null;

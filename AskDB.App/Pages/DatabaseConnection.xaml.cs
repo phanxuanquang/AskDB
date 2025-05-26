@@ -19,9 +19,13 @@ namespace AskDB.App
 {
     public sealed partial class DatabaseConnection : Page
     {
-        private DatabaseCredential ConnectionCredential { get; set; } = new();
         private ObservableCollection<string> DatabaseTypes { get; set; } = new ObservableCollection<string>(EnumExtensions.GetValues<DatabaseType>().Select(x => x.GetAttributeValue<string>("Description")));
+
         private string _sqliteFilePath;
+        private bool _useConnectionString = false;
+        private DatabaseCredential ConnectionCredential { get; set; } = new();
+        private ConnectionString ConnectionString { get; set; } = new();
+
         private readonly AppDbContext _db;
 
         public DatabaseConnection()
@@ -43,31 +47,56 @@ namespace AskDB.App
 
             try
             {
-                if (ConnectionCredential.DatabaseType == DatabaseType.SQLite && string.IsNullOrWhiteSpace(_sqliteFilePath))
+                if (_useConnectionString)
                 {
-                    await DialogHelper.ShowErrorAsync("Please select the SQLite database file.");
-                    return;
+                    var connectionString = ConnectionString.Value?.Trim();
+                    var extractor = ConnectionCredential.DatabaseType switch
+                    {
+                        DatabaseType.SqlServer => (ExtractorBase)new SqlServerExtractor(connectionString),
+                        DatabaseType.MySQL => new MySqlExtractor(connectionString),
+                        DatabaseType.PostgreSQL => new PostgreSqlExtractor(connectionString),
+                        DatabaseType.SQLite => new SqliteExtractor(connectionString),
+                        _ => throw new NotImplementedException(),
+                    };
+                    await extractor.EnsureDatabaseConnectionAsync();
+                    await _db.SaveConnectionStringAsync(ConnectionString);
                 }
-
-                var extractor = ConnectionCredential.DatabaseType switch
+                else
                 {
-                    DatabaseType.SqlServer => (ExtractorBase)new SqlServerExtractor(ConnectionCredential.BuildConnectionString(5)),
-                    DatabaseType.MySQL => new MySqlExtractor(ConnectionCredential.BuildConnectionString(5)),
-                    DatabaseType.PostgreSQL => new PostgreSqlExtractor(ConnectionCredential.BuildConnectionString(5)),
-                    DatabaseType.SQLite => new SqliteExtractor(_sqliteFilePath),
-                    _ => throw new NotImplementedException(),
-                };
+                    ConnectionCredential.Port = ConnectionCredential.Port == default
+                    ? ConnectionCredential.DatabaseType.GetAttributeValue<int>("DefaultPort")
+                    : ConnectionCredential.Port;
 
-                await extractor.EnsureDatabaseConnectionAsync();
+                    ConnectionCredential.Host = string.IsNullOrWhiteSpace(ConnectionCredential.Host)
+                        ? ConnectionCredential.DatabaseType.GetAttributeValue<string>("DefaultHost")
+                        : ConnectionCredential.Host;
 
-                await _db.SaveDatabaseCredentialAsync(ConnectionCredential);
+                    if (ConnectionCredential.DatabaseType == DatabaseType.SQLite && string.IsNullOrWhiteSpace(_sqliteFilePath))
+                    {
+                        await DialogHelper.ShowErrorAsync("Please select the SQLite database file.");
+                        return;
+                    }
+
+                    var extractor = ConnectionCredential.DatabaseType switch
+                    {
+                        DatabaseType.SqlServer => (ExtractorBase)new SqlServerExtractor(ConnectionCredential.BuildConnectionString(5)),
+                        DatabaseType.MySQL => new MySqlExtractor(ConnectionCredential.BuildConnectionString(5)),
+                        DatabaseType.PostgreSQL => new PostgreSqlExtractor(ConnectionCredential.BuildConnectionString(5)),
+                        DatabaseType.SQLite => new SqliteExtractor(_sqliteFilePath),
+                        _ => throw new NotImplementedException(),
+                    };
+
+                    await extractor.EnsureDatabaseConnectionAsync();
+
+                    await _db.SaveDatabaseCredentialAsync(ConnectionCredential);
+                }
 
                 Frame.Navigate(
                     typeof(ChatWithDatabase),
                     new DatabaseConnectionInfo
                     {
-                        ConnectionString = ConnectionCredential.BuildConnectionString(),
-                        DatabaseType = extractor.DatabaseType,
+                        ConnectionString = _useConnectionString ? ConnectionString.Value?.Trim() : ConnectionCredential.BuildConnectionString(),
+                        DatabaseType = ConnectionCredential.DatabaseType,
                     },
                     new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
             }
@@ -106,10 +135,20 @@ namespace AskDB.App
         {
             ConnectionCredential.DatabaseType = (DatabaseType)(sender as ComboBox).SelectedIndex;
 
-            var isSqliteSelected = ConnectionCredential.DatabaseType == DatabaseType.SQLite;
+            if (!_useConnectionString)
+            {
+                var isSqliteSelected = ConnectionCredential.DatabaseType == DatabaseType.SQLite;
+                NotSqliteComponents.Visibility = VisibilityHelper.SetVisible(!isSqliteSelected);
+                SqliteComponents.Visibility = VisibilityHelper.SetVisible(isSqliteSelected);
+            }
+        }
 
-            NotSqliteComponents.Visibility = VisibilityHelper.SetVisible(!isSqliteSelected);
-            SqliteComponents.Visibility = VisibilityHelper.SetVisible(isSqliteSelected);
+        private void UseConnectionStringCheckBox_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            _useConnectionString = (sender as CheckBox).IsChecked == true;
+
+            UseConnectionStringSpace.Visibility = VisibilityHelper.SetVisible(_useConnectionString);
+            NotSqliteComponents.Visibility = VisibilityHelper.SetVisible(!_useConnectionString);
         }
     }
 }

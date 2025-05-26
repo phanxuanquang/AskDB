@@ -1,4 +1,5 @@
 ﻿using AskDB.App.Helpers;
+using AskDB.App.Pages;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -22,7 +23,15 @@ namespace AskDB.App
                 return;
             }
 
-            MainFrame.Navigate(typeof(DatabaseConnection));
+            if (Cache.HasUserEverConnectedToDatabase)
+            {
+                MainFrame.Navigate(typeof(ExistingDatabaseConnection), null, new DrillInNavigationTransitionInfo());
+            }
+            else
+            {
+                MainFrame.Navigate(typeof(DatabaseConnection), null, new DrillInNavigationTransitionInfo());
+            }
+
         }
 
         private async void GithubProfileButton_Click(object sender, RoutedEventArgs e)
