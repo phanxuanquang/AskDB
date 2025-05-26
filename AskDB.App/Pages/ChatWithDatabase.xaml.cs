@@ -1,6 +1,7 @@
 using AskDB.App.Helpers;
 using AskDB.App.ViewModels;
 using AskDB.Commons.Enums;
+using AskDB.Commons.Extensions;
 using AskDB.Commons.Helpers;
 using AskDB.Database.Extensions;
 using CommunityToolkit.WinUI.UI.Controls;
@@ -22,6 +23,7 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.Globalization;
 using Windows.Storage.Pickers;
 using Windows.System;
 using WinRT.Interop;
@@ -53,6 +55,7 @@ namespace AskDB.App.Pages
             }
 
             _globalInstruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
+            _globalInstruction = _globalInstruction.Replace("{Database_Type}", request.DatabaseType.GetAttributeValue<string>("Description")).Replace("{Language}", "English");
 
             _extractor = request.DatabaseType switch
             {
@@ -180,14 +183,6 @@ namespace AskDB.App.Pages
             var toggleButton = sender as ToggleButton;
             MainView.IsPaneOpen = toggleButton?.IsChecked == true;
         }
-        private void QueryBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
-        {
-            if (e.Key == VirtualKey.Enter)
-            {
-                SendButton_Click(sender, e);
-                e.Handled = true;
-            }
-        }
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
             var userInput = QueryBox.Text.Trim();
@@ -209,6 +204,14 @@ namespace AskDB.App.Pages
                 SetMessage($"Error: {ex.Message}. {ex.InnerException?.Message}", false);
             }
         }
+        private void QueryBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (e.Key == VirtualKey.Enter)
+            {
+                SendButton_Click(sender, e);
+                e.Handled = true;
+            }
+        }
         #endregion
 
         #region Message and Progress Content Bindings
@@ -226,7 +229,7 @@ namespace AskDB.App.Pages
             var progressContent = new ProgressContent
             {
                 Message = message,
-                SqlCommand = sqlCommand ?? $"```sql\n{sqlCommand}\n```",
+                SqlCommand = sqlCommand ?? $"Executed SQL command:\n\n```sql\n{sqlCommand}\n```",
                 ActionButtonVisibility = VisibilityHelper.SetVisible(isActionButtonVisible),
                 Data = dataTable
             };
@@ -248,7 +251,7 @@ namespace AskDB.App.Pages
                 .WithFunctionDeclarations(functionDeclarations, FunctionCallingMode.AUTO)
                 .Build();
 
-            var modelResponse = await _generator.GenerateContentAsync(apiRequest, "gemini-2.5-flash-preview-05-20");
+            var modelResponse = await _generator.GenerateContentAsync(apiRequest, "gemini-2.0-flash");
 
             var functionCalls = (modelResponse.FunctionCalls == null || modelResponse.FunctionCalls.Count == 0) ? [] : modelResponse.FunctionCalls;
 
@@ -276,14 +279,14 @@ namespace AskDB.App.Pages
                         }
                         catch (Exception ex)
                         {
-                            var output = $"**Error in function {function.Name}:**\n\n```plaintext\n{ex.Message}. {ex.InnerException?.Message}\n```\n\nPlease try with another approarch!";
+                            var output = $"Error in function **{function.Name}**:\n\n```plaintext\n{ex.Message}. {ex.InnerException?.Message}\n```";
 
                             functionResponses.Add(new FunctionResponse
                             {
                                 Name = function.Name,
                                 Response = new Response
                                 {
-                                    Output = output,
+                                    Output = $"{output}\n\nAction plan or clarification is required.",
                                 }
                             });
                             SetProgressContent(output, null, false, null);
@@ -298,7 +301,6 @@ namespace AskDB.App.Pages
                         .Build();
 
                     var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash_Lite);
-
 
                     functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
 
@@ -318,18 +320,6 @@ namespace AskDB.App.Pages
                     functionCalls = [];
                 }
             }
-
-            var apiRequestForConclusion = new ApiRequestBuilder()
-                .WithSystemInstruction(instruction)
-                .WithPrompt("Now summarize your actions, then provide any final insights or recommendations for the next steps.")
-                .DisableAllSafetySettings()
-                .Build();
-
-            var modelResponseForConclusion = await _generator.GenerateContentAsync(apiRequestForConclusion, "gemini-2.0-flash");
-            if (!string.IsNullOrEmpty(modelResponseForConclusion.Content))
-            {
-                SetMessage(modelResponseForConclusion.Content, false);
-            }
         }
 
         private async Task<FunctionResponse> CallFunctionAsync(FunctionCall function)
@@ -345,7 +335,6 @@ namespace AskDB.App.Pages
                 case var name when name == FunctionCallingManager.ExecuteQueryAsyncFunction.Name:
                     {
                         var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
-                        SetProgressContent("Let me check your database.", null, false, null);
                         var dataTable = await _extractor.ExecuteQueryAsync(sqlQuery);
                         SetProgressContent("Let me take a look into this data", sqlQuery, true, dataTable);
                         return CreateResponse(FunctionCallingManager.ExecuteQueryAsyncFunction.Name, dataTable.ToMarkdown());
@@ -353,10 +342,9 @@ namespace AskDB.App.Pages
                 case var name when name == FunctionCallingManager.ExecuteNonQueryAsyncFunction.Name:
                     {
                         var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
-                        SetProgressContent("Let me check your database.", sqlQuery, false, null);
                         await _extractor.ExecuteNonQueryAsync(sqlQuery);
                         SetProgressContent("Command executed successfully.", null, false, null);
-                        return CreateResponse(FunctionCallingManager.ExecuteNonQueryAsyncFunction.Name, "Command executed successfully.");
+                        return CreateResponse(FunctionCallingManager.ExecuteNonQueryAsyncFunction.Name, $"Command executed successfully.\n\n```sql\n{sqlQuery}\n```");
                     }
                 case var name when name == nameof(_extractor.GetSchemaInfoAsync):
                     {
@@ -378,15 +366,13 @@ namespace AskDB.App.Pages
                     }
                 case var name when name == nameof(_extractor.GetUserPermissionsAsync):
                     {
-                        SetProgressContent("Let me check your permissions.", null, false, null);
                         var permissions = await _extractor.GetUserPermissionsAsync();
                         var permissionsInMarkdown = string.Join(", ", permissions.Select(x => $"`{x}`"));
-                        SetProgressContent($"I found these permissions: {permissionsInMarkdown}", null, false, null);
+                        SetProgressContent($"Found these permissions: {permissionsInMarkdown}", null, false, null);
                         return CreateResponse(nameof(_extractor.GetUserPermissionsAsync), permissionsInMarkdown);
                     }
                 case "RequestForActionPlan":
                     {
-                        SetProgressContent("Let me think about the next steps.", null, false, null);
                         var actionPlanRequest = new ApiRequestBuilder()
                             .WithSystemInstruction(_globalInstruction)
                             .DisableAllSafetySettings()
@@ -399,7 +385,6 @@ namespace AskDB.App.Pages
                 case "RequestForInternetSearch":
                     {
                         var query = FunctionCallingHelper.GetParameterValue<string>(function, "query");
-                        SetProgressContent($"Let me search the internet:\n\n {query}", null, false, null);
                         var searchRequest = new ApiRequestBuilder()
                             .WithSystemInstruction(_globalInstruction)
                             .EnableGrounding()
@@ -407,17 +392,16 @@ namespace AskDB.App.Pages
                             .WithPrompt($"Now do an **in-depth internet research** and provide the result based on this description:\n\n{query}")
                             .Build();
                         var generator = new Generator(Cache.ApiKey);
-                        var searchResponse = await generator.GenerateContentAsync(searchRequest, ModelVersion.Gemini_20_Flash_Lite);
-                        SetMessage(searchResponse.Content, false);
+                        var searchResponse = await generator.GenerateContentAsync(searchRequest, ModelVersion.Gemini_20_Flash);
+                        SetProgressContent(searchResponse.Content, null, false, null);
                         return CreateResponse("RequestForInternetSearch", searchResponse.Content);
                     }
                 case "ChangeTheConversationLanguage":
                     {
                         var language = FunctionCallingHelper.GetParameterValue<string>(function, "language");
-                        SetProgressContent($"Changing the conversation language to `{language}`", null, false, null);
                         _globalInstruction = _globalInstruction.Replace("{Language}", language);
                         SetMessage($"From now on, AskDb will talk with you using {language}.", false);
-                        return CreateResponse("ChangeTheConversationLanguage", $"The conversation language has been changed to `{language}`. From now on, the agent **must use {language}** for the conversation.");
+                        return CreateResponse("ChangeTheConversationLanguage", $"From now on, the agent **must use {language}** for the conversation (except for the tool calling).");
                     }
                 default:
                     return null;

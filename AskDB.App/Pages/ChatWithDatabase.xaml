@@ -77,6 +77,9 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+                <Image Source="/Assets/icon.png" MaxHeight="200" Opacity="0.05"/>
+            </Grid>
             <ListView Grid.Row="0" IsItemClickEnabled="False" CanDragItems="False" CanReorderItems="False" SelectionMode="None" ItemsSource="{x:Bind Messages}">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="view_models:ChatMessage">
