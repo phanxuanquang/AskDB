@@ -1,6 +1,6 @@
 using AskDB.App.Helpers;
 using AskDB.App.Pages;
-using AskDB.App.ViewModels;
+using AskDB.App.View_Models;
 using AskDB.Commons.Attributes;
 using AskDB.Commons.Enums;
 using AskDB.Commons.Extensions;
@@ -20,7 +20,7 @@ namespace AskDB.App
 {
     public sealed partial class DatabaseConnection : Page
     {
-        private ObservableCollection<string> DatabaseTypes { get; set; } = new ObservableCollection<string>(EnumExtensions.GetValues<DatabaseType>().Select(x => x.GetDescription()));
+        private ObservableCollection<string> DatabaseTypes { get; set; } = [.. EnumExtensions.GetValues<DatabaseType>().Select(x => x.GetDescription())];
 
         private string _sqliteFilePath;
         private bool _useConnectionString = false;
@@ -31,7 +31,7 @@ namespace AskDB.App
 
         public DatabaseConnection()
         {
-            _db = App.GetService<AppDbContext>();
+            _db = App.LocalDb;
             InitializeComponent();
         }
 

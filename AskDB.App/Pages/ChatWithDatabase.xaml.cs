@@ -1,5 +1,5 @@
 using AskDB.App.Helpers;
-using AskDB.App.ViewModels;
+using AskDB.App.View_Models;
 using AskDB.Commons.Enums;
 using AskDB.Commons.Extensions;
 using AskDB.Commons.Helpers;
@@ -23,6 +23,7 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Pickers;
 using Windows.System;
 using WinRT.Interop;
@@ -247,7 +248,7 @@ When calling, provide a very specific query detailing the information needed and
             }
 
             SetLoading(true);
-            SetMessage(userInput, true);
+            SetUserMessage(userInput, true);
 
             try
             {
@@ -255,7 +256,7 @@ When calling, provide a very specific query detailing the information needed and
             }
             catch (Exception ex)
             {
-                SetMessage($"Error: {ex.Message}. {ex.InnerException?.Message}", false);
+                SetUserMessage($"Error: {ex.Message}. {ex.InnerException?.Message}", false);
             }
             finally
             {
@@ -279,7 +280,7 @@ When calling, provide a very specific query detailing the information needed and
             LoadingOverlay.Visibility = VisibilityHelper.SetVisible(isLoading);
             MessageSpace.Opacity = isLoading ? 0.2 : 1;
         }
-        private void SetMessage(string message, bool isFromUser = false)
+        private void SetUserMessage(string message, bool isFromUser = false)
         {
             var chatMessage = new ChatMessage
             {
@@ -288,18 +289,33 @@ When calling, provide a very specific query detailing the information needed and
             };
             Messages.Add(chatMessage);
         }
-        private void SetProgressContent(string message, string sqlCommand, bool isActionButtonVisible, DataTable dataTable = null)
+
+        private void SetProgressMessage(string message)
         {
             var progressContent = new ProgressContent
             {
                 Message = message,
-                SqlCommand = sqlCommand ?? $"Executed SQL command:\n\n```sql\n{sqlCommand}\n```",
-                ActionButtonVisibility = VisibilityHelper.SetVisible(isActionButtonVisible),
+                SqlCommand = null,
+                ActionButtonVisibility = VisibilityHelper.SetVisible(false),
+                Data = null,
+            };
+
+            ProgressContents.Add(progressContent);
+        }
+
+        private void SetProgressDataTable(string sqlCommand, DataTable dataTable)
+        {
+            var progressContent = new ProgressContent
+            {
+                Message = null,
+                SqlCommand = sqlCommand,
+                ActionButtonVisibility = VisibilityHelper.SetVisible(true),
                 Data = dataTable
             };
 
             ProgressContents.Add(progressContent);
         }
+
         #endregion
 
         private async Task HandleUserInputAsync(string userInput)
@@ -321,7 +337,7 @@ When calling, provide a very specific query detailing the information needed and
 
             if (functionCalls.Count == 0)
             {
-                SetMessage(modelResponse.Content, false);
+                SetUserMessage(modelResponse.Content, false);
                 return;
             }
 
@@ -355,7 +371,8 @@ When calling, provide a very specific query detailing the information needed and
                                     Output = $"{output}\n\nAction plan or clarification is required.",
                                 }
                             });
-                            SetProgressContent(output, null, false, null);
+
+                            SetProgressMessage(output);
                         }
                     }
 
@@ -372,16 +389,16 @@ When calling, provide a very specific query detailing the information needed and
 
                     if (functionCalls.Count == 0)
                     {
-                        SetMessage(modelResponseForFunction.Content, false);
+                        SetUserMessage(modelResponseForFunction.Content, false);
                     }
                     else
                     {
-                        SetProgressContent(modelResponseForFunction.Content, null, false, null);
+                        SetProgressMessage(modelResponseForFunction.Content);
                     }
                 }
                 catch (Exception ex)
                 {
-                    SetMessage($"Error: {ex.Message}. {ex.InnerException?.Message}", false);
+                    SetUserMessage($"Error: {ex.Message}. {ex.InnerException?.Message}", false);
                     functionCalls = [];
                 }
             }
@@ -401,53 +418,56 @@ When calling, provide a very specific query detailing the information needed and
                     {
                         var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
                         var dataTable = await _extractor.ExecuteQueryAsync(sqlQuery);
-                        SetProgressContent("Let me take a look into this data", sqlQuery, true, dataTable);
+                        SetProgressDataTable(sqlQuery, dataTable);
                         return CreateResponse(FunctionCallingManager.ExecuteQueryAsyncFunction.Name, dataTable.ToMarkdown());
                     }
                 case var name when name == FunctionCallingManager.ExecuteNonQueryAsyncFunction.Name:
                     {
                         var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
+                        SetProgressMessage($"Let me execute the command:\n\n```sql\n{sqlQuery}\n```");
                         await _extractor.ExecuteNonQueryAsync(sqlQuery);
-                        SetProgressContent("Command executed successfully.", null, false, null);
+                        SetProgressMessage("Command executed successfully.");
                         return CreateResponse(FunctionCallingManager.ExecuteNonQueryAsyncFunction.Name, $"Command executed successfully.\n\n```sql\n{sqlQuery}\n```");
                     }
                 case var name when name == nameof(_extractor.GetTableSchemaInfoAsync):
                     {
                         var schema = FunctionCallingHelper.GetParameterValue<string>(function, "schema");
                         var table = FunctionCallingHelper.GetParameterValue<string>(function, "table");
-                        SetProgressContent($"Let me check the schema information for the table `{schema}.{table}`", null, false, null);
+                        SetProgressMessage($"Let me check the schema information for the table `{schema}.{table}`");
                         var schemaInfo = await _extractor.GetTableSchemaInfoAsync(schema, table);
-                        SetProgressContent("Let me take a look into this data", null, false, schemaInfo);
+                        SetProgressDataTable(null, schemaInfo);
                         return CreateResponse(nameof(_extractor.GetTableSchemaInfoAsync), schemaInfo.ToMarkdown());
                     }
                 case var name when name == nameof(_extractor.SearchSchemasByNameAsync):
                     {
                         var keyword = FunctionCallingHelper.GetParameterValue<string>(function, "keyword");
-                        SetProgressContent($"Let me check the database schema names with the keyword `{keyword}`", null, false, null);
+                        SetProgressMessage($"Searching for schemas with keyword `{keyword}`...");
                         var schemaNames = await _extractor.SearchSchemasByNameAsync(keyword);
                         var schemaNamesInMarkdown = string.Join(", ", schemaNames.Select(x => $"`{x}`"));
-                        SetProgressContent($"I found these schemas: {schemaNamesInMarkdown}", null, false, null);
+                        SetProgressMessage($"Found {schemaNames.Count} schemas with keyword `{keyword}`:\n\n{schemaNamesInMarkdown}");
                         return CreateResponse(nameof(_extractor.SearchSchemasByNameAsync), schemaNamesInMarkdown);
                     }
                 case var name when name == nameof(_extractor.SearchTablesByNameAsync):
                     {
                         var schema = FunctionCallingHelper.GetParameterValue<string>(function, "schema");
                         var keyword = FunctionCallingHelper.GetParameterValue<string>(function, "keyword");
-                        SetProgressContent($"Let me check the database tables in the schema `{schema}` with the keyword `{keyword}`", null, false, null);
+                        SetProgressMessage($"Searching for tables in schema `{schema}` with keyword `{keyword}`...");
                         var tableNames = await _extractor.SearchTablesByNameAsync(schema, keyword);
                         var tableNamesInMarkdown = string.Join(", ", tableNames.Select(x => $"`{x}`"));
-                        SetProgressContent($"I found these tables: {tableNamesInMarkdown}", null, false, null);
+                        SetProgressMessage($"Found {tableNames.Count} tables in schema `{schema}` with keyword `{keyword}`:\n\n{tableNamesInMarkdown}");
                         return CreateResponse(nameof(_extractor.SearchTablesByNameAsync), tableNamesInMarkdown);
                     }
                 case var name when name == nameof(_extractor.GetUserPermissionsAsync):
                     {
+                        SetProgressMessage("Retrieving user permissions...");
                         var permissions = await _extractor.GetUserPermissionsAsync();
                         var permissionsInMarkdown = string.Join(", ", permissions.Select(x => $"`{x}`"));
-                        SetProgressContent($"Found these permissions: {permissionsInMarkdown}", null, false, null);
+                        SetProgressMessage($"Found {permissions.Count} permissions:\n\n{permissionsInMarkdown}");
                         return CreateResponse(nameof(_extractor.GetUserPermissionsAsync), permissionsInMarkdown);
                     }
                 case "RequestForActionPlan":
                     {
+                        SetProgressMessage("Analyzing the situation and creating an action plan...");
                         var actionPlanRequest = new ApiRequestBuilder()
                             .WithSystemInstruction(_globalInstruction)
                             .DisableAllSafetySettings()
@@ -455,34 +475,48 @@ When calling, provide a very specific query detailing the information needed and
                             .WithPrompt("I have some blocking points here and need you to make an action plan to overcome. Now think deeply step-by-step about the current situation, then provide a clear and detailed action plan.")
                             .Build();
 
-                        var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, ModelVersion.Gemini_20_Flash);
-                        SetMessage(actionPlanResponse.Content, false);
+                        var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, Cache.ReasoningModelAlias);
+                        SetProgressMessage(actionPlanResponse.Content);
                         return CreateResponse("RequestForActionPlan", actionPlanResponse.Content);
                     }
                 case "RequestForInternetSearch":
                     {
                         var query = FunctionCallingHelper.GetParameterValue<string>(function, "query");
+                        SetProgressMessage($"Let me perform an in-depth internet search following this description:\n\n{query}");
                         var searchRequest = new ApiRequestBuilder()
                             .WithSystemInstruction(_globalInstruction)
                             .EnableGrounding()
                             .DisableAllSafetySettings()
-                            .WithPrompt($"Now do an **in-depth internet research**, then provide a detailed reported in markdown format. The search result MUST satify the below description:\n\n{query}")
+                            .WithPrompt($"Now perform an **in-depth internet research**, then provide a detailed reported in markdown format. The search result MUST satify the below description:\n\n{query}")
                             .Build();
                         var generator = new Generator(Cache.ApiKey);
                         var searchResponse = await generator.GenerateContentAsync(searchRequest, ModelVersion.Gemini_20_Flash);
-                        SetProgressContent(searchResponse.Content, null, false, null);
+                        SetProgressMessage(searchResponse.Content);
                         return CreateResponse("RequestForInternetSearch", searchResponse.Content);
                     }
                 case "ChangeTheConversationLanguage":
                     {
                         var language = FunctionCallingHelper.GetParameterValue<string>(function, "language");
                         _globalInstruction = _globalInstruction.Replace("{Language}", language);
-                        SetMessage($"From now on, AskDb will talk with you using {language}.", false);
                         return CreateResponse("ChangeTheConversationLanguage", $"From now on, the agent **must use {language}** for the conversation (except for the tool calling).");
                     }
                 default:
                     return null;
             }
+        }
+
+        private void CopySqlButton_Click(object sender, RoutedEventArgs e)
+        {
+            var context = (sender as Button)?.DataContext as ProgressContent;
+
+            if (context == null || string.IsNullOrEmpty(context.SqlCommand))
+            {
+                return;
+            }
+
+            var package = new DataPackage();
+            package.SetText(context.SqlCommand);
+            Clipboard.SetContent(package);
         }
     }
 }

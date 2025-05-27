@@ -14,11 +14,13 @@ namespace AskDB.App
     {
         public static IHost Host { get; private set; }
         public static Window Window { get; private set; }
+        public static AppDbContext LocalDb { get; private set; }
 
         public App()
         {
             this.InitializeComponent();
             Host = CreateHostBuilder();
+            LocalDb = Host.Services.GetService<AppDbContext>();
         }
 
         protected override async void OnLaunched(LaunchActivatedEventArgs args)
@@ -29,9 +31,9 @@ namespace AskDB.App
             Window.Activate();
         }
 
-        public static T GetService<T>() where T : class
+        public static AppDbContext GetAppDbContextService()
         {
-            return Host.Services.GetService<T>() ?? throw new InvalidOperationException($"Service {typeof(T)} not found.");
+            return Host.Services.GetService<AppDbContext>() ?? throw new InvalidOperationException("Service AppDbContext not found.");
         }
 
         private static IHost CreateHostBuilder()
@@ -47,8 +49,6 @@ namespace AskDB.App
 
         private static async Task InitializeAsync()
         {
-            var db = GetService<AppDbContext>();
-
             if (!File.Exists(AppDbContext.DbPath))
             {
                 var directory = Path.GetDirectoryName(AppDbContext.DbPath);
@@ -56,12 +56,12 @@ namespace AskDB.App
                 {
                     Directory.CreateDirectory(directory);
                 }
-
-                await db.Database.EnsureCreatedAsync().ConfigureAwait(false);
             }
 
-            Cache.ApiKey = await db.GetApiKeyAsync().ConfigureAwait(false);
-            Cache.HasUserEverConnectedToDatabase = await db.IsDatabaseCredentialOrConnectionStringExistsAsync();
+            await LocalDb.Database.EnsureCreatedAsync().ConfigureAwait(false);
+
+            Cache.ApiKey = await LocalDb.GetApiKeyAsync().ConfigureAwait(false);
+            Cache.HasUserEverConnectedToDatabase = await LocalDb.IsDatabaseCredentialOrConnectionStringExistsAsync();
         }
     }
 }

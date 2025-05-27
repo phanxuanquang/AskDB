@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:AskDB.App.Pages"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:app="using:AskDB.App" xmlns:viewmodels="using:AskDB.App.ViewModels" xmlns:view_models="using:AskDB.App.ViewModels" xmlns:models="using:AskDB.Database.Models" xmlns:view_models1="using:AskDB.App.View_Models"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:app="using:AskDB.App" xmlns:viewmodels="using:AskDB.App.View_Models" xmlns:view_models="using:AskDB.App.View_Models" xmlns:models="using:AskDB.Database.Models" xmlns:view_models1="using:AskDB.App.View_Models"
     mc:Ignorable="d">
 
     <Grid MaxWidth="1000">
@@ -37,7 +37,7 @@
                                                 <FontIcon Glyph="&#xE774;" FontSize="12" VerticalAlignment="Center"/>
                                                 <TextBlock Text="{x:Bind Host}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center"/>
                                             </StackPanel>
-                                            <FontIcon Grid.Column="1" Glyph="&#xE74C;"/>
+                                            <FontIcon Grid.Column="1" Glyph="&#xE8A7;"/>
                                         </Grid>
                                         <TextBlock Text="{x:Bind Database}" Style="{StaticResource SubtitleTextBlockStyle}" FontWeight="SemiBold"/>
                                         <StackPanel Padding="8"/>
@@ -73,7 +73,7 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="{x:Bind Name}" Style="{StaticResource SubtitleTextBlockStyle}" FontWeight="SemiBold"/>
-                                            <FontIcon Grid.Column="1" Glyph="&#xE74C;" Opacity="0.5" />
+                                            <FontIcon Grid.Column="1" Glyph="&#xE8A7;" Opacity="0.5" />
                                         </Grid>
                                         <StackPanel Padding="8"/>
                                         <StackPanel Spacing="6" Orientation="Horizontal">

@@ -1,7 +1,7 @@
 ﻿using Microsoft.UI.Xaml;
 using System.Data;
 
-namespace AskDB.App.ViewModels
+namespace AskDB.App.View_Models
 {
     public class ProgressContent
     {

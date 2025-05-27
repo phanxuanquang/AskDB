@@ -16,7 +16,7 @@ namespace AskDB.App
         public GeminiConnection()
         {
             this.InitializeComponent();
-            _db = App.GetService<AppDbContext>();
+            _db = App.LocalDb;
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -31,7 +31,7 @@ namespace AskDB.App
 
         private void SetLoading(bool isLoading)
         {
-            LoadingOverlay.SetLoading("Validating API Key...", isLoading);
+            LoadingOverlay.SetLoading("Connecting", isLoading);
             LoadingOverlay.Visibility = VisibilityHelper.SetVisible(isLoading);
             MainPanel.Visibility = VisibilityHelper.SetVisible(!isLoading);
         }

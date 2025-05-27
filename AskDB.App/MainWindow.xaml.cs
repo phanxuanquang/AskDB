@@ -31,7 +31,6 @@ namespace AskDB.App
             {
                 MainFrame.Navigate(typeof(DatabaseConnection), null, new DrillInNavigationTransitionInfo());
             }
-
         }
 
         private async void GithubProfileButton_Click(object sender, RoutedEventArgs e)

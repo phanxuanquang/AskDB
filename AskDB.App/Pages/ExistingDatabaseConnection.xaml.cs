@@ -1,6 +1,5 @@
 using AskDB.App.Helpers;
 using AskDB.App.View_Models;
-using AskDB.App.ViewModels;
 using AskDB.Commons.Enums;
 using AskDB.Commons.Extensions;
 using AskDB.Database;
@@ -26,8 +25,7 @@ namespace AskDB.App.Pages
         public ExistingDatabaseConnection()
         {
             InitializeComponent();
-            _db = App.GetService<AppDbContext>();
-
+            _db = App.LocalDb;
         }
 
         private void SetLoading(bool isLoading)
