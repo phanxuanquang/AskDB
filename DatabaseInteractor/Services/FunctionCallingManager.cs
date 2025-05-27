@@ -11,6 +11,7 @@ namespace DatabaseInteractor.Services
 This function is used **EXCLUSIVELY** for executing SQL queries or SQL cripts that are intended to retrieve data or inspect the database state WITHOUT making any changes. 
 This primarily includes SELECT statements.
 **DO NOT** use this function for `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `ALTER`, `DROP`, `TRUNCATE`, or any other SQL command that modifies data or schema. For such operations, use `ExecuteNonQueryAsyncFunction` function instead.
+Prefer to use `GetTableSchemaInfoAsync` function to check and understand the structure of the relevant tables before executing if you are unsure about the query or its impact.
 The result will be a dataset (e.g., a list of rows and columns).",
             Parameters = new Parameters
             {
@@ -42,7 +43,9 @@ This includes, but is not limited to:
 Any other DML (Data Manipulation Language) or DDL (Data Definition Language) command that changes the database state but does not primarily return a data result set.
 This function typically returns the number of rows affected, not a dataset.
 CRITICAL SAFETY NOTE: Always ensure any data modification (INSERT, UPDATE, DELETE) or destructive (DROP, TRUNCATE) operations executed via this function have been explicitly planned and confirmed by the user according to the Core Problem-Solving & Confidence Protocol.
-**DO NOT** use this function for SELECT statements or other read-only queries that are expected to return data; use ExecuteQueryAsyncFunction for those.",
+Prefer to use `GetTableSchemaInfoAsync` function to check and understand the structure of the relevant tables before executing if you are unsure about the query or its impact.
+Prefer to use `ExecuteQueryAsyncFunction` function to check the data of the impacted tables before executing if you are unsure about the query or its impact.
+**DO NOT** use this function for SELECT statements or other read-only queries that are expected to return data; use `ExecuteQueryAsyncFunction` function for those.",
             Parameters = new Parameters
             {
                 Properties = new
