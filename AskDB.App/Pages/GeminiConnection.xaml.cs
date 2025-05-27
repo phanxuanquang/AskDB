@@ -3,6 +3,7 @@ using AskDB.Database;
 using GeminiDotNET;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Navigation;
 using System;
 using Page = Microsoft.UI.Xaml.Controls.Page;
 
@@ -16,9 +17,16 @@ namespace AskDB.App
         {
             this.InitializeComponent();
             _db = App.GetService<AppDbContext>();
+        }
+
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            base.OnNavigatedTo(e);
 
             SetLoading(false);
             SetError(null);
+
+            _geminiApiKey = Cache.ApiKey;
         }
 
         private void SetLoading(bool isLoading)
@@ -39,9 +47,16 @@ namespace AskDB.App
             try
             {
                 SetLoading(true);
+                SetError(null);
+
                 if (string.IsNullOrEmpty(_geminiApiKey) || string.IsNullOrWhiteSpace(_geminiApiKey))
                 {
                     throw new InvalidOperationException("Please enter your Gemini API key");
+                }
+
+                if (Cache.ApiKey.Equals(_geminiApiKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("You are already connected to Gemini with this API key.");
                 }
 
                 try

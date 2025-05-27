@@ -6,7 +6,9 @@
     xmlns:local="using:AskDB.App.Pages"
     xmlns:controls="using:AskDB.App"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls" xmlns:view_models="using:AskDB.App.ViewModels"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls" 
+    xmlns:view_models="using:AskDB.App.ViewModels" xmlns:animations="using:CommunityToolkit.WinUI.Animations"
     mc:Ignorable="d">
 
     <SplitView IsPaneOpen="False" x:Name="MainView" OpenPaneLength="640" PanePlacement="Right" DisplayMode="Inline" PaneBackground="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
@@ -51,7 +53,7 @@
                                         GridLinesVisibility="All"
                                         AutoGenerateColumns="False" 
                                         VerticalScrollBarVisibility="Auto"
-                                        ClipboardCopyMode="IncludeHeader"
+                                        ClipboardCopyMode="ExcludeHeader"
                                         BorderThickness="1"
                                         BorderBrush="{ThemeResource ControlElevationBorderBrush}"
                                         RowBackground="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
@@ -72,9 +74,12 @@
                 </ListView>
             </Grid>
         </SplitView.Pane>
-
         <Grid>
             <Grid RowSpacing="8" Margin="0,0,8,0" x:Name="MessageSpace" Padding="12">
+                <Grid.OpacityTransition>
+                    <ScalarTransition />
+                </Grid.OpacityTransition>
+
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
@@ -120,6 +125,9 @@
                 </Grid>
             </Grid>
             <Grid x:Name="LoadingOverlay" Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}" CornerRadius="{StaticResource OverlayCornerRadius}" >
+                <Grid.OpacityTransition>
+                    <ScalarTransition />
+                </Grid.OpacityTransition>
                 <controls:LoadingControl x:Name="LoadingIndicator" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Grid>
         </Grid>

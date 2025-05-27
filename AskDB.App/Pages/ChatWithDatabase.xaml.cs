@@ -327,6 +327,8 @@ When calling, provide a very specific query detailing the information needed and
 
             while (functionCalls.Count > 0)
             {
+                await Task.Delay(2000);
+
                 try
                 {
                     var functionResponses = new List<FunctionResponse>();
@@ -375,7 +377,6 @@ When calling, provide a very specific query detailing the information needed and
                     else
                     {
                         SetProgressContent(modelResponseForFunction.Content, null, false, null);
-                        await Task.Delay(1000);
                     }
                 }
                 catch (Exception ex)

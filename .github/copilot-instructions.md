@@ -1,0 +1,84 @@
+- Apply best practices for C# 11 and .NET:
+  - Use `init` properties for immutable objects.
+  - Use `with` expressions for cloning records.
+  - Use `default` literal for default values.
+  - Use `file-scoped namespaces` for cleaner code.
+  - Use `global using` directives to reduce clutter.
+  - Use `target-typed new` expressions for concise object creation.
+  - Use `static using` directives for static members.
+  - Use `nameof` operator for member names instead of hardcoding strings.
+  - Use `null-coalescing assignment` (`??=`) for default values.
+  - Use `null-conditional operator` (`?.`) for safe navigation.
+  - Use `string interpolation` instead of `String.Format()`.
+  - Use `pattern matching` for type checks and conditional logic.
+  - Use `is not null` instead of `!= null`.
+  - Use `is` pattern matching instead of `switch` statements for type checks.
+  - Use `switch` expressions for concise conditional logic.
+  - Avoid using `var` for types that are not obvious.
+- Exception handling:
+  - Use specific exceptions instead of general ones.
+  - Avoid catching `Exception` unless necessary.
+  - Use `try-catch-finally` blocks for resource cleanup.
+  - Use `throw` to rethrow exceptions without losing the stack trace.
+  - Use try-catch blocks for all external/resource-intensive operations.
+- Optimize asynchronous code:
+  - Use `async` and `await` for asynchronous programming.
+  - Use `ConfigureAwait(false)` to avoid deadlocks in UI applications.
+  - Use `ValueTask<T>` for performance-sensitive scenarios.
+  - Use `IAsyncEnumerable<T>` for streaming data.
+  - Use `Task.WhenAll` for concurrent I/O-bound operations.
+  - Prefer async/await for I/O-bound operations. Avoid blocking calls like `.Result` or `.Wait()`.
+  - Use `ConfigureAwait(false)` when async calls do not need to resume on the same context.
+- Optimize memory cost:
+  - Use `using` declarations for `IDisposable` objects to ensure proper disposal.
+  - Use `readonly` for fields that should not be modified.
+  - Use `readonly struct` for small immutable data structures.
+  - Use `record` for immutable data types with value semantics.
+  - Use `ref struct` for stack-only data structures.
+  - Use `Span<T>` and `Memory<T>` for high-performance memory operations.
+  - Use `ArrayPool<T>` for large arrays to reduce allocations.
+  - Use `StringBuilder` for string concatenation in loops.
+  - Use `String.IsNullOrEmpty()` and `String.IsNullOrWhiteSpace()` for string checks.
+- Optimize performance:
+  - Use `Parallel.ForEach` for CPU-bound operations, but avoid it for I/O-bound operations. 
+  - Use `Task.Run` for CPU-bound operations to offload work to the thread pool.
+  - Use `Task.WhenAll` for concurrent I/O-bound operations, but avoid it for CPU-bound operations. It should be preferred when the tasks are independent and can be executed concurrently.
+  - Use `ValueTask<T>` for performance-sensitive scenarios.
+  - Use `Memory<T>` and `Span<T>` for high-performance memory operations.
+  - Use `ArrayPool<T>` for large arrays to reduce allocations.
+- Use Entity Framework Core efficiently:
+  - Apply `AsNoTracking()` for read-only queries.
+  - Use projection (`Select`) to limit data transfer.
+  - Prefer `AsSplitQuery()` to avoid Cartesian explosion.
+  - Avoid `Include()` when not necessary.
+- Optimize LINQ:
+  - Avoid `ToList()` method unless enumeration is needed.
+  - Prefer `IEnumerable` for deferred execution.
+  - Use `IAsyncEnumerable<T>` for streaming data.
+  - Use `IEnumerable<T>` for deferred execution and lazy evaluation.
+  - Use `IQueryable<T>` for LINQ queries that can be translated to SQL. 
+  - Use `Select` to convert to a specific type.
+  - Use `FirstOrDefault()` instead of `First()` when the result may be empty.
+  - Avoid multiple enumerations and redundant operations.
+- Use proper data structures:
+  - Use `Dictionary<TKey, TValue>` and `HashSet<T>` for **fast** lookups.
+  - Use `Span<T>`, `Memory<T>`,` ArrayPool<T>` for high-performance memory scenarios.
+  - Prefer `struct`, `readonly struct`, and `record struct` for small immutable data.
+  - Use `ValueTuple` instead of creating temporary classes.
+- Avoid anti-patterns:
+  - Avoid `async void` (except for event handlers).
+  - Avoid service locator.
+  - Avoid tight coupling and circular dependencies.
+- Apply **DRY** (Don't Repeat Yourself) and **KISS** (Keep It Simple, Stupid) principles effectively:
+  - Avoid code duplication by using helper methods or classes.
+  - Keep methods short and focused on a single task.
+  - Use meaningful names for variables, methods, and classes.
+  - Use comments to explain complex logic, but avoid redundant comments.
+  - Use extension methods for reusable logic.
+  - Use base classes or interfaces for shared behavior.
+  - Use helper classes for common functionality.
+  - Use partial classes for large classes to improve readability.
+- Enable nullable reference types and annotate nullability explicitly.
+- Validate all inputs using FluentValidation or manual guards.
+- Apply Dependency Injection consistently. Avoid static/global state.
+- Sanitize inputs to prevent common security issues.

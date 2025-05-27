@@ -12,7 +12,7 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid x:Name="RootGrid" RequestedTheme="Dark">
+    <Grid x:Name="RootGrid" RequestedTheme="Light">
         <Grid.BackgroundTransition>
             <BrushTransition />
         </Grid.BackgroundTransition>
@@ -33,9 +33,9 @@
                     <FontIcon Glyph="&#xE793;" />
                 </AppBarToggleButton.Icon>
             </AppBarToggleButton>
-            <AppBarButton LabelPosition="Collapsed" ToolTipService.ToolTip="My profile">
+            <AppBarButton LabelPosition="Collapsed" ToolTipService.ToolTip="Update my API key" Click="UpdateApiKeyButton_Click">
                 <AppBarButton.Icon>
-                    <FontIcon Glyph="&#xEF58;"/>
+                    <FontIcon Glyph="&#xE705;"/>
                 </AppBarButton.Icon>
             </AppBarButton>
             <CommandBar.SecondaryCommands>

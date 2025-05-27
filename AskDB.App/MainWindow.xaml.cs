@@ -52,5 +52,13 @@ namespace AskDB.App
                 MainFrame.GoBack();
             }
         }
+
+        private void UpdateApiKeyButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (MainFrame.SourcePageType != typeof(GeminiConnection))
+            {
+                MainFrame.Navigate(typeof(GeminiConnection), null, new DrillInNavigationTransitionInfo());
+            }
+        }
     }
 }
