@@ -309,8 +309,8 @@ When calling, provide a very specific query detailing the information needed and
             {
                 Message = null,
                 SqlCommand = sqlCommand,
-                ActionButtonVisibility = VisibilityHelper.SetVisible(true),
-                Data = dataTable
+                ActionButtonVisibility = VisibilityHelper.SetVisible(dataTable.Rows.Count > 0),
+                Data = dataTable.Rows.Count > 0 ? dataTable : null
             };
 
             ProgressContents.Add(progressContent);
@@ -368,7 +368,7 @@ When calling, provide a very specific query detailing the information needed and
                                 Name = function.Name,
                                 Response = new Response
                                 {
-                                    Output = $"{output}\n\nAction plan or clarification is required.",
+                                    Output = $"{output}\n\nAction plan or clarification or internet search is required.",
                                 }
                             });
 
@@ -417,6 +417,7 @@ When calling, provide a very specific query detailing the information needed and
                 case var name when name == FunctionCallingManager.ExecuteQueryAsyncFunction.Name:
                     {
                         var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
+                        SetProgressMessage($"Let me execute this query to check the data:\n\n```sql\n{sqlQuery}\n```");
                         var dataTable = await _extractor.ExecuteQueryAsync(sqlQuery);
                         SetProgressDataTable(sqlQuery, dataTable);
                         return CreateResponse(FunctionCallingManager.ExecuteQueryAsyncFunction.Name, dataTable.ToMarkdown());
