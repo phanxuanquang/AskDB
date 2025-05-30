@@ -506,7 +506,7 @@ When calling, provide a very specific query detailing the information needed and
             }
         }
 
-        private void CopySqlButton_Click(object sender, RoutedEventArgs e)
+        private async void CopySqlButton_Click(object sender, RoutedEventArgs e)
         {
             var context = (sender as Button)?.DataContext as ProgressContent;
 
@@ -518,6 +518,24 @@ When calling, provide a very specific query detailing the information needed and
             var package = new DataPackage();
             package.SetText(context.SqlCommand);
             Clipboard.SetContent(package);
+
+            await DialogHelper.ShowSuccessAsync("The SQL command has been copied to clipboard.");
+        }
+
+        private async void CopyMessageButton_Click(object sender, RoutedEventArgs e)
+        {
+            var context = (sender as Button)?.DataContext as ChatMessage;
+
+            if (context == null || string.IsNullOrEmpty(context.Content))
+            {
+                return;
+            }
+
+            var package = new DataPackage();
+            package.SetText(context.Content);
+            Clipboard.SetContent(package);
+
+            await DialogHelper.ShowSuccessAsync("The message has been copied to clipboard.");
         }
     }
 }

@@ -36,7 +36,7 @@
                                     CodeBackground="{ThemeResource SolidBackgroundFillColorBaseAltBrush}"
                                     QuoteBackground="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
                                     QuotePadding="6"/>
-                                <StackPanel Spacing="8" Padding="12" Visibility="{x:Bind ActionButtonVisibility}" Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}" CornerRadius="{StaticResource ControlCornerRadius}">
+                                <StackPanel Spacing="8" Visibility="{x:Bind ActionButtonVisibility}" Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}" CornerRadius="{StaticResource ControlCornerRadius}">
                                     <controls1:DataGrid 
                                         Loaded="DataGrid_Loaded"
                                         IsReadOnly="True" 
@@ -53,7 +53,7 @@
                                         RowBackground="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
                                         AlternatingRowBackground="{ThemeResource ControlAltFillColorTertiaryBrush}"
                                         MaxHeight="500"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" Padding="8">
                                         <Button Padding="6" ToolTipService.ToolTip="Copy the SQL command" ToolTipService.Placement="Left" Click="CopySqlButton_Click">
                                             <FontIcon Glyph="&#xE8C8;" FontSize="14"/>
                                         </Button>
@@ -85,20 +85,23 @@
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="view_models:ChatMessage">
                             <StackPanel
-                    Margin="0,12"
-                    Padding="16,12"
-                    Spacing="12"
-                    CornerRadius="{StaticResource OverlayCornerRadius}"
-                    Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
-                    HorizontalAlignment="{x:Bind Alignment}">
+                                    Margin="0,12"
+                                    Padding="16,12"
+                                    Spacing="8"
+                                    CornerRadius="{StaticResource OverlayCornerRadius}"
+                                    Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
+                                    HorizontalAlignment="{x:Bind Alignment}">
                                 <controls1:MarkdownTextBlock 
-                        TextWrapping="WrapWholeWords" 
-                        Text="{x:Bind Content}" 
-                        Background="Transparent" 
-                        CodePadding="12"
-                        InlineCodeBackground="{ThemeResource SystemFillColorCautionBackgroundBrush}"
-                        QuoteBackground="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
-                        QuotePadding="6"/>
+                                    TextWrapping="WrapWholeWords" 
+                                    Text="{x:Bind Content}" 
+                                    Background="Transparent" 
+                                    CodePadding="12"
+                                    InlineCodeBackground="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                                    QuoteBackground="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
+                                    QuotePadding="6"/>
+                                <Button Padding="6" ToolTipService.ToolTip="Copy" HorizontalAlignment="{x:Bind Alignment}" Click="CopyMessageButton_Click">
+                                    <FontIcon Glyph="&#xE8C8;" FontSize="14"/>
+                                </Button>
                             </StackPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
