@@ -46,7 +46,7 @@ namespace DatabaseInteractor.Services.Extractors
             throw new NotImplementedException();
         }
 
-        public override Task<DataTable> GetTableSchemaInfoAsync(string schema, string table)
+        public override Task<DataTable> GetTableStructureDetailAsync(string schema, string table)
         {
             throw new NotImplementedException();
         }

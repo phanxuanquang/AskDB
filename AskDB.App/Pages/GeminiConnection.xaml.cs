@@ -54,7 +54,7 @@ namespace AskDB.App
                     throw new InvalidOperationException("Please enter your Gemini API key");
                 }
 
-                if (Cache.ApiKey.Equals(_geminiApiKey, StringComparison.OrdinalIgnoreCase))
+                if (Cache.ApiKey == _geminiApiKey)
                 {
                     throw new InvalidOperationException("You are already connected to Gemini with this API key.");
                 }
