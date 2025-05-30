@@ -99,7 +99,7 @@
                                     InlineCodeBackground="{ThemeResource SystemFillColorCautionBackgroundBrush}"
                                     QuoteBackground="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
                                     QuotePadding="6"/>
-                                <Button Padding="6" ToolTipService.ToolTip="Copy" HorizontalAlignment="{x:Bind Alignment}" Click="CopyMessageButton_Click">
+                                <Button Padding="6" ToolTipService.ToolTip="Copy" HorizontalAlignment="{x:Bind Alignment}">
                                     <FontIcon Glyph="&#xE8C8;" FontSize="14"/>
                                 </Button>
                             </StackPanel>
