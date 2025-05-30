@@ -4,7 +4,7 @@ using AskDB.Commons.Enums;
 using AskDB.Commons.Helpers;
 using AskDB.Database.Extensions;
 using CommunityToolkit.WinUI.UI.Controls;
-using DatabaseInteractor.FunctionCallings.Attributes;
+using DatabaseInteractor.Function_Callings.Attributes;
 using DatabaseInteractor.Services;
 using DatabaseInteractor.Services.Extractors;
 using GeminiDotNET;
@@ -69,136 +69,7 @@ namespace AskDB.App.Pages
 
             _generator = new Generator(Cache.ApiKey).EnableChatHistory(50);
 
-            FunctionCallingHelper.RegisterFunction(_extractor.ExecuteQueryAsync, new Parameters
-            {
-                Properties = new
-                {
-                    sqlQuery = new
-                    {
-                        type = "string",
-                        description = "The SQL query to execute. It should be a valid SQL command that returns data, such as a `SELECT` statement."
-                    }
-                },
-                Required = ["sqlQuery"]
-            });
-
-            FunctionCallingHelper.RegisterFunction(_extractor.ExecuteNonQueryAsync, new Parameters
-            {
-                Properties = new
-                {
-                    sqlQuery = new
-                    {
-                        type = "string",
-                        description = "The complete, syntactically correct SQL command or SQL scripts (e.g., INSERT, UPDATE, DELETE, CREATE, ALTER) to be executed. Ensure the query is specific to the user-confirmed action plan."
-                    }
-                },
-                Required = ["sqlQuery"]
-            });
-            FunctionCallingHelper.RegisterFunction(_extractor.GetUserPermissionsAsync);
-            FunctionCallingHelper.RegisterFunction(_extractor.SearchSchemasByNameAsync, new Parameters
-            {
-                Properties = new
-                {
-                    keyword = new
-                    {
-                        type = "string",
-                        description = "A keyword to filter the schema names. For example, `prod` might return `Production_schema`, `prod_data`. If an empty string is provided, all accessible schema names are returned. The search is typically case-insensitive and looks for the keyword within the schema names."
-                    }
-                },
-                Required = ["keyword"]
-            });
-            FunctionCallingHelper.RegisterFunction(_extractor.SearchTablesByNameAsync, new Parameters
-            {
-                Properties = new
-                {
-                    schema = new
-                    {
-                        type = "string",
-                        description = "The name of the schema containing the table. This is often case-sensitive depending on the database. If not explicitly provided by the user or clear from context, attempt to use the database's default schema (e.g., 'dbo' for SQL Server, 'public' for PostgreSQL). If still uncertain, clarify with the user or use 'SearchSchemasByNameAsync' to find possible schemas."
-                    },
-                    keyword = new
-                    {
-                        type = "string",
-                        description = "A keyword to filter the table names. For example, `user` might return `Users`, `UserAccounts`. If an empty string is provided, all accessible table names in the specified schema are returned. The search is typically case-insensitive and looks for the keyword within the table names."
-                    }
-                },
-                Required = ["schema"]
-            });
-            FunctionCallingHelper.RegisterFunction(_extractor.GetTableStructureDetailAsync, new Parameters
-            {
-                Properties = new
-                {
-                    schema = new
-                    {
-                        type = "string",
-                        description = "The name of the schema containing the table. This is often case-sensitive depending on the database. If not explicitly provided by the user or clear from context, attempt to use the database's default schema (e.g., 'dbo' for SQL Server, 'public' for PostgreSQL). If still uncertain, clarify with the user or use 'SearchSchemasByNameAsync' to find possible schemas."
-                    },
-                    table = new
-                    {
-                        type = "string",
-                        description = "The name of the table for which to retrieve detailed schema information. This is often case-sensitive depending on the database."
-                    }
-                },
-                Required = ["schema", "table"]
-            });
-            FunctionCallingHelper.RegisterFunction(RequestForActionPlanAsync);
-            FunctionCallingHelper.RegisterFunction(RequestForInternetSearchAsync, new Parameters
-            {
-                Properties = new
-                {
-                    requirement = new
-                    {
-                        type = "string",
-                        description = @"A highly specific and detailed natural language requirement for the internet search in markdown format. 
-It **MUST** include at least: 
-
-1. A brief summarization of the current user request or problem. 
-2. The specific information you are trying to find (documentation, examples, troubleshooting steps, etc.). 
-3. How this information will help you address the user's database-related task.
-4. Any specific sources or types of information you want to prioritize (e.g., official documentation, community forums, etc.).
-5. Any other relevant context that can help refine the search results.
-6. The search query should be clear and concise, avoiding vague terms or overly broad requests.   
-7. Any specific formats you prefer for the results (e.g., list, table, etc.)."
-                    }
-                },
-                Required = ["requirement"]
-            });
-            FunctionCallingHelper.RegisterFunction(ChangeTheConversationLanguage, new Parameters
-            {
-                Properties = new
-                {
-                    language = new
-                    {
-                        type = "string",
-                        description = "The language to change the conversation to. This should be a valid language name (e.g., 'English', 'Spanish', 'French')."
-                    }
-                },
-                Required = ["language"]
-            });
-        }
-        private void DataGrid_Loaded(object sender, RoutedEventArgs e)
-        {
-            var dataGrid = sender as DataGrid;
-            var dataTable = (dataGrid?.DataContext as ProgressContent)?.Data;
-
-            if (dataTable == null)
-            {
-                return;
-            }
-
-            dataGrid.Columns.Clear();
-            for (int i = 0; i < dataTable.Columns.Count; i++)
-            {
-                dataGrid.Columns.Add(new DataGridTextColumn()
-                {
-                    Header = dataTable.Columns[i].ColumnName,
-                    Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
-                });
-            }
-
-            var collectionObjects = new ObservableCollection<object>(dataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray));
-
-            dataGrid.ItemsSource = collectionObjects;
+            InitFunctionCalling();
         }
         private async void ExportButton_Click(object sender, RoutedEventArgs e)
         {
@@ -287,7 +158,6 @@ It **MUST** include at least:
             };
             Messages.Add(chatMessage);
         }
-
         private void SetProgressMessage(string message)
         {
             var progressContent = new ProgressContent
@@ -295,25 +165,147 @@ It **MUST** include at least:
                 Message = message,
                 SqlCommand = null,
                 ActionButtonVisibility = VisibilityHelper.SetVisible(false),
-                Data = null,
             };
 
             ProgressContents.Add(progressContent);
         }
-
         private void SetProgressDataTable(string sqlCommand, DataTable dataTable)
         {
+            if (dataTable == null || dataTable.Rows.Count == 0)
+            {
+                return;
+            }
+
+            var dataGrid = new DataGrid();
+            for (int i = 0; i < dataTable.Columns.Count; i++)
+            {
+                dataGrid.Columns.Add(new DataGridTextColumn()
+                {
+                    Header = dataTable.Columns[i].ColumnName,
+                    Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
+                });
+            }
+
             var progressContent = new ProgressContent
             {
                 Message = null,
                 SqlCommand = sqlCommand,
                 ActionButtonVisibility = VisibilityHelper.SetVisible(dataTable.Rows.Count > 0),
-                Data = dataTable.Rows.Count > 0 ? dataTable : null
+                QueryResults = new ObservableCollection<object>(dataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray)),
             };
 
             ProgressContents.Add(progressContent);
         }
 
+        private void InitFunctionCalling()
+        {
+            FunctionCallingHelper.RegisterFunction(RequestForActionPlanAsync);
+            FunctionCallingHelper.RegisterFunction(RequestForInternetSearchAsync, new Parameters
+            {
+                Properties = new
+                {
+                    requirement = new
+                    {
+                        type = "string",
+                        description = @"A highly specific and detailed natural language requirement for the internet search in markdown format. 
+It **MUST** include at least: 
+
+1. A brief summarization of the current user request or problem. 
+2. The specific information you are trying to find (documentation, examples, troubleshooting steps, etc.). 
+3. How this information will help you address the user's database-related task.
+4. Any specific sources or types of information you want to prioritize (e.g., official documentation, community forums, etc.).
+5. Any other relevant context that can help refine the search results.
+6. The search query should be clear and concise, avoiding vague terms or overly broad requests.   
+7. Any specific formats you prefer for the results (e.g., list, table, etc.)."
+                    }
+                },
+                Required = ["requirement"]
+            });
+            FunctionCallingHelper.RegisterFunction(ChangeTheConversationLanguage, new Parameters
+            {
+                Properties = new
+                {
+                    language = new
+                    {
+                        type = "string",
+                        description = "The language to change the conversation to. This should be a valid language name (e.g., 'English', 'Spanish', 'French')."
+                    }
+                },
+                Required = ["language"]
+            });
+
+            FunctionCallingHelper.RegisterFunction(_extractor.ExecuteQueryAsync, new Parameters
+            {
+                Properties = new
+                {
+                    sqlQuery = new
+                    {
+                        type = "string",
+                        description = "The SQL query to execute. It should be a valid SQL command that returns data, such as a `SELECT` statement."
+                    }
+                },
+                Required = ["sqlQuery"]
+            });
+            FunctionCallingHelper.RegisterFunction(_extractor.ExecuteNonQueryAsync, new Parameters
+            {
+                Properties = new
+                {
+                    sqlQuery = new
+                    {
+                        type = "string",
+                        description = "The complete, syntactically correct SQL command or SQL scripts (e.g., INSERT, UPDATE, DELETE, CREATE, ALTER) to be executed. Ensure the query is specific to the user-confirmed action plan."
+                    }
+                },
+                Required = ["sqlQuery"]
+            });
+            FunctionCallingHelper.RegisterFunction(_extractor.GetUserPermissionsAsync);
+            FunctionCallingHelper.RegisterFunction(_extractor.SearchSchemasByNameAsync, new Parameters
+            {
+                Properties = new
+                {
+                    keyword = new
+                    {
+                        type = "string",
+                        description = "A keyword to filter the schema names. For example, `prod` might return `Production_schema`, `prod_data`. If an empty string is provided, all accessible schema names are returned. The search is typically case-insensitive and looks for the keyword within the schema names."
+                    }
+                },
+                Required = ["keyword"]
+            });
+            FunctionCallingHelper.RegisterFunction(_extractor.SearchTablesByNameAsync, new Parameters
+            {
+                Properties = new
+                {
+                    schema = new
+                    {
+                        type = "string",
+                        description = "The name of the schema containing the table. This is often case-sensitive depending on the database. If not explicitly provided by the user or clear from context, attempt to use the database's default schema (e.g., 'dbo' for SQL Server, 'public' for PostgreSQL). If still uncertain, clarify with the user or use 'SearchSchemasByNameAsync' to find possible schemas."
+                    },
+                    keyword = new
+                    {
+                        type = "string",
+                        description = "A keyword to filter the table names. For example, `user` might return `Users`, `UserAccounts`. If an empty string is provided, all accessible table names in the specified schema are returned. The search is typically case-insensitive and looks for the keyword within the table names."
+                    }
+                },
+                Required = ["schema"]
+            });
+            FunctionCallingHelper.RegisterFunction(_extractor.GetTableStructureDetailAsync, new Parameters
+            {
+                Properties = new
+                {
+                    schema = new
+                    {
+                        type = "string",
+                        description = "The name of the schema containing the table. This is often case-sensitive depending on the database. If not explicitly provided by the user or clear from context, attempt to use the database's default schema (e.g., 'dbo' for SQL Server, 'public' for PostgreSQL). If still uncertain, clarify with the user or use 'SearchSchemasByNameAsync' to find possible schemas."
+                    },
+                    table = new
+                    {
+                        type = "string",
+                        description = "The name of the table for which to retrieve detailed schema information. This is often case-sensitive depending on the database."
+                    }
+                },
+                Required = ["schema", "table"]
+            });
+        }
         #endregion
 
         private async Task HandleUserInputAsync(string userInput)
@@ -500,16 +492,15 @@ It **MUST** include at least:
             await DialogHelper.ShowSuccessAsync("SQL command has been copied to clipboard.");
         }
 
-
-        [Name("change_the_conversation_language")]
-        [Description("Change the conversation language for the agent. This will update the global instruction to reflect the new language setting.")]
+        [FunctionDeclaration("change_the_conversation_language", "Change the conversation language for the agent. This will update the global instruction to reflect the new language setting.")]
         private void ChangeTheConversationLanguage(string language)
         {
-            _globalInstruction = _globalInstruction.Replace("{Language}", language);
+            _globalInstruction = _globalInstruction
+                .Replace("{Language}", language)
+                .Replace("{DateTime_Now}", DateTime.Now.ToString("HH:mm:ss, mm.MM.yyyy"));
         }
 
-        [Name("request_for_action_plan")]
-        [Description(@"Request an action plan based on the current situation. This will analyze the current situation and generate a detailed action plan.
+        [FunctionDeclaration("request_for_action_plan", @"Request an action plan based on the current situation. This will analyze the current situation and generate a detailed action plan.
 Use this function when you encounter a situation where you are unsure how to proceed, have encountered an unexpected error from another tool that you cannot resolve, or believe the user's request requires a sequence of actions that needs higher-level strategic planning beyond simple SQL execution.
 This tool signals a need for collaborative problem-solving or guidance.
 
@@ -524,7 +515,7 @@ Specifically, use this when:
 - You need to perform a complex task that might involve multiple tool calls and conditional logic, and you require confirmation or a structured approach.")]
         private async Task<string> RequestForActionPlanAsync()
         {
-            var instruction = await FileHelper.ReadFileAsync("Instructions/ActionPlan.md");
+            var instruction = await FileHelper.ReadFileAsync("Instructions /ActionPlan.md");
 
             var actionPlanRequest = new ApiRequestBuilder()
                 .WithSystemInstruction(instruction.Replace("{Database_Type}", _extractor.DatabaseType.ToString()))
@@ -538,8 +529,7 @@ Specifically, use this when:
             return actionPlanResponse.Content;
         }
 
-        [Name("request_for_internet_search")]
-        [Description(@"Perform an in-depth internet search based on the provided query. Use this function ONLY when you need external information from the internet using Google Search engine to better understand or fulfill a user's database-related request.
+        [FunctionDeclaration("request_for_internet_search", @"Perform an in-depth internet search based on the provided query. Use this function ONLY when you need external information from the internet using Google Search engine to better understand or fulfill a user's database-related request.
 This is NOT for general web browsing.
 
 Situations for use include:
@@ -557,7 +547,10 @@ Situations for use include:
 - You might want to search for external insights or recent trends that could inform your query strategy.
 - You want to search for best practices for authoring complex SQL queries that can optimize execution time and resource consumption.
 
-**DO NOT** use this for information readily available through schema tools or simple SQL queries. Always prioritize internal knowledge and database introspection tools first. When calling, provide a very specific query detailing the information needed and the context.")]
+Important notes:
+- **DO NOT** use this for information readily available through schema tools or simple SQL queries.
+- Always prioritize internal knowledge and database introspection tools first.
+- When calling, provide a very specific query detailing the information needed and the context.")]
         private async Task<string> RequestForInternetSearchAsync(string requirement)
         {
             var searchRequest = new ApiRequestBuilder()

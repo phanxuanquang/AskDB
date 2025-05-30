@@ -1,5 +1,5 @@
 ﻿using AskDB.Commons.Enums;
-using DatabaseInteractor.FunctionCallings.Attributes;
+using DatabaseInteractor.Function_Callings.Attributes;
 using System.Data;
 
 namespace DatabaseInteractor.Services
@@ -9,16 +9,14 @@ namespace DatabaseInteractor.Services
         protected string ConnectionString = connectionString;
         public DatabaseType DatabaseType { get; protected set; }
 
-        [Name("execute_query")]
-        [Description(@"Execute a SQL query and return the result as a dataset (e.g., a list of rows and columns).
+        [FunctionDeclaration("execute_query", @"Execute a SQL query and return the result as a dataset (e.g., a list of rows and columns).
 Use this function **EXCLUSIVELY** for executing SQL queries or SQL cripts that are intended to retrieve data or inspect the database state **WITHOUT** making any changes. 
 This primarily includes SELECT statements.
 **DO NOT** use this function for `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `ALTER`, `DROP`, `TRUNCATE`, or any other SQL command that modifies data or schema.
 Prefer to use `get_table_structure` function to check and understand the structure of the relevant tables before executing if you are unsure about the query or its impact.")]
         public abstract Task<DataTable> ExecuteQueryAsync(string sqlQuery);
 
-        [Name("execute_non_query")]
-        [Description(@"Execute a SQL query that does not return any result (e.g., INSERT, UPDATE, DELETE).
+        [FunctionDeclaration("execute_non_query", @"Execute a SQL query that does not return any result (e.g., INSERT, UPDATE, DELETE).
 Use this function **EXCLUSIVELY** for executing SQL commands or SQL scripts that modify the database data or schema.
 
 This includes, but is not limited to:
@@ -37,8 +35,7 @@ This includes, but is not limited to:
 - **DO NOT** use this function for SELECT statements or other read-only queries that are expected to return data")]
         public abstract Task ExecuteNonQueryAsync(string sqlQuery);
 
-        [Name("get_user_permission")]
-        [Description(@"Get the list of permissions for the current user.
+        [FunctionDeclaration("get_user_permissions", @"Get the list of permissions for the current user.
 Use this function **EXCLUSIVELY** to retrieve a list of the database permissions currently granted to the application's user session.
 
 This information can be crucial for:
@@ -47,8 +44,7 @@ This information can be crucial for:
 - Informing the user about their current capabilities within the database if they inquire or if it's relevant to a problem.")]
         public abstract Task<List<string>> GetUserPermissionsAsync();
 
-        [Name("search_schemas_by_name")]
-        [Description(@"Search for schemas by name and returns a list of schema names that contain the keyword. If the keyword is an empty string, all schema names will be returned.
+        [FunctionDeclaration("search_schemas_by_name", @"Search for schemas by name and returns a list of schema names that contain the keyword. If the keyword is an empty string, all schema names will be returned.
 Use this function to retrieve a list of available schema names in the current database.
 
 This function is useful when:
@@ -58,8 +54,7 @@ This function is useful when:
 - The user explicitly asks to list schemas.")]
         public abstract Task<List<string>> SearchSchemasByNameAsync(string? keyword);
 
-        [Name("search_tables_by_name")]
-        [Description(@"Search for tables by name within a specific schema. Returns a list of table names that contain the keyword. If the keyword is an empty string, all table names will be returned.
+        [FunctionDeclaration("search_tables_by_name", @"Search for tables by name within a specific schema. Returns a list of table names that contain the keyword. If the keyword is an empty string, all table names will be returned.
 
 Use this function to retrieve a list of table names within a specific schema in the current database. 
 
@@ -73,8 +68,7 @@ If the user does not specify a schema, you should use the default schema of the 
 If unsure about the schema, consider using `search_schemas_by_name` function first with your defined parameters, or asking the user for the clarification.")]
         public abstract Task<List<string>> SearchTablesByNameAsync(string schema, string? keyword);
 
-        [Name("get_table_structure")]
-        [Description(@"Get the structure of a table, including column names and types. Returns a DataTable with the structure information.
+        [FunctionDeclaration("get_table_structure", @"Get the structure of a table, including column names and types. Returns a DataTable with the structure information.
 Use this function to retrieve structural information for a specific table.
 The information returned includes:
 - Column names, data types, nullability, constraints, foreign keys, references.

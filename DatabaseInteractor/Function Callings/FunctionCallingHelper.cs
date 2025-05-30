@@ -1,4 +1,4 @@
-﻿using DatabaseInteractor.FunctionCallings.Attributes;
+﻿using DatabaseInteractor.Function_Callings.Attributes;
 using GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling;
 using GeminiDotNET.ApiModels.Response.Success.FunctionCalling;
 using System.Reflection;
@@ -26,51 +26,41 @@ namespace DatabaseInteractor.FunctionCallings.Services
 
         public static void RegisterFunction(Delegate del, Parameters? parameters = null)
         {
-            var method = del.Method;
-            var name = method.GetCustomAttribute<NameAttribute>().Name;
+            var attr = del.GetFunctionDeclarationAttribute();
 
-            if (FunctionDeclarations.Exists(fd => fd.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            if (FunctionDeclarations.Exists(fd => fd.Name.Equals(attr.Name, StringComparison.OrdinalIgnoreCase)))
             {
                 return;
             }
 
-            string description = method.GetCustomAttribute<DescriptionAttribute>().Description;
-
             FunctionDeclarations.Add(new FunctionDeclaration
             {
-                Name = name,
-                Description = description,
+                Name = attr.Name,
+                Description = attr.Description,
                 Parameters = parameters
             });
         }
 
-        public static string GetParameterValue(Delegate del, string parameterName)
+        public static FunctionDeclarationAttribute GetFunctionDeclarationAttribute(this Delegate del)
         {
-            MethodInfo method = del.Method;
-            ParameterInfo[] parameters = method.GetParameters();
-            foreach (var parameter in parameters)
+            MethodInfo methodInfo = del.Method;
+            var attribute = methodInfo.GetCustomAttribute<FunctionDeclarationAttribute>();
+            if (attribute == null)
             {
-                return (string)parameter.DefaultValue;
+                MethodInfo baseMethod = methodInfo.GetBaseDefinition();
+                if (baseMethod != methodInfo)
+                {
+                    attribute = baseMethod.GetCustomAttribute<FunctionDeclarationAttribute>();
+                }
             }
-            throw new ArgumentException($"Parameter '{parameterName}' not found in function '{method.Name}'.");
+
+            return attribute ?? throw new InvalidOperationException($"Method '{del.Method.Name}' does not have a FunctionDeclaration attribute.");
         }
 
         public static string GetFunctionName(Delegate del)
         {
-            MethodInfo method = del.Method;
-            NameAttribute? nameAttribute = method.GetCustomAttribute<NameAttribute>();
-            if (nameAttribute != null)
-            {
-                return nameAttribute.Name;
-            }
-            throw new InvalidOperationException($"Function {method.Name} does not have a Name attribute defined.");
+            return del.GetFunctionDeclarationAttribute()?.Name;
         }
-
-        public static FunctionResponse CreateResponse(Delegate del, string output) => new()
-        {
-            Name = del.Method.GetCustomAttribute<NameAttribute>().Name,
-            Response = new Response { Output = output }
-        };
 
         public static FunctionResponse CreateResponse(string name, string output) => new()
         {

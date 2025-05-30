@@ -24,6 +24,12 @@
                     <TextBlock Text="Progress" Style="{StaticResource SubtitleTextBlockStyle}"/>
                 </StackPanel>
                 <ListView Grid.Row="1" IsItemClickEnabled="False" CanDragItems="False" CanReorderItems="False" SelectionMode="None" ItemsSource="{x:Bind ProgressContents}">
+                    <ListView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"/>
+                        </ItemsPanelTemplate>
+                    </ListView.ItemsPanel>
+
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="view_models:ProgressContent">
                             <StackPanel Margin="0,8" Spacing="8">
@@ -38,7 +44,6 @@
                                     QuotePadding="6"/>
                                 <StackPanel Spacing="8" Visibility="{x:Bind ActionButtonVisibility}" Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}" CornerRadius="{StaticResource ControlCornerRadius}">
                                     <controls1:DataGrid 
-                                        Loaded="DataGrid_Loaded"
                                         IsReadOnly="True" 
                                         CanUserReorderColumns="True" 
                                         CanUserResizeColumns="True"
@@ -52,7 +57,8 @@
                                         BorderBrush="{ThemeResource ControlElevationBorderBrush}"
                                         RowBackground="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
                                         AlternatingRowBackground="{ThemeResource ControlAltFillColorTertiaryBrush}"
-                                        MaxHeight="500"/>
+                                        MaxHeight="500"
+                                        ItemsSource="{x:Bind QueryResults}"/>
                                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" Padding="8">
                                         <Button Padding="6" ToolTipService.ToolTip="Copy the SQL command" ToolTipService.Placement="Left" Click="CopySqlButton_Click">
                                             <FontIcon Glyph="&#xE8C8;" FontSize="14"/>
@@ -82,6 +88,11 @@
                     <Image Source="/Assets/icon.png" MaxHeight="200" Opacity="0.05"/>
                 </Grid>
                 <ListView Grid.Row="0" IsItemClickEnabled="False" CanDragItems="False" CanReorderItems="False" SelectionMode="None" ItemsSource="{x:Bind Messages}">
+                    <ListView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"/>
+                        </ItemsPanelTemplate>
+                    </ListView.ItemsPanel>
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="view_models:ChatMessage">
                             <StackPanel
