@@ -12,26 +12,68 @@ using DatabaseInteractor.Services.Extractors;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Windows.Storage.Pickers;
 
 namespace AskDB.App
 {
-    public sealed partial class DatabaseConnection : Page
+    public sealed partial class DatabaseConnection : Page, INotifyPropertyChanged
     {
-        private ObservableCollection<string> DatabaseTypes { get; set; } = [.. EnumExtensions.GetValues<DatabaseType>().Select(x => x.GetDescription())];
 
+        private List<string> _databaseTypes = [.. EnumExtensions.GetValues<DatabaseType>().Select(x => x.GetDescription())];
         private string _sqliteFilePath;
         private bool _useConnectionString = false;
-        private DatabaseCredential ConnectionCredential { get; set; } = new();
+        private bool _useWindowsAuthentication = false;
+        private DatabaseCredential _connectionCredential = new();
+
+        public bool UseWindowsAuthentication {
+            get => _useWindowsAuthentication; 
+            set
+            {
+                if (_useWindowsAuthentication != value)
+                {
+                    _useWindowsAuthentication = value;
+
+                    OnPropertyChanged();
+                }
+            }
+        }
+        public DatabaseCredential ConnectionCredential { 
+            get => _connectionCredential; 
+            set 
+            {
+                _connectionCredential = value;
+                OnPropertyChanged();
+            } 
+        }
+
+        public ObservableCollection<string> DatabaseTypes
+        {
+            get => new(_databaseTypes);
+            set
+            {
+                _databaseTypes = value.ToList();
+                OnPropertyChanged();
+            }
+        }
         private ConnectionString ConnectionString { get; set; } = new();
 
         private readonly AppDbContext _db;
 
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
         public DatabaseConnection()
         {
             _db = App.LocalDb;
+            UseWindowsAuthentication = false;
             InitializeComponent();
         }
 
@@ -128,9 +170,9 @@ namespace AskDB.App
         {
             ConnectionCredential.DatabaseType = (DatabaseType)(sender as ComboBox).SelectedIndex;
 
-            ConnectionCredential.Port = ConnectionCredential.Port == default
-                        ? ConnectionCredential.DatabaseType.GetAttributeValue<DefaultPortAttribute>().Port
-                        : ConnectionCredential.Port;
+            ConnectionCredential.Port = ConnectionCredential.Port == default 
+                ? ConnectionCredential.DatabaseType.GetAttributeValue<DefaultPortAttribute>().Port
+                : ConnectionCredential.Port;
 
             ConnectionCredential.Host = string.IsNullOrWhiteSpace(ConnectionCredential.Host)
                 ? ConnectionCredential.DatabaseType.GetAttributeValue<DefaultHostAttribute>().Host
@@ -150,6 +192,17 @@ namespace AskDB.App
 
             UseConnectionStringSpace.Visibility = VisibilityHelper.SetVisible(_useConnectionString);
             NotSqliteComponents.Visibility = VisibilityHelper.SetVisible(!_useConnectionString);
+        }
+
+        private void UseWindowsAuthenticationCheckBox_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            var isChecked = (sender as CheckBox).IsChecked == true;
+
+            UseWindowsAuthentication = isChecked;
+            if (isChecked)
+            {
+                ConnectionCredential.Username = ConnectionCredential.Password = null;
+            }
         }
     }
 }

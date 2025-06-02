@@ -6,9 +6,13 @@
     xmlns:local="using:AskDB.App"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-    xmlns:animatedvisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
+    xmlns:animatedvisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals" xmlns:converters="using:AskDB.App.Converters"
     mc:Ignorable="d"
     NavigationCacheMode="Required">
+
+    <Page.Resources>
+        <converters:BoolToNegativeBoolConverter x:Key="BoolToNegativeBoolConverter"/>
+    </Page.Resources>
 
     <Grid MaxWidth="1000">
         <StackPanel x:Name="MainPanel" Spacing="16" VerticalAlignment="Center"
@@ -31,14 +35,18 @@
                             <TextBox Grid.Column="0" Header="Host" PlaceholderText="127.0.0.1" Text="{x:Bind ConnectionCredential.Host, Mode=TwoWay}"/>
                             <NumberBox Grid.Column="1" Header="Port" Minimum="0" MinWidth="120" SpinButtonPlacementMode="Compact" SmallChange="1" LargeChange="10" Value="{x:Bind ConnectionCredential.Port, Mode=TwoWay}"/>
                         </Grid>
-                        <Grid ColumnSpacing="12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0" Header="Username" Text="{x:Bind ConnectionCredential.Username, Mode=TwoWay}"/>
-                            <PasswordBox Grid.Column="1" Header="Password" Password="{x:Bind ConnectionCredential.Password, Mode=TwoWay}"/>
-                        </Grid>
+                        <StackPanel Spacing="8">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" Header="Username" Text="{x:Bind ConnectionCredential.Username, Mode=TwoWay}" IsEnabled="{x:Bind UseWindowsAuthentication,Converter={StaticResource BoolToNegativeBoolConverter},Mode=OneWay}"/>
+                                <PasswordBox Grid.Column="1" Header="Password" Password="{x:Bind ConnectionCredential.Password, Mode=TwoWay}" IsEnabled="{x:Bind UseWindowsAuthentication,Converter={StaticResource BoolToNegativeBoolConverter},Mode=OneWay}"/>
+                            </Grid>
+                            <CheckBox Content="I want to use Windows Authentication" IsChecked="{x:Bind UseWindowsAuthentication,Mode=TwoWay}" Click="UseWindowsAuthenticationCheckBox_Click"/>
+                        </StackPanel>
+                        
                         <TextBox Header="Database" Text="{x:Bind ConnectionCredential.Database, Mode=TwoWay}"/>
                         <StackPanel Orientation="Horizontal" Spacing="24">
                             <CheckBox Content="SSL/TLS encryption" IsChecked="{x:Bind ConnectionCredential.EnableSsl, Mode=TwoWay}"/>

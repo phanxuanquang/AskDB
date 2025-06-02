@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.UI.Xaml;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -23,12 +24,12 @@ namespace AskDB.App
             LocalDb = Host.Services.GetService<AppDbContext>();
         }
 
-        protected override async void OnLaunched(LaunchActivatedEventArgs args)
+        protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
-            await InitializeAsync();
-
+            Stopwatch.StartNew();
             Window = new MainWindow();
             Window.Activate();
+            _ = InitializeAndLogAsync();
         }
 
         public static AppDbContext GetAppDbContextService()
@@ -47,21 +48,18 @@ namespace AskDB.App
                 .Build();
         }
 
-        private static async Task InitializeAsync()
+        private static async Task InitializeAndLogAsync()
         {
             if (!File.Exists(AppDbContext.DbPath))
             {
-                var directory = Path.GetDirectoryName(AppDbContext.DbPath);
-                if (!Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
+                await LocalDb.Database.EnsureCreatedAsync().ConfigureAwait(false);
             }
 
-            await LocalDb.Database.EnsureCreatedAsync().ConfigureAwait(false);
-
-            Cache.ApiKey = await LocalDb.GetApiKeyAsync().ConfigureAwait(false);
-            Cache.HasUserEverConnectedToDatabase = await LocalDb.IsDatabaseCredentialOrConnectionStringExistsAsync();
+            var apiKeyTask = LocalDb.GetApiKeyAsync();
+            var hasUserTask = LocalDb.IsDatabaseCredentialOrConnectionStringExistsAsync();
+            await Task.WhenAll(apiKeyTask, hasUserTask).ConfigureAwait(false);
+            Cache.ApiKey = apiKeyTask.Result;
+            Cache.HasUserEverConnectedToDatabase = hasUserTask.Result;
         }
     }
 }

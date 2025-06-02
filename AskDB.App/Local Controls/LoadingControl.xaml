@@ -8,8 +8,12 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <StackPanel x:Name="loadingPanel" HorizontalAlignment="Center" Background="Transparent" Visibility="Collapsed" Spacing="16">
-        <ProgressRing x:Name="progressRing" IsActive="True" HorizontalAlignment="Center"/>
-        <TextBlock x:Name="textBlock" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
-    </StackPanel>
+    <Grid x:Name="LoadingPanel" HorizontalAlignment="Center" Background="Transparent" Visibility="Collapsed" RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <ProgressRing Grid.Row="0" x:Name="ProgressRing" IsActive="True" HorizontalAlignment="Center" Width="{x:Bind _size}" Height="{x:Bind _size}"/>
+        <TextBlock Grid.Row="1" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Bind _message}"/>
+    </Grid>
 </UserControl>

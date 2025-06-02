@@ -4,6 +4,7 @@ using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
+using System.Threading.Tasks;
 using Windows.System;
 
 namespace AskDB.App
@@ -16,6 +17,23 @@ namespace AskDB.App
             this.AppWindow.SetIcon("Assets/icon.ico");
             this.AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
             this.AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
+
+            LoadingIndicator.SetLoading(null, true, 72);
+
+            _ = FinishStartupAsync();
+        }
+
+        private async Task FinishStartupAsync()
+        {
+            int maxWaitMs = 500;
+            int waited = 0;
+            while (string.IsNullOrEmpty(Cache.ApiKey) && waited < maxWaitMs)
+            {
+                await Task.Delay(100);
+                waited += 100;
+            }
+
+            LoadingIndicator.SetLoading(null, false);
 
             if (string.IsNullOrEmpty(Cache.ApiKey))
             {

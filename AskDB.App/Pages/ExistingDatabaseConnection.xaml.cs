@@ -30,7 +30,7 @@ namespace AskDB.App.Pages
 
         private void SetLoading(bool isLoading)
         {
-            LoadingOverlay.SetLoading("Connecting...", isLoading);
+            LoadingOverlay.SetLoading("Connecting", isLoading);
             LoadingOverlay.Visibility = VisibilityHelper.SetVisible(isLoading);
             MainPanel.Visibility = VisibilityHelper.SetVisible(!isLoading);
         }

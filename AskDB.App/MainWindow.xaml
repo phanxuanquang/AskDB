@@ -52,5 +52,6 @@
             </CommandBar.SecondaryCommands>
         </CommandBar>
         <Frame Grid.Row="1" x:Name="MainFrame" Padding="16,0,16,24" />
+        <local:LoadingControl x:Name="LoadingIndicator" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.RowSpan="2" />
     </Grid>
 </Window>

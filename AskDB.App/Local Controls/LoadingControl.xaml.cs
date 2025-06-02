@@ -8,16 +8,18 @@ namespace AskDB.App
 {
     public sealed partial class LoadingControl : UserControl
     {
+        private string _message;
+        private int _size;
         public LoadingControl()
         {
             this.InitializeComponent();
         }
 
-        public void SetLoading(string message, bool isActivated, int radius = 50)
+        public void SetLoading(string message, bool isActivated, int size = 50)
         {
-            textBlock.Text = message;
-            loadingPanel.Visibility = VisibilityHelper.SetVisible(isActivated);
-            progressRing.Width = progressRing.Height = radius;
+            _message = message;
+            _size = size;
+            LoadingPanel.Visibility = VisibilityHelper.SetVisible(isActivated);
         }
     }
 }
