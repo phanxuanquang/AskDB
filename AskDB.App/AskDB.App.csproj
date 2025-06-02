@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.26100.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>AskDB.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -25,6 +25,9 @@
     <Copyright>© 2024 Phan Xuan Quang / AskDb Project</Copyright>
     <PackageProjectUrl>https://github.com/phanxuanquang/AskDB</PackageProjectUrl>
     <RepositoryUrl>https://github.com/phanxuanquang/AskDB</RepositoryUrl>
+    <PackageIcon>icon.png</PackageIcon>
+    <PublishAot>False</PublishAot>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 	<Target Name="RemoveFoldersWithMuiFiles" AfterTargets="Build">
 		<ItemGroup>
@@ -45,7 +48,7 @@
 
   <ItemGroup>
     <Content Include="Images\icon.ico">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\icon.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -63,9 +66,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Square44x44Logo.targetsize-24_altform-unplated.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Images\StoreLogo.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Wide310x150Logo.scale-200.png">

@@ -1,5 +1,4 @@
 ﻿using AskDB.Commons.Enums;
-using AskDB.Commons.Extensions;
 using Microsoft.Data.SqlClient;
 using System.Data;
 

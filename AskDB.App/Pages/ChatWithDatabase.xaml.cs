@@ -1,7 +1,6 @@
 using AskDB.App.Helpers;
 using AskDB.App.View_Models;
 using AskDB.Commons.Enums;
-using AskDB.Commons.Extensions;
 using AskDB.Commons.Helpers;
 using CommunityToolkit.WinUI.UI.Controls;
 using DatabaseInteractor.Function_Callings.Attributes;

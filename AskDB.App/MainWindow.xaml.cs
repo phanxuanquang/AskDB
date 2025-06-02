@@ -14,7 +14,7 @@ namespace AskDB.App
         public MainWindow()
         {
             this.InitializeComponent();
-            this.AppWindow.SetIcon("Image/icon.ico");
+            this.AppWindow.SetIcon("Images/icon.ico");
             this.AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
             this.AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
 
