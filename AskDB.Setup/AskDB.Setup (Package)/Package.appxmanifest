@@ -8,14 +8,14 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="f4e5be96-7217-4491-b988-27bcb1b95623"
+    Name="e06302d2-c908-42b1-9885-74a7badd2d85"
     Publisher="CN=phanxuanquang"
     Version="1.0.0.0" />
 
-  <mp:PhoneIdentity PhoneProductId="f4e5be96-7217-4491-b988-27bcb1b95623" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+  <mp:PhoneIdentity PhoneProductId="e06302d2-c908-42b1-9885-74a7badd2d85" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>AskDB</DisplayName>
+    <DisplayName>AskDB.Setup (Package)</DisplayName>
     <PublisherDisplayName>Phan Xuan Quang</PublisherDisplayName>
     <Logo>Images\StoreLogo.png</Logo>
   </Properties>
@@ -34,8 +34,8 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="AskDB"
-        Description="Ask the AI about your SQL database"
+        DisplayName="AskDB.Setup (Package)"
+        Description="AskDB.Setup (Package)"
         BackgroundColor="transparent"
         Square150x150Logo="Images\Square150x150Logo.png"
         Square44x44Logo="Images\Square44x44Logo.png">
