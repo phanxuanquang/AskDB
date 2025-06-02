@@ -30,8 +30,9 @@ namespace AskDB.App
         private bool _useWindowsAuthentication = false;
         private DatabaseCredential _connectionCredential = new();
 
-        public bool UseWindowsAuthentication {
-            get => _useWindowsAuthentication; 
+        public bool UseWindowsAuthentication
+        {
+            get => _useWindowsAuthentication;
             set
             {
                 if (_useWindowsAuthentication != value)
@@ -42,13 +43,14 @@ namespace AskDB.App
                 }
             }
         }
-        public DatabaseCredential ConnectionCredential { 
-            get => _connectionCredential; 
-            set 
+        public DatabaseCredential ConnectionCredential
+        {
+            get => _connectionCredential;
+            set
             {
                 _connectionCredential = value;
                 OnPropertyChanged();
-            } 
+            }
         }
 
         public ObservableCollection<string> DatabaseTypes
@@ -170,7 +172,7 @@ namespace AskDB.App
         {
             ConnectionCredential.DatabaseType = (DatabaseType)(sender as ComboBox).SelectedIndex;
 
-            ConnectionCredential.Port = ConnectionCredential.Port == default 
+            ConnectionCredential.Port = ConnectionCredential.Port == default
                 ? ConnectionCredential.DatabaseType.GetAttributeValue<DefaultPortAttribute>().Port
                 : ConnectionCredential.Port;
 

@@ -31,7 +31,6 @@ namespace AskDB.App.Pages
         private void SetLoading(bool isLoading)
         {
             LoadingOverlay.SetLoading("Connecting", isLoading);
-            LoadingOverlay.Visibility = VisibilityHelper.SetVisible(isLoading);
             MainPanel.Visibility = VisibilityHelper.SetVisible(!isLoading);
         }
 
@@ -100,6 +99,8 @@ namespace AskDB.App.Pages
                 return;
             }
 
+            LoadingOverlay.SetLoading("Connecting", true);
+
             try
             {
                 var extractorForConnectionString = data.DatabaseType switch
@@ -125,6 +126,10 @@ namespace AskDB.App.Pages
                 await _db.RemoveDatabaseCredentialAsync(data.Id);
                 await DialogHelper.ShowErrorAsync(ex.Message);
             }
+            finally
+            {
+                LoadingOverlay.SetLoading("Connecting", false);
+            }
         }
 
         private async void ConnectionStringItemsView_ItemInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
@@ -135,6 +140,8 @@ namespace AskDB.App.Pages
             {
                 return;
             }
+
+            LoadingOverlay.SetLoading("Connecting", true);
 
             try
             {
@@ -160,6 +167,10 @@ namespace AskDB.App.Pages
                 ExistingConnectionStringInfors.Remove(data);
                 await _db.RemoveConnectionStringAsync(data.Id);
                 await DialogHelper.ShowErrorAsync(ex.Message);
+            }
+            finally
+            {
+                LoadingOverlay.SetLoading("Connecting", false);
             }
         }
     }
