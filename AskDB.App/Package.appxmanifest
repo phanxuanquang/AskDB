@@ -8,7 +8,7 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="f4e5be96-7217-4491-b988-27bcb1b95623"
+    Name="AskDB"
     Publisher="CN=phanxuanquang"
     Version="1.0.0.0" />
 
