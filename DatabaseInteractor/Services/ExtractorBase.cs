@@ -66,7 +66,7 @@ This tool is **CRITICAL** for:
 
 If the user does not specify a schema, you should use the default schema of the database (usually `dbo` for SQL Server, `public` for PostgreSQL, etc.).
 If unsure about the schema, consider using `search_schemas_by_name` function first with your defined parameters, or asking the user for the clarification.")]
-        public abstract Task<List<string>> SearchTablesByNameAsync(string schema, string? keyword);
+        public abstract Task<List<string>> SearchTablesByNameAsync(string? schema, string? keyword);
 
         [FunctionDeclaration("get_table_structure", @"Get the structure of a table, including column names and types. Returns a DataTable with the structure information.
 Use this function to retrieve structural information for a specific table.
@@ -81,7 +81,7 @@ This tool is **CRITICAL** for:
 - Understanding potential issues with data integrity before making changes.
 If the user does not specify a schema, you should use the default schema of the database (usually `dbo` for SQL Server, `public` for PostgreSQL, etc.).
 If unsure about the schema, consider using `search_schemas_by_name` function first with your defined parameters, or asking the user for the clarification.")]
-        public abstract Task<DataTable> GetTableStructureDetailAsync(string schema, string table);
+        public abstract Task<DataTable> GetTableStructureDetailAsync(string? schema, string table);
 
         public abstract Task EnsureDatabaseConnectionAsync();
     }

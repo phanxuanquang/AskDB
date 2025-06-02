@@ -5,7 +5,10 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:AskDB.App.Pages"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:app="using:AskDB.App" xmlns:viewmodels="using:AskDB.App.View_Models" xmlns:view_models="using:AskDB.App.View_Models" xmlns:models="using:AskDB.Database.Models" xmlns:view_models1="using:AskDB.App.View_Models"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:app="using:AskDB.App" 
+    xmlns:view_models="using:AskDB.App.View_Models" 
+    xmlns:models="using:AskDB.Database.Models" 
     mc:Ignorable="d">
 
     <Grid MaxWidth="1000">
@@ -63,7 +66,7 @@
                         <LinedFlowLayout ItemsStretch="Fill" LineSpacing="8" MinItemSpacing="8"/>
                     </ItemsView.Layout>
                     <ItemsView.ItemTemplate>
-                        <DataTemplate x:DataType="view_models1:ExistingConnectionStringInfor">
+                        <DataTemplate x:DataType="view_models:ExistingConnectionStringInfor">
                             <ItemContainer >
                                 <Button Padding="12" ToolTipService.ToolTip="Connect">
                                     <StackPanel MinWidth="250" MaxWidth="300" Spacing="8" >

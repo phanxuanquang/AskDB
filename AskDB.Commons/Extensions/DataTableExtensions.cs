@@ -1,10 +1,24 @@
 ﻿using System.Data;
 using System.Text;
 
-namespace AskDB.Database.Extensions
+namespace AskDB.Commons.Extensions
 {
     public static class DataTableExtensions
     {
+        public static List<string> ToListString(this DataTable data)
+        {
+            var results = new List<string>();
+            foreach (DataRow row in data.Rows)
+            {
+                var value = row[0]?.ToString();
+                if (!string.IsNullOrEmpty(value))
+                {
+                    results.Add(value);
+                }
+            }
+            return results;
+        }
+
         public static string? ToMarkdown(this DataTable table)
         {
             if (table == null || table.Rows.Count == 0) return null;

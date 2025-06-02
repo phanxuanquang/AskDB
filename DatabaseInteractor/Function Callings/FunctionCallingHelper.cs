@@ -9,21 +9,6 @@ namespace DatabaseInteractor.FunctionCallings.Services
     {
         public static List<FunctionDeclaration> FunctionDeclarations { get; } = [];
 
-        public static void RegisterFunction(string name, string description, Parameters? parameters = null)
-        {
-            if (FunctionDeclarations.Exists(fd => fd.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
-            {
-                return;
-            }
-
-            FunctionDeclarations.Add(new FunctionDeclaration
-            {
-                Name = name,
-                Description = description,
-                Parameters = parameters
-            });
-        }
-
         public static void RegisterFunction(Delegate del, Parameters? parameters = null)
         {
             var attr = del.GetFunctionDeclarationAttribute();
@@ -54,7 +39,7 @@ namespace DatabaseInteractor.FunctionCallings.Services
                 }
             }
 
-            return attribute ?? throw new InvalidOperationException($"Method '{del.Method.Name}' does not have a FunctionDeclaration attribute.");
+            return attribute ?? throw new InvalidOperationException($"Method '{del.Method.Name}' does not have any FunctionDeclaration attribute.");
         }
 
         public static string GetFunctionName(Delegate del)
@@ -65,7 +50,10 @@ namespace DatabaseInteractor.FunctionCallings.Services
         public static FunctionResponse CreateResponse(string name, string output) => new()
         {
             Name = name,
-            Response = new Response { Output = output }
+            Response = new Response
+            {
+                Output = output
+            }
         };
     }
 }

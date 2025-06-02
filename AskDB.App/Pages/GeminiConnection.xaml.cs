@@ -70,7 +70,14 @@ namespace AskDB.App
 
                     await generator.GenerateContentAsync(apiRequest);
 
-                    await _db.CreateUserAsync(_geminiApiKey);
+                    if (!string.IsNullOrEmpty(Cache.ApiKey))
+                    {
+                        await _db.UpdateApiKeyAsync(_geminiApiKey);
+                    }
+                    else
+                    {
+                        await _db.CreateOrUpdateApiKeyAsync(_geminiApiKey);
+                    }
 
                     Cache.ApiKey = _geminiApiKey;
                     this.Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });

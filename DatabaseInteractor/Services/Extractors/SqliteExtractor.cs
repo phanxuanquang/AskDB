@@ -33,12 +33,11 @@ namespace DatabaseInteractor.Services.Extractors
             await command.ExecuteNonQueryAsync();
         }
 
-        public override async Task<List<string>> GetUserPermissionsAsync()
+        public override Task<List<string>> GetUserPermissionsAsync()
         {
-            return
-            [
+            return Task.FromResult<List<string>>([
                 "SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER", "INDEX", "TRIGGER"
-            ];
+            ]);
         }
 
         public override Task<List<string>> SearchSchemasByNameAsync(string? keyword)
@@ -46,7 +45,7 @@ namespace DatabaseInteractor.Services.Extractors
             throw new NotImplementedException();
         }
 
-        public override Task<DataTable> GetTableStructureDetailAsync(string schema, string table)
+        public override Task<DataTable> GetTableStructureDetailAsync(string? schema, string table)
         {
             throw new NotImplementedException();
         }
@@ -64,7 +63,7 @@ namespace DatabaseInteractor.Services.Extractors
             }
         }
 
-        public override async Task<List<string>> SearchTablesByNameAsync(string schema, string? keyword)
+        public override async Task<List<string>> SearchTablesByNameAsync(string? schema, string? keyword)
         {
             if (string.IsNullOrWhiteSpace(keyword))
             {
@@ -73,11 +72,16 @@ namespace DatabaseInteractor.Services.Extractors
             using var connection = new SqliteConnection(ConnectionString);
             using var command = new SqliteCommand($"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE @keyword", connection);
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
-            var dataTable = new DataTable();
+
             await connection.OpenAsync();
             using var reader = await command.ExecuteReaderAsync();
-            dataTable.Load(reader);
-            return dataTable.AsEnumerable().Select(row => row.Field<string>("name")).ToList();
+            var tables = new List<string>();
+            while (await reader.ReadAsync())
+            {
+                tables.Add(reader.GetString(0));
+            }
+
+            return tables;
         }
     }
 }

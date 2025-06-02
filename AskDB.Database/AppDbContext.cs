@@ -1,4 +1,5 @@
-﻿using AskDB.Commons.Extensions;
+﻿using AskDB.Commons.Enums;
+using AskDB.Commons.Extensions;
 using AskDB.Database.Extensions;
 using AskDB.Database.Models;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +31,7 @@ namespace AskDB.Database
             await SaveChangesAsync();
         }
 
-        public async Task CreateUserAsync(string apiKey)
+        public async Task CreateOrUpdateApiKeyAsync(string apiKey)
         {
             var user = new UserSetting
             {
@@ -43,16 +44,17 @@ namespace AskDB.Database
 
         public async Task<string?> GetApiKeyAsync()
         {
-            var userProfile = await UserSettings
+            var apiKey = await UserSettings
                 .AsNoTracking()
+                .Select(x => x.ApiKey)
                 .FirstOrDefaultAsync();
 
-            if (userProfile == null)
+            if (apiKey == null)
             {
                 return null;
             }
 
-            return userProfile.ApiKey.AesDecrypt();
+            return apiKey.AesDecrypt();
         }
         #endregion
 
@@ -100,7 +102,7 @@ namespace AskDB.Database
         {
             return await DatabaseCredentials
                 .AsNoTracking()
-                .Where(x => x.DatabaseType != Commons.Enums.DatabaseType.SQLite)
+                .Where(x => x.DatabaseType != DatabaseType.SQLite)
                 .OrderByDescending(x => x.LastAccessTime)
                 .Select(x => x.Decrypt())
                 .ToListAsync();

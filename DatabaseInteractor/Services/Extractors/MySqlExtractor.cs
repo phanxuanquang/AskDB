@@ -27,10 +27,22 @@ namespace DatabaseInteractor.Services.Extractors
 
         public override async Task ExecuteNonQueryAsync(string sqlQuery)
         {
-            using var connection = new MySqlConnection(ConnectionString);
-            using var command = new MySqlCommand(sqlQuery, connection);
+            await using var connection = new MySqlConnection(ConnectionString);
             await connection.OpenAsync();
-            await command.ExecuteNonQueryAsync();
+
+            await using var transaction = await connection.BeginTransactionAsync();
+            await using var command = new MySqlCommand(sqlQuery, connection, transaction);
+
+            try
+            {
+                await command.ExecuteNonQueryAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public override async Task<List<string>> GetUserPermissionsAsync()
@@ -55,9 +67,43 @@ namespace DatabaseInteractor.Services.Extractors
             throw new NotImplementedException();
         }
 
-        public override Task<DataTable> GetTableStructureDetailAsync(string schema, string table)
+        public override async Task<DataTable> GetTableStructureDetailAsync(string? schema, string table)
         {
-            throw new NotImplementedException();
+            var query = @"
+                SELECT
+                    cols.COLUMN_NAME AS ColumnName,
+                    cols.DATA_TYPE AS ColumnDataType,
+                    cols.IS_NULLABLE AS IsColumnNullable,
+                    cols.CHARACTER_MAXIMUM_LENGTH AS ColumnMaxLength,
+                    COALESCE(tc.CONSTRAINT_TYPE, '') AS ColumnConstraintType,
+                    kcu.REFERENCED_TABLE_NAME AS ReferencedTable,
+                    kcu.REFERENCED_COLUMN_NAME AS ReferencedColumn
+                FROM
+                    information_schema.COLUMNS cols
+                LEFT JOIN information_schema.KEY_COLUMN_USAGE kcu
+                    ON cols.TABLE_SCHEMA = kcu.TABLE_SCHEMA
+                    AND cols.TABLE_NAME = kcu.TABLE_NAME
+                    AND cols.COLUMN_NAME = kcu.COLUMN_NAME
+                LEFT JOIN information_schema.TABLE_CONSTRAINTS tc
+                    ON kcu.CONSTRAINT_SCHEMA = tc.CONSTRAINT_SCHEMA
+                    AND kcu.TABLE_NAME = tc.TABLE_NAME
+                    AND kcu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+                WHERE
+                    cols.TABLE_SCHEMA = IFNULL(@schema, DATABASE())
+                    AND cols.TABLE_NAME = @table
+                ORDER BY
+                    cols.ORDINAL_POSITION;";
+
+            using var connection = new MySqlConnection(ConnectionString);
+            using var command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@schema", (object?)schema ?? DBNull.Value);
+            command.Parameters.AddWithValue("@table", table);
+
+            var dataTable = new DataTable();
+            await connection.OpenAsync();
+            using var reader = await command.ExecuteReaderAsync();
+            dataTable.Load(reader);
+            return dataTable;
         }
 
         public override async Task EnsureDatabaseConnectionAsync()
@@ -77,25 +123,26 @@ namespace DatabaseInteractor.Services.Extractors
             }
         }
 
-        public override async Task<List<string>> SearchTablesByNameAsync(string schema, string? keyword)
+        public override async Task<List<string>> SearchTablesByNameAsync(string? schema, string? keyword)
         {
-            var tables = new List<string>();
-            var query = "SHOW TABLES";
-            if (!string.IsNullOrEmpty(keyword))
+            var query = @"
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = IFNULL(@schema, DATABASE()) 
+                    AND table_name COLLATE utf8mb4_general_ci LIKE CONCAT('%', @keyword, '%');";
+
+            using var connection = new MySqlConnection(ConnectionString);
+            using var command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@schema", (object?)schema ?? DBNull.Value);
+            command.Parameters.AddWithValue("@table", keyword);
+
+            using var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
+            var table = new List<string>();
+            while (await reader.ReadAsync())
             {
-                query += $" LIKE '%{keyword}%'";
+                table.Add(reader.GetString(0));
             }
-            using (var connection = new MySqlConnection(ConnectionString))
-            {
-                using var command = new MySqlCommand(query, connection);
-                await connection.OpenAsync();
-                using var reader = await command.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
-                {
-                    tables.Add(reader.GetString(0));
-                }
-            }
-            return tables;
+            return table;
         }
     }
 }

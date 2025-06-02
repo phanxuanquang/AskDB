@@ -4,23 +4,13 @@ namespace AskDB.Commons.Extensions
 {
     public static class EnumExtensions
     {
-        public static T? GetAttributeValue<T>(this Enum enumValue) where T : Attribute
+        public static T? GetAttributeValue<T>(this Enum value) where T : Attribute
         {
-            // Lấy kiểu enum
-            var type = enumValue.GetType();
+            var memberInfo = value.GetType().GetMember(value.ToString());
 
-            // Lấy tên của enum value (ví dụ: SqlServer)
-            var memberInfo = type.GetMember(enumValue.ToString());
+            if (memberInfo.Length == 0) return null;
 
-            if (memberInfo.Length == 0)
-                return null;
-
-            // Lấy attribute theo kiểu T
-            var attribute = memberInfo[0]
-                .GetCustomAttributes(typeof(T), false)
-                .FirstOrDefault() as T;
-
-            return attribute;
+            return memberInfo[0].GetCustomAttributes(typeof(T), false).FirstOrDefault() as T;
         }
 
         public static IEnumerable<Enum> GetValues<T>() where T : Enum

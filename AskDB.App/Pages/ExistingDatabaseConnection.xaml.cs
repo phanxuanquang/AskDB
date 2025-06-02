@@ -86,6 +86,8 @@ namespace AskDB.App.Pages
 
         private void SkipButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         {
+            ExistingDatabaseConnectionInfors.Clear();
+            ExistingConnectionStringInfors.Clear();
             this.Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
         }
 

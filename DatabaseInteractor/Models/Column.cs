@@ -11,7 +11,6 @@ namespace DatabaseInteractor.Models
         public string? DefaultValue { get; set; }
         public string? PrimaryKey { get; set; }
         public string? ForeignKeyName { get; set; }
-        public string? ParentColumn { get; set; }
         public string? ReferencedTable { get; set; }
         public string? ReferencedColumn { get; set; }
 
@@ -30,7 +29,9 @@ namespace DatabaseInteractor.Models
                 "BINARY",
                 "BLOB",
                 "JSON",
-                "BSON"
+                "BSON",
+                "TEXT",
+                "ITEXT"
             };
 
             stringBuilder.Append($"[{Name}] {DataType.ToUpper()}");
