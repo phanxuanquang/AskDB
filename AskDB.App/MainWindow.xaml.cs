@@ -18,13 +18,15 @@ namespace AskDB.App
             this.AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
             this.AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
 
-            LoadingIndicator.SetLoading(null, true, 72);
+            
 
             _ = FinishStartupAsync();
         }
 
         private async Task FinishStartupAsync()
         {
+            LoadingIndicator.SetLoading(null, true, 72);
+
             int maxWaitMs = 500;
             int waited = 0;
             while (string.IsNullOrEmpty(Cache.ApiKey) && waited < maxWaitMs)
