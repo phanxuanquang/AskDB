@@ -1,4 +1,5 @@
 using AskDB.App.Helpers;
+using AskDB.App.Pages;
 using AskDB.Database;
 using GeminiDotNET;
 using Microsoft.UI.Xaml;
@@ -35,7 +36,7 @@ namespace AskDB.App
             MainPanel.Visibility = VisibilityHelper.SetVisible(!isLoading);
         }
 
-        private void SetError(string message = null)
+        private void SetError(string? message)
         {
             ErrorLabel.Visibility = VisibilityHelper.SetVisible(!string.IsNullOrEmpty(message));
             ErrorLabel.Text = message ?? string.Empty;
@@ -79,11 +80,19 @@ namespace AskDB.App
                     }
 
                     Cache.ApiKey = _geminiApiKey;
-                    this.Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+
+                    if(Cache.HasUserEverConnectedToDatabase)
+                    {
+                        this.Frame.Navigate(typeof(ExistingDatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+                    }
+                    else
+                    {
+                        this.Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    throw new InvalidOperationException("Invalid or expired API key. Please try again with another API key.");
+                    throw new InvalidOperationException("Invalid or expired API key. Please try again with another API key.", ex);
                 }
             }
             catch (Exception ex)

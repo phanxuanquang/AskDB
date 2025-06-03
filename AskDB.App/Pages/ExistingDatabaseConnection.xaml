@@ -22,7 +22,7 @@
             </StackPanel>
             <StackPanel Spacing="12" x:Name="ConnectionCredentialsPanel">
                 <TextBlock Text="Connection Credentials" Style="{StaticResource BodyStrongTextBlockStyle}"/>
-                <ItemsView Padding="16,0"  SelectionMode="None" ItemsSource="{x:Bind ExistingDatabaseConnectionInfors}" MaxHeight="360" IsItemInvokedEnabled="True" ItemInvoked="DatabaseCredentionItemsView_ItemInvoked">
+                <ItemsView Padding="12,0"  SelectionMode="None" ItemsSource="{x:Bind ExistingDatabaseConnectionInfors}" MaxHeight="360" IsItemInvokedEnabled="True" ItemInvoked="DatabaseCredentionItemsView_ItemInvoked">
                     <ItemsView.Layout>
                         <LinedFlowLayout ItemsStretch="Fill" LineSpacing="8" MinItemSpacing="8"/>
                     </ItemsView.Layout>
@@ -42,7 +42,7 @@
                                             </StackPanel>
                                             <FontIcon Grid.Column="1" Glyph="&#xE8A7;"/>
                                         </Grid>
-                                        <TextBlock Text="{x:Bind Database}" Style="{StaticResource SubtitleTextBlockStyle}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{x:Bind Database}" Style="{StaticResource BodyStrongTextBlockStyle}" FontWeight="SemiBold"/>
                                         <StackPanel Padding="8"/>
                                         <StackPanel Spacing="6" Orientation="Horizontal">
                                             <StackPanel CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}" Padding="8,6">
@@ -61,7 +61,7 @@
             </StackPanel>
             <StackPanel Spacing="12" x:Name="ConnectionStringsPanel">
                 <TextBlock Text="Connection Strings" Style="{StaticResource BodyStrongTextBlockStyle}"/>
-                <ItemsView Padding="16,0" SelectionMode="None" ItemsSource="{x:Bind ExistingConnectionStringInfors}" MaxHeight="360" IsItemInvokedEnabled="True" ItemInvoked="ConnectionStringItemsView_ItemInvoked">
+                <ItemsView Padding="12,0" SelectionMode="None" ItemsSource="{x:Bind ExistingConnectionStringInfors}" MaxHeight="360" IsItemInvokedEnabled="True" ItemInvoked="ConnectionStringItemsView_ItemInvoked">
                     <ItemsView.Layout>
                         <LinedFlowLayout ItemsStretch="Fill" LineSpacing="8" MinItemSpacing="8"/>
                     </ItemsView.Layout>
@@ -75,8 +75,8 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{x:Bind Name}" Style="{StaticResource SubtitleTextBlockStyle}" FontWeight="SemiBold"/>
-                                            <FontIcon Grid.Column="1" Glyph="&#xE8A7;" Opacity="0.5" />
+                                            <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" FontWeight="SemiBold"/>
+                                            <FontIcon Grid.Column="1" Glyph="&#xE8A7;" FontSize="12" Opacity="0.5" />
                                         </Grid>
                                         <StackPanel Padding="8"/>
                                         <StackPanel Spacing="6" Orientation="Horizontal">

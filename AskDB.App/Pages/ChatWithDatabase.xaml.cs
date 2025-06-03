@@ -149,7 +149,7 @@ namespace AskDB.App.Pages
             LoadingOverlay.Visibility = VisibilityHelper.SetVisible(isLoading);
             MessageSpace.Opacity = isLoading ? 0.2 : 1;
         }
-        private void SetUserMessage(string message, bool isFromUser = false)
+        private void SetUserMessage(string? message, bool isFromUser = false)
         {
             var chatMessage = new ChatMessage
             {
@@ -158,7 +158,7 @@ namespace AskDB.App.Pages
             };
             Messages.Add(chatMessage);
         }
-        private void SetProgressMessage(string message)
+        private void SetProgressMessage(string? message)
         {
             var progressContent = new ProgressContent
             {
@@ -169,7 +169,7 @@ namespace AskDB.App.Pages
 
             ProgressContents.Add(progressContent);
         }
-        private void SetProgressDataTable(string sqlCommand, DataTable dataTable)
+        private void SetProgressDataTable(string? sqlCommand, DataTable dataTable)
         {
             if (dataTable == null || dataTable.Rows.Count == 0)
             {
@@ -471,8 +471,7 @@ It **MUST** include at least:
                         ChangeTheConversationLanguage(language);
                         return FunctionCallingHelper.CreateResponse(name, $"From now on, the agent **must use {language}** for the conversation (except for the tool calling).");
                     }
-                default:
-                    return null;
+                default: throw new NotImplementedException($"Function '{function.Name}' is not implemented.");
             }
         }
 

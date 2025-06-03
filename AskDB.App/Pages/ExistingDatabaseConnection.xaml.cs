@@ -92,9 +92,7 @@ namespace AskDB.App.Pages
 
         private async void DatabaseCredentionItemsView_ItemInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
         {
-            var data = args.InvokedItem as ExistingDatabaseConnectionInfo;
-
-            if (data == null)
+            if (args.InvokedItem is not ExistingDatabaseConnectionInfo data)
             {
                 return;
             }
@@ -134,9 +132,7 @@ namespace AskDB.App.Pages
 
         private async void ConnectionStringItemsView_ItemInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
         {
-            var data = args.InvokedItem as ExistingConnectionStringInfor;
-
-            if (data == null)
+            if (args.InvokedItem is not ExistingConnectionStringInfor data)
             {
                 return;
             }
@@ -164,8 +160,6 @@ namespace AskDB.App.Pages
             }
             catch (Exception ex)
             {
-                ExistingConnectionStringInfors.Remove(data);
-                await _db.RemoveConnectionStringAsync(data.Id);
                 await DialogHelper.ShowErrorAsync(ex.Message);
             }
             finally

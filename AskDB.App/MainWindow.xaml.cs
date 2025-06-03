@@ -18,7 +18,7 @@ namespace AskDB.App
             this.AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
             this.AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
 
-            
+
 
             _ = FinishStartupAsync();
         }
@@ -77,6 +77,24 @@ namespace AskDB.App
             if (MainFrame.SourcePageType != typeof(GeminiConnection))
             {
                 MainFrame.Navigate(typeof(GeminiConnection), null, new DrillInNavigationTransitionInfo());
+            }
+        }
+
+        private async void HomeButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(Cache.ApiKey))
+            {
+                await DialogHelper.ShowErrorAsync("Please enter your Gemini API key.");
+                return;
+            }
+
+            if (Cache.HasUserEverConnectedToDatabase)
+            {
+                MainFrame.Navigate(typeof(ExistingDatabaseConnection), null, new DrillInNavigationTransitionInfo());
+            }
+            else
+            {
+                MainFrame.Navigate(typeof(DatabaseConnection), null, new DrillInNavigationTransitionInfo());
             }
         }
     }

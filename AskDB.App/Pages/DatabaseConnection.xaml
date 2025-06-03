@@ -70,7 +70,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBox Grid.Column="0" Header="Connection String" PlaceholderText="Enter your connection string" Text="{x:Bind ConnectionString.Value, Mode=TwoWay}"/>
-                    <TextBox Grid.Column="1" Header="Profile name" MinWidth="150" PlaceholderText="Enter a unique name for your connection string" Padding="12,4" Text="{x:Bind ConnectionString.Name, Mode=TwoWay}"/>
+                    <TextBox Grid.Column="1" Header="Profile name" MinWidth="200" PlaceholderText="Enter a friendly name" Padding="12,4" Text="{x:Bind ConnectionString.Name, Mode=TwoWay}"/>
                 </Grid>
             </Grid>
             <CheckBox Content="I want to use connection string instead" IsChecked="False" Click="UseConnectionStringCheckBox_Click"/>

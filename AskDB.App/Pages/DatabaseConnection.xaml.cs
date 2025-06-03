@@ -194,6 +194,7 @@ namespace AskDB.App
 
             UseConnectionStringSpace.Visibility = VisibilityHelper.SetVisible(_useConnectionString);
             NotSqliteComponents.Visibility = VisibilityHelper.SetVisible(!_useConnectionString);
+            SqliteComponents.Visibility = VisibilityHelper.SetVisible(!_useConnectionString);
         }
 
         private void UseWindowsAuthenticationCheckBox_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
