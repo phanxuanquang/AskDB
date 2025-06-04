@@ -1,4 +1,5 @@
 ﻿using AskDB.Commons.Enums;
+using AskDB.Commons.Extensions;
 using Microsoft.Data.Sqlite;
 using System.Data;
 
@@ -13,13 +14,13 @@ namespace DatabaseInteractor.Services.Extractors
 
         public override async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
         {
-            using var connection = new SqliteConnection(ConnectionString);
-            using var command = new SqliteCommand(sqlQuery, connection);
+            await using var connection = new SqliteConnection(ConnectionString);
+            await using var command = new SqliteCommand(sqlQuery, connection);
             var dataTable = new DataTable();
 
             await connection.OpenAsync();
 
-            using var reader = await command.ExecuteReaderAsync();
+            await using var reader = await command.ExecuteReaderAsync();
             dataTable.Load(reader);
 
             return dataTable;
@@ -27,8 +28,8 @@ namespace DatabaseInteractor.Services.Extractors
 
         public override async Task ExecuteNonQueryAsync(string sqlQuery)
         {
-            using var connection = new SqliteConnection(ConnectionString);
-            using var command = new SqliteCommand(sqlQuery, connection);
+            await using var connection = new SqliteConnection(ConnectionString);
+            await using var command = new SqliteCommand(sqlQuery, connection);
             await connection.OpenAsync();
             await command.ExecuteNonQueryAsync();
         }
@@ -40,14 +41,14 @@ namespace DatabaseInteractor.Services.Extractors
             ]);
         }
 
-        public override Task<List<string>> SearchSchemasByNameAsync(string? keyword)
+        public override async Task<DataTable> GetTableStructureDetailAsync(string? schema, string table)
         {
-            throw new NotImplementedException();
-        }
-
-        public override Task<DataTable> GetTableStructureDetailAsync(string? schema, string table)
-        {
-            throw new NotImplementedException();
+            if (string.IsNullOrWhiteSpace(table) || string.IsNullOrEmpty(table))
+            {
+                throw new ArgumentException("Table name cannot be null or empty.", nameof(table));
+            }
+            var query = $"PRAGMA table_info({table})";
+            return await ExecuteQueryAsync(query);
         }
 
         public override async Task EnsureDatabaseConnectionAsync()
@@ -63,25 +64,14 @@ namespace DatabaseInteractor.Services.Extractors
             }
         }
 
-        public override async Task<List<string>> SearchTablesByNameAsync(string? schema, string? keyword)
+        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword)
         {
-            if (string.IsNullOrWhiteSpace(keyword))
-            {
-                keyword = string.Empty;
-            }
-            using var connection = new SqliteConnection(ConnectionString);
-            using var command = new SqliteCommand($"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE @keyword", connection);
+            await using var command = new SqliteCommand($"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE @keyword");
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
 
-            await connection.OpenAsync();
-            using var reader = await command.ExecuteReaderAsync();
-            var tables = new List<string>();
-            while (await reader.ReadAsync())
-            {
-                tables.Add(reader.GetString(0));
-            }
+            var data = await ExecuteQueryAsync(command.CommandText);
 
-            return tables;
+            return data.ToListString();
         }
     }
 }

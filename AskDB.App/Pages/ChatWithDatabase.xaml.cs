@@ -1,16 +1,17 @@
-using AskDB.App.Helpers;
+﻿using AskDB.App.Helpers;
 using AskDB.App.View_Models;
 using AskDB.Commons.Enums;
 using AskDB.Commons.Extensions;
-using AskDB.Commons.Helpers;
 using CommunityToolkit.WinUI.UI.Controls;
-using DatabaseInteractor.Function_Callings.Attributes;
 using DatabaseInteractor.Services;
 using DatabaseInteractor.Services.Extractors;
+using Gemini.NET;
 using GeminiDotNET;
 using GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling;
 using GeminiDotNET.ApiModels.Enums;
 using GeminiDotNET.ApiModels.Response.Success.FunctionCalling;
+using GeminiDotNET.FunctionCallings.Attributes;
+using GeminiDotNET.Helpers;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -26,7 +27,6 @@ using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Pickers;
 using Windows.System;
 using WinRT.Interop;
-using FunctionCallingHelper = DatabaseInteractor.FunctionCallings.Services.FunctionCallingHelper;
 
 namespace AskDB.App.Pages
 {
@@ -199,8 +199,8 @@ namespace AskDB.App.Pages
 
         private void InitFunctionCalling()
         {
-            FunctionCallingHelper.RegisterFunction(RequestForActionPlanAsync);
-            FunctionCallingHelper.RegisterFunction(RequestForInternetSearchAsync, new Parameters
+            FunctionDeclarationHelper.RegisterFunction(RequestForActionPlanAsync);
+            FunctionDeclarationHelper.RegisterFunction(RequestForInternetSearchAsync, new Parameters
             {
                 Properties = new
                 {
@@ -221,7 +221,7 @@ It **MUST** include at least:
                 },
                 Required = ["requirement"]
             });
-            FunctionCallingHelper.RegisterFunction(ChangeTheConversationLanguage, new Parameters
+            FunctionDeclarationHelper.RegisterFunction(ChangeTheConversationLanguage, new Parameters
             {
                 Properties = new
                 {
@@ -234,7 +234,7 @@ It **MUST** include at least:
                 Required = ["language"]
             });
 
-            FunctionCallingHelper.RegisterFunction(_extractor.ExecuteQueryAsync, new Parameters
+            FunctionDeclarationHelper.RegisterFunction(_extractor.ExecuteQueryAsync, new Parameters
             {
                 Properties = new
                 {
@@ -246,7 +246,7 @@ It **MUST** include at least:
                 },
                 Required = ["sqlQuery"]
             });
-            FunctionCallingHelper.RegisterFunction(_extractor.ExecuteNonQueryAsync, new Parameters
+            FunctionDeclarationHelper.RegisterFunction(_extractor.ExecuteNonQueryAsync, new Parameters
             {
                 Properties = new
                 {
@@ -258,37 +258,20 @@ It **MUST** include at least:
                 },
                 Required = ["sqlQuery"]
             });
-            FunctionCallingHelper.RegisterFunction(_extractor.GetUserPermissionsAsync);
-            FunctionCallingHelper.RegisterFunction(_extractor.SearchSchemasByNameAsync, new Parameters
+            FunctionDeclarationHelper.RegisterFunction(_extractor.GetUserPermissionsAsync);
+            FunctionDeclarationHelper.RegisterFunction(_extractor.SearchTablesByNameAsync, new Parameters
             {
                 Properties = new
                 {
                     keyword = new
                     {
                         type = "string",
-                        description = "A keyword to filter the schema names. For example, `prod` might return `Production_schema`, `prod_data`. If an empty string is provided, all accessible schema names are returned. The search is typically case-insensitive and looks for the keyword within the schema names."
+                        description = "A keyword to filter the table names. For example, `user` might return `Users`, `UserAccounts`. If an empty string is provided, all accessible table names with their associated schema are returned. The search is typically case-insensitive and looks for the keyword within the table names."
                     }
                 },
                 Required = ["keyword"]
             });
-            FunctionCallingHelper.RegisterFunction(_extractor.SearchTablesByNameAsync, new Parameters
-            {
-                Properties = new
-                {
-                    schema = new
-                    {
-                        type = "string",
-                        description = "The name of the schema containing the table. This is often case-sensitive depending on the database. If not explicitly provided by the user or clear from context, attempt to use the database's default schema (e.g., 'dbo' for SQL Server, 'public' for PostgreSQL). If still uncertain, clarify with the user or use 'SearchSchemasByNameAsync' to find possible schemas."
-                    },
-                    keyword = new
-                    {
-                        type = "string",
-                        description = "A keyword to filter the table names. For example, `user` might return `Users`, `UserAccounts`. If an empty string is provided, all accessible table names in the specified schema are returned. The search is typically case-insensitive and looks for the keyword within the table names."
-                    }
-                },
-                Required = ["schema"]
-            });
-            FunctionCallingHelper.RegisterFunction(_extractor.GetTableStructureDetailAsync, new Parameters
+            FunctionDeclarationHelper.RegisterFunction(_extractor.GetTableStructureDetailAsync, new Parameters
             {
                 Properties = new
                 {
@@ -312,13 +295,14 @@ It **MUST** include at least:
         {
             var instruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
             instruction = instruction.Replace("{Database_Type}", _extractor.DatabaseType.ToString());
-            var functionDeclarations = FunctionCallingHelper.FunctionDeclarations;
+            var functionDeclarations = FunctionDeclarationHelper.FunctionDeclarations;
 
             var apiRequest = new ApiRequestBuilder()
                 .WithSystemInstruction(instruction)
                 .WithPrompt(userInput)
                 .DisableAllSafetySettings()
-                .WithFunctionDeclarations(functionDeclarations, FunctionCallingMode.AUTO)
+                .WithTools(new ToolBuilder().AddFunctionDeclarations(functionDeclarations))
+                .SetFunctionCallingMode(FunctionCallingMode.AUTO)
                 .Build();
 
             var modelResponse = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash);
@@ -369,7 +353,8 @@ It **MUST** include at least:
                     var apiRequestWithFunctions = new ApiRequestBuilder()
                         .WithSystemInstruction(instruction)
                         .DisableAllSafetySettings()
-                        .WithFunctionDeclarations(functionDeclarations, FunctionCallingMode.AUTO)
+                        .WithTools(new ToolBuilder().AddFunctionDeclarations(functionDeclarations))
+                        .SetFunctionCallingMode(FunctionCallingMode.AUTO)
                         .WithFunctionResponses(functionResponses)
                         .Build();
 
@@ -398,51 +383,48 @@ It **MUST** include at least:
         {
             switch (function.Name)
             {
-                case var name when name == FunctionCallingHelper.GetFunctionName(_extractor.ExecuteQueryAsync):
+                case var name when name == FunctionDeclarationHelper.GetFunctionName(_extractor.ExecuteQueryAsync):
                     {
-                        var sqlQuery = GeminiDotNET.Helpers.FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
+                        var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
                         SetProgressMessage($"Let me execute this query to check the data:\n\n```sql\n{sqlQuery}\n```");
                         var dataTable = await _extractor.ExecuteQueryAsync(sqlQuery);
                         SetProgressDataTable(sqlQuery, dataTable);
                         return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
                     }
-                case var name when name == FunctionCallingHelper.GetFunctionName(_extractor.ExecuteNonQueryAsync):
+                case var name when name == FunctionDeclarationHelper.GetFunctionName(_extractor.ExecuteNonQueryAsync):
                     {
-                        var sqlQuery = GeminiDotNET.Helpers.FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
+                        var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
                         SetProgressMessage($"Let me execute the command:\n\n```sql\n{sqlQuery}\n```");
                         await _extractor.ExecuteNonQueryAsync(sqlQuery);
                         SetProgressMessage("Command executed successfully.");
                         return FunctionCallingHelper.CreateResponse(name, $"Command executed successfully.\n\n```sql\n{sqlQuery}\n```");
                     }
-                case var name when name == FunctionCallingHelper.GetFunctionName(_extractor.GetTableStructureDetailAsync):
+                case var name when name == FunctionDeclarationHelper.GetFunctionName(_extractor.GetTableStructureDetailAsync):
                     {
-                        var schema = GeminiDotNET.Helpers.FunctionCallingHelper.GetParameterValue<string>(function, "schema");
-                        var table = GeminiDotNET.Helpers.FunctionCallingHelper.GetParameterValue<string>(function, "table");
+                        var schema = FunctionCallingHelper.GetParameterValue<string>(function, "schema");
+                        var table = FunctionCallingHelper.GetParameterValue<string>(function, "table");
                         SetProgressMessage($"Let me check the schema information for the table `{schema}.{table}`");
                         var schemaInfo = await _extractor.GetTableStructureDetailAsync(schema, table);
                         SetProgressDataTable(null, schemaInfo);
                         return FunctionCallingHelper.CreateResponse(name, schemaInfo.ToMarkdown());
                     }
-                case var name when name == FunctionCallingHelper.GetFunctionName(_extractor.SearchSchemasByNameAsync):
+                case var name when name == FunctionDeclarationHelper.GetFunctionName(_extractor.SearchTablesByNameAsync):
                     {
-                        var keyword = GeminiDotNET.Helpers.FunctionCallingHelper.GetParameterValue<string>(function, "keyword");
-                        SetProgressMessage($"Searching for schemas with keyword `{keyword}`...");
-                        var schemaNames = await _extractor.SearchSchemasByNameAsync(keyword);
-                        var schemaNamesInMarkdown = string.Join(", ", schemaNames.Select(x => $"`{x}`"));
-                        SetProgressMessage($"Found {schemaNames.Count} schemas with keyword `{keyword}`:\n\n{schemaNamesInMarkdown}");
-                        return FunctionCallingHelper.CreateResponse(name, schemaNamesInMarkdown);
-                    }
-                case var name when name == FunctionCallingHelper.GetFunctionName(_extractor.SearchTablesByNameAsync):
-                    {
-                        var schema = GeminiDotNET.Helpers.FunctionCallingHelper.GetParameterValue<string>(function, "schema");
-                        var keyword = GeminiDotNET.Helpers.FunctionCallingHelper.GetParameterValue<string>(function, "keyword");
-                        SetProgressMessage($"Searching for tables in schema `{schema}` with keyword `{keyword}`...");
-                        var tableNames = await _extractor.SearchTablesByNameAsync(schema, keyword);
+                        var keyword = FunctionCallingHelper.GetParameterValue<string>(function, "keyword");
+                        if(string.IsNullOrEmpty(keyword))
+                        {
+                            SetProgressMessage("Searching for all accessible tables...");
+                        }
+                        else
+                        {
+                            SetProgressMessage($"Searching for tables using keyword `{keyword}`...");
+                        }
+                        var tableNames = await _extractor.SearchTablesByNameAsync(keyword);
                         var tableNamesInMarkdown = string.Join(", ", tableNames.Select(x => $"`{x}`"));
-                        SetProgressMessage($"Found {tableNames.Count} tables in schema `{schema}` with keyword `{keyword}`:\n\n{tableNamesInMarkdown}");
+                        SetProgressMessage($"Found {tableNames.Count} tables with keyword `{keyword}`:\n\n{tableNamesInMarkdown}");
                         return FunctionCallingHelper.CreateResponse(name, tableNamesInMarkdown);
                     }
-                case var name when name == FunctionCallingHelper.GetFunctionName(_extractor.GetUserPermissionsAsync):
+                case var name when name == FunctionDeclarationHelper.GetFunctionName(_extractor.GetUserPermissionsAsync):
                     {
                         SetProgressMessage("Retrieving user permissions...");
                         var permissions = await _extractor.GetUserPermissionsAsync();
@@ -450,24 +432,24 @@ It **MUST** include at least:
                         SetProgressMessage($"Found {permissions.Count} permissions:\n\n{permissionsInMarkdown}");
                         return FunctionCallingHelper.CreateResponse(name, permissionsInMarkdown);
                     }
-                case var name when name == FunctionCallingHelper.GetFunctionName(RequestForActionPlanAsync):
+                case var name when name == FunctionDeclarationHelper.GetFunctionName(RequestForActionPlanAsync):
                     {
                         SetProgressMessage("Analyzing the situation and creating an action plan...");
                         var actionPlan = await RequestForActionPlanAsync();
                         SetProgressMessage(actionPlan);
                         return FunctionCallingHelper.CreateResponse(name, actionPlan);
                     }
-                case var name when name == FunctionCallingHelper.GetFunctionName(RequestForInternetSearchAsync):
+                case var name when name == FunctionDeclarationHelper.GetFunctionName(RequestForInternetSearchAsync):
                     {
-                        var requirement = GeminiDotNET.Helpers.FunctionCallingHelper.GetParameterValue<string>(function, "query");
+                        var requirement = FunctionCallingHelper.GetParameterValue<string>(function, "query");
                         SetProgressMessage($"Let me perform an in-depth internet search following this description:\n\n{requirement}");
                         var searchResult = await RequestForInternetSearchAsync(requirement);
                         SetProgressMessage(searchResult);
                         return FunctionCallingHelper.CreateResponse(name, searchResult);
                     }
-                case var name when name == FunctionCallingHelper.GetFunctionName(ChangeTheConversationLanguage):
+                case var name when name == FunctionDeclarationHelper.GetFunctionName(ChangeTheConversationLanguage):
                     {
-                        var language = GeminiDotNET.Helpers.FunctionCallingHelper.GetParameterValue<string>(function, "language");
+                        var language = FunctionCallingHelper.GetParameterValue<string>(function, "language");
                         ChangeTheConversationLanguage(language);
                         return FunctionCallingHelper.CreateResponse(name, $"From now on, the agent **must use {language}** for the conversation (except for the tool calling).");
                     }
@@ -499,27 +481,100 @@ It **MUST** include at least:
                 .Replace("{DateTime_Now}", DateTime.Now.ToString("HH:mm:ss, mm.MM.yyyy"));
         }
 
-        [FunctionDeclaration("request_for_action_plan", @"Request an action plan based on the current situation. This will analyze the current situation and generate a detailed action plan.
-Use this function when you encounter a situation where you are unsure how to proceed, have encountered an unexpected error from another tool that you cannot resolve, or believe the user's request requires a sequence of actions that needs higher-level strategic planning beyond simple SQL execution.
-This tool signals a need for collaborative problem-solving or guidance.
+        [FunctionDeclaration("request_for_action_plan", @"Request an action plan based on the current situation.
+This function triggers a **higher-level reasoning process** to generate a structured, step-by-step **action plan** that responds to ambiguous, uncertain, or complex situations.
 
-Specifically, use this when:
-- A tool call results in an error you cannot diagnose or fix by simply retrying or slightly modifying parameters (e.g., persistent permission issues, unexpected database state).
-- You believe the user's request requires a sequence of actions that needs higher-level strategic planning beyond simple SQL execution.
-- It is a signal that you need to escalate the problem for collaborative problem-solving or guidance.
-- It is not intended for direct user interaction but rather for internal use to clarify the current state or request further assistance.
-- It is a call to seek further assistance if the current approach is insufficient or unclear.
-- It is a signal that the current path is too risky, and you need to escalate for a revised strategy.
-- The user's request is very high-level or ambiguous, and initial clarifications haven't led to a concrete, safe series of steps.
-- You need to perform a complex task that might involve multiple tool calls and conditional logic, and you require confirmation or a structured approach.")]
+---
+
+### **Purpose**
+
+Use this function when you:
+
+* Encounter **ambiguity, uncertainty**, or a **lack of sufficient context** to safely proceed.
+* Face **persistent tool errors** or **unexpected database responses** that can’t be resolved with retries or parameter tweaks.
+* Need to **formulate a multi-step strategy** to fulfill a complex or vague user request.
+* Detect that the current path is **risky, error-prone, or poorly defined**, and continuing may lead to unsafe operations or user confusion.
+
+---
+
+### **When to Call This Function**
+
+#### Error Escalation / Recovery
+
+* A function call (e.g., `get_table_structure`, `execute_query`) fails **repeatedly**, and the error:
+
+  * Is unclear or undocumented
+  * Indicates **permission issues** or **schema anomalies**
+  * Suggests deeper structural problems (e.g., missing objects, circular dependencies)
+
+> *“Query failed due to missing columns, but column names appear correct. Retrying won’t help — request an action plan.”*
+
+#### High-Level Ambiguous Request
+
+* The user asks for something **broad, unclear, or strategic**, such as:
+
+  * “Help me explore this database.”
+  * “Can you optimize this whole workflow?”
+  * “What's the best way to analyze our customer churn?”
+
+> *“Too vague for direct SQL — need a structured breakdown with decision points.”*
+
+####  Complex Task Decomposition
+
+* A task clearly requires **multiple steps** involving:
+
+  * Several tool calls
+  * Conditional branches
+  * Safe sequencing (e.g., inspect → validate → execute → verify)
+* But the **flow is not yet established**, or too risky to guess.
+
+> *“The user wants to delete inactive accounts. You need to check constraints, foreign keys, and ask for confirmation — request an action plan.”*
+
+#### Stuck or Unsafe
+
+* The current approach feels **unsafe**, or you’re unsure whether continuing will:
+
+  * Violate constraints
+  * Cause irreversible actions
+  * Misunderstand the user’s real intent
+
+> *“The table has no primary key. A DELETE is requested. Need help deciding how to proceed safely.”*
+
+#### Collaboration Trigger
+
+* You believe this situation needs:
+
+  * Another agent to step in
+  * Supervisor logic
+  * A structured review before taking action
+
+> *“The user might be asking something outside current capabilities or boundaries — escalate.”*
+
+---
+
+### **What This Function Is NOT For**
+
+* Not for simple query planning
+* Not for debugging syntax errors (try re-running or adjusting the query first)
+* Not for interacting directly with the user (this is an **internal reasoning function**)
+* Not for retrying the same call with minor parameter tweaks
+
+---
+
+### *Best Practices**
+
+* Treat this as a signal for **multi-step reasoning** or **error resolution**.
+* Use when you're **not confident** in how to proceed and want a **structured resolution path**.
+* Expect the output to be an **ordered list of actions** (e.g., “First call function X, then verify Y, finally run Z”).")]
         private async Task<string> RequestForActionPlanAsync()
         {
-            var instruction = await FileHelper.ReadFileAsync("Instructions /ActionPlan.md");
+            var instruction = await FileHelper.ReadFileAsync("Instructions/Action Plan.md");
 
             var actionPlanRequest = new ApiRequestBuilder()
                 .WithSystemInstruction(instruction.Replace("{Database_Type}", _extractor.DatabaseType.ToString()))
                 .DisableAllSafetySettings()
-                .WithFunctionDeclarations(FunctionCallingHelper.FunctionDeclarations, FunctionCallingMode.NONE)
+                .WithTools(new ToolBuilder().AddFunctionDeclarations(FunctionDeclarationHelper.FunctionDeclarations))
+                .SetFunctionCallingMode(FunctionCallingMode.NONE)
                 .WithPrompt("I have some blocking points here and need you to make an action plan to overcome. Now think deeply step-by-step about the current situation, then provide a clear and detailed action plan.")
                 .Build();
 
@@ -528,41 +583,134 @@ Specifically, use this when:
             return actionPlanResponse.Content;
         }
 
-        [FunctionDeclaration("request_for_internet_search", @"Perform an in-depth internet search based on the provided query. Use this function ONLY when you need external information from the internet using Google Search engine to better understand or fulfill a user's database-related request.
-This is NOT for general web browsing.
+        [FunctionDeclaration("request_for_internet_search", @"Perform an in-depth **Google Search** to retrieve external information from the internet.
+Use this function **ONLY** when essential details are unavailable through internal knowledge or schema-aware tools, and you need **outside context** to fulfill or enhance a **database-related request**.
 
-Situations for use include:
-- The user asks a question about a feature, error code, or concept that is not within your current knowledge base and cannot be determined through schema inspection or existing tools.
-- The user's query implies knowledge of external factors that might influence data interpretation (e.g., 'Find customers affected by the recent policy change announced on [website]').
-- You need to understand a specific technical term or standard practice related to the SQL database that is blocking your ability to form a safe and effective plan.
-- You want to gather additional context or best practices from external sources to enhance your understanding of the user's request.
-- You need to find information that is not directly related to the database schema or data but is relevant to the user's request (e.g., industry standards, recent updates, etc.).
-- You are trying to find solutions to common problems or errors that are not specific to the database schema but are relevant to the user's request.
-- You need to search for best practices or common patterns related to the user's request that are not specific to the database schema but are relevant to the user's request.
-- You need to search for the solution for dealing with a specific error code or message that is not directly related to the database schema but is relevant to the user's request.
-- You might want to look for documentation that relates to the current database version or features that are not covered by the schema tools.
-- You want to search for the SQL syntax or examples that are not directly related to the database schema but are relevant to the user's request.
-- You might want to search for the SQL performance tuning tips or optimization techniques that can enhance query efficiency and effectiveness.
-- You might want to search for external insights or recent trends that could inform your query strategy.
-- You want to search for best practices for authoring complex SQL queries that can optimize execution time and resource consumption.
+---
 
-Important notes:
-- **DO NOT** use this for information readily available through schema tools or simple SQL queries.
-- Always prioritize internal knowledge and database introspection tools first.
-- When calling, provide a very specific query detailing the information needed and the context.")]
+### **Purpose**
+
+Use this function to:
+
+* Understand technical concepts, error codes, or behaviors **outside current database metadata or tool-based introspection**.
+* Fetch **external documentation**, **real-world examples**, **best practices**, or **community discussions** relevant to SQL, schema design, database configuration, or performance optimization.
+* Incorporate **non-schema-specific industry knowledge** to better fulfill the user’s request.
+
+---
+
+### **When to Use**
+
+#### **Unknown Concepts / Terminology**
+
+* The user references:
+
+  * A feature or standard outside your training data (e.g., “ISO 20022 for financial databases”).
+  * An acronym, pattern, or methodology that you can't infer (e.g., “explain PAXOS in distributed SQL”).
+
+> *“I don’t understand this protocol or term — look it up externally.”*
+
+---
+
+#### **Error Code Lookup**
+
+* You encounter an **error code or message** (e.g., `ORA-00933`, `SQLSTATE[HY000]`) that is:
+
+  * Unfamiliar or vendor-specific
+  * Not solvable through retry or schema inspection
+
+> *“The query fails with a SQL error I've never seen — search for solutions.”*
+
+---
+
+#### **Feature-Specific Guidance**
+
+* The user asks about:
+
+  * **New or niche features** in SQL engines (e.g., `MERGE` syntax in MySQL 8.0)
+  * Differences between database engine versions (e.g., “Has Azure SQL enabled `STRING_AGG` yet?”)
+  * Usage of **vendor-specific extensions** (e.g., `Oracle Autonomous Database` or `Snowflake Streams`)
+
+> *“Schema tools won’t show if the feature is available — check official documentation.”*
+
+---
+
+#### **Search for Best Practices / Examples**
+
+* You need to find:
+
+  * Real-world SQL examples (e.g., recursive CTEs, window functions)
+  * Community-vetted **performance tuning tips**
+  * **Best practices for indexing**, partitioning, or materialized views
+
+> *“This join is slow — look up tuning strategies for large hash joinsr.”*
+
+---
+
+#### **Cross-Domain Context**
+
+* The user query relates to **external, domain-specific events** or **non-database content**:
+
+  * “Find users impacted by the recent regulation posted on `example.com`”
+  * “Correlate sales with the new Apple product release schedule”
+
+> *“I need public information to correlate internal data meaningfully.”*
+
+---
+
+### **Repeatable Patterns Where This Helps**
+
+| Use Case                      | Why External Search Helps                    |
+| ----------------------------- | -------------------------------------------- |
+| Error analysis                | Schema inspection won’t explain vendor error |
+| Advanced SQL usage            | Complex queries need proven examples         |
+| Feature detection by version  | Schema tools don’t show feature availability |
+| Performance tuning            | Real-world advice is often external          |
+| Vendor-specific syntax quirks | Requires specific documentation or examples  |
+| Domain-specific policy lookup | Schema doesn’t reflect external regulations  |
+| Strategy formulation          | Need broader perspective to plan or validate |
+
+---
+
+### **When NOT to Use**
+
+* DO NOT search for table names, column types, or schema details — use schema tools like `get_table_structure`, `search_tables_by_name`, or `get_database_schema`.
+* DO NOT search for answers that can be retrieved using `execute_query` or simple metadata queries.
+* DO NOT use for general browsing or user entertainment purposes.
+* DO NOT use vague or broad queries — queries must be **targeted and contextualized**.
+
+---
+
+### **Important Notes**
+
+* **Be specific**: Always include the full context in the query, e.g., `""SQL Server 2022 error 3621 MERGE statement fails when nulls in source""`.
+* **Internal first**: Exhaust all internal schema-aware reasoning before falling back to internet search.
+* **Fallback mode**: Only use when essential to solving the user’s request safely and accurately.
+
+---
+
+### Summary
+
+Use this function to retrieve **critical, missing context** from the internet when:
+
+* Schema tools and internal knowledge fall short
+* A specific external error or domain concept is blocking progress
+* You need best practices, version differences, or vendor-specific behavior clarification
+
+> Use it responsibly. Prioritize internal analysis. Be precise. Always focus on **database-relevant** augmentation.")]
         private async Task<string> RequestForInternetSearchAsync(string requirement)
         {
             var searchRequest = new ApiRequestBuilder()
                 .WithSystemInstruction(_globalInstruction)
-                .EnableGrounding()
+                .WithTools(new ToolBuilder().EnableGoogleSearch())
                 .WithDefaultGenerationConfig(0.5F)
                 .DisableAllSafetySettings()
                 .WithPrompt($"Now perform an **in-depth internet research**, then provide a detailed reported in markdown format. The search result MUST satify the below requirement:\n\n{requirement}")
                 .Build();
 
-            var searchResponse = await _generator.GenerateContentAsync(searchRequest, ModelVersion.Gemini_20_Flash);
-            return searchResponse.Content;
+            var generator = new Generator(Cache.ApiKey);
 
+            var searchResponse = await generator.GenerateContentAsync(searchRequest, ModelVersion.Gemini_20_Flash);
+            return searchResponse.Content;
         }
     }
 }

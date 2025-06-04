@@ -1,4 +1,5 @@
 ﻿using AskDB.Commons.Enums;
+using AskDB.Commons.Extensions;
 using MySql.Data.MySqlClient;
 using System.Data;
 
@@ -13,13 +14,13 @@ namespace DatabaseInteractor.Services.Extractors
 
         public override async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
         {
-            using var connection = new MySqlConnection(ConnectionString);
-            using var command = new MySqlCommand(sqlQuery, connection);
-            var dataTable = new DataTable();
-
+            await using var connection = new MySqlConnection(ConnectionString);
+            await using var command = new MySqlCommand(sqlQuery, connection);
+            
             await connection.OpenAsync();
 
-            using var reader = await command.ExecuteReaderAsync();
+            await using var reader = await command.ExecuteReaderAsync();
+            var dataTable = new DataTable();
             dataTable.Load(reader);
 
             return dataTable;
@@ -47,24 +48,9 @@ namespace DatabaseInteractor.Services.Extractors
 
         public override async Task<List<string>> GetUserPermissionsAsync()
         {
-            var permissions = new List<string>();
             var query = "SHOW GRANTS FOR CURRENT_USER()";
-            using (var connection = new MySqlConnection(ConnectionString))
-            {
-                using var command = new MySqlCommand(query, connection);
-                await connection.OpenAsync();
-                using var reader = await command.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
-                {
-                    permissions.Add(reader.GetString(0));
-                }
-            }
-            return permissions;
-        }
-
-        public override Task<List<string>> SearchSchemasByNameAsync(string? keyword)
-        {
-            throw new NotImplementedException();
+            var data = await ExecuteQueryAsync(query);
+            return data.ToListString();
         }
 
         public override async Task<DataTable> GetTableStructureDetailAsync(string? schema, string table)
@@ -94,16 +80,11 @@ namespace DatabaseInteractor.Services.Extractors
                 ORDER BY
                     cols.ORDINAL_POSITION;";
 
-            using var connection = new MySqlConnection(ConnectionString);
-            using var command = new MySqlCommand(query, connection);
+            await using var command = new MySqlCommand(query);
             command.Parameters.AddWithValue("@schema", (object?)schema ?? DBNull.Value);
             command.Parameters.AddWithValue("@table", table);
 
-            var dataTable = new DataTable();
-            await connection.OpenAsync();
-            using var reader = await command.ExecuteReaderAsync();
-            dataTable.Load(reader);
-            return dataTable;
+            return await ExecuteQueryAsync(command.CommandText);
         }
 
         public override async Task EnsureDatabaseConnectionAsync()
@@ -123,26 +104,16 @@ namespace DatabaseInteractor.Services.Extractors
             }
         }
 
-        public override async Task<List<string>> SearchTablesByNameAsync(string? schema, string? keyword)
+        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword)
         {
-            var query = @"
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = IFNULL(@schema, DATABASE()) 
-                    AND table_name COLLATE utf8mb4_general_ci LIKE CONCAT('%', @keyword, '%');";
+            var query = "SELECT table_name FROM information_schema.tables WHERE table_name COLLATE utf8mb4_general_ci LIKE CONCAT('%', @keyword, '%');";
 
             using var connection = new MySqlConnection(ConnectionString);
             using var command = new MySqlCommand(query, connection);
-            command.Parameters.AddWithValue("@schema", (object?)schema ?? DBNull.Value);
-            command.Parameters.AddWithValue("@table", keyword);
+            command.Parameters.AddWithValue("@keyword", keyword);
 
-            using var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
-            var table = new List<string>();
-            while (await reader.ReadAsync())
-            {
-                table.Add(reader.GetString(0));
-            }
-            return table;
+            var data = await ExecuteQueryAsync(command.CommandText);
+            return data.ToListString();
         }
     }
 }

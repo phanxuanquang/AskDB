@@ -1,4 +1,5 @@
 ﻿using AskDB.Commons.Enums;
+using AskDB.Commons.Extensions;
 using Npgsql;
 using System.Data;
 
@@ -13,13 +14,13 @@ namespace DatabaseInteractor.Services.Extractors
 
         public override async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
         {
-            using var connection = new NpgsqlConnection(ConnectionString);
-            using var command = new NpgsqlCommand(sqlQuery, connection);
-            var dataTable = new DataTable();
-
+            await using var connection = new NpgsqlConnection(ConnectionString);
+            await using var command = new NpgsqlCommand(sqlQuery, connection);
+           
             await connection.OpenAsync();
 
-            using var reader = await command.ExecuteReaderAsync();
+            var dataTable = new DataTable();
+            await using var reader = await command.ExecuteReaderAsync();
             dataTable.Load(reader);
 
             return dataTable;
@@ -27,33 +28,27 @@ namespace DatabaseInteractor.Services.Extractors
 
         public override async Task ExecuteNonQueryAsync(string sqlQuery)
         {
-            using var connection = new NpgsqlConnection(ConnectionString);
-            using var command = new NpgsqlCommand(sqlQuery, connection);
+            await using var connection = new NpgsqlConnection(ConnectionString);
             await connection.OpenAsync();
-            await command.ExecuteNonQueryAsync();
+            await using var transaction = await connection.BeginTransactionAsync();
+            await using var command = new NpgsqlCommand(sqlQuery, connection, transaction);
+            try
+            {
+                await command.ExecuteNonQueryAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public override async Task<List<string>> GetUserPermissionsAsync()
         {
-            var permissions = new List<string>();
             var query = "SELECT privilege_type FROM information_schema.role_table_grants WHERE grantee = CURRENT_USER";
-
-            using (var connection = new NpgsqlConnection(ConnectionString))
-            {
-                using var command = new NpgsqlCommand(query, connection);
-                await connection.OpenAsync();
-                using var reader = await command.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
-                {
-                    permissions.Add(reader.GetString(0));
-                }
-            }
-            return permissions;
-        }
-
-        public override Task<List<string>> SearchSchemasByNameAsync(string? keyword)
-        {
-            throw new NotImplementedException();
+            var data = await ExecuteQueryAsync(query);
+            return data.ToListString();
         }
 
         public override Task<DataTable> GetTableStructureDetailAsync(string? schema, string table)
@@ -63,7 +58,7 @@ namespace DatabaseInteractor.Services.Extractors
 
         public override async Task EnsureDatabaseConnectionAsync()
         {
-            using var connection = new NpgsqlConnection(ConnectionString);
+            await using var connection = new NpgsqlConnection(ConnectionString);
             try
             {
                 await connection.OpenAsync();
@@ -74,29 +69,25 @@ namespace DatabaseInteractor.Services.Extractors
             }
         }
 
-        public override async Task<List<string>> SearchTablesByNameAsync(string? schema, string? keyword)
+        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword)
         {
-            var tables = new List<string>();
-            var query = "SELECT table_name FROM information_schema.tables WHERE table_schema = @schema";
-            if (!string.IsNullOrEmpty(keyword))
-            {
-                query += " AND table_name ILIKE @keyword";
-            }
+            var query = @"
+                SELECT 
+                    quote_ident(table_schema) || '.' || quote_ident(table_name) AS full_table_name
+                FROM 
+                    information_schema.tables
+                WHERE 
+                    table_type = 'BASE TABLE'
+                    AND (table_schema NOT IN ('pg_catalog', 'information_schema'))
+                    AND table_name ILIKE @keyword
+                ORDER BY 
+                    table_schema, table_name;";
 
-            using var connection = new NpgsqlConnection(ConnectionString);
-            using var command = new NpgsqlCommand(query, connection);
-            command.Parameters.AddWithValue("@schema", string.IsNullOrEmpty(schema) ? "public" : schema);
-            if (!string.IsNullOrEmpty(keyword))
-            {
-                command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
-            }
-            await connection.OpenAsync();
-            using var reader = await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                tables.Add(reader.GetString(0));
-            }
-            return tables;
+            await using var command = new NpgsqlCommand(query);
+            command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
+           
+            var data = await ExecuteQueryAsync(command.CommandText);
+            return data.ToListString();
         }
     }
 }

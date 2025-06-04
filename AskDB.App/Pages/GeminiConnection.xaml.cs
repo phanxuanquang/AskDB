@@ -81,7 +81,7 @@ namespace AskDB.App
 
                     Cache.ApiKey = _geminiApiKey;
 
-                    if(Cache.HasUserEverConnectedToDatabase)
+                    if (Cache.HasUserEverConnectedToDatabase)
                     {
                         this.Frame.Navigate(typeof(ExistingDatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
                     }
