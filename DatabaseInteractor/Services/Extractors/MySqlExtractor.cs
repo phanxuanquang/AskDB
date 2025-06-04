@@ -115,5 +115,14 @@ namespace DatabaseInteractor.Services.Extractors
             var data = await ExecuteQueryAsync(command.CommandText);
             return data.ToListString();
         }
+
+        public override async Task<int> GetTableCountAsync()
+        {
+            var query = "SELECT COUNT(*) FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_schema NOT IN ('mysql', 'information_schema', 'performance_schema', 'sys');";
+            using var connection = new MySqlConnection(ConnectionString);
+            using var command = new MySqlCommand(query, connection);
+            await connection.OpenAsync();
+            return Convert.ToInt32(await command.ExecuteScalarAsync());
+        }
     }
 }

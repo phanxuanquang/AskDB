@@ -24,6 +24,7 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Globalization;
 using Windows.Storage.Pickers;
 using Windows.System;
 using WinRT.Interop;
@@ -55,6 +56,8 @@ namespace AskDB.App.Pages
                 return;
             }
 
+            SetLoading(true);
+
             _globalInstruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
             ChangeTheConversationLanguage("English");
 
@@ -67,9 +70,21 @@ namespace AskDB.App.Pages
                 _ => throw new NotImplementedException(),
             };
 
-            _generator = new Generator(Cache.ApiKey).EnableChatHistory(50);
+            var tableCount = await _extractor.GetTableCountAsync();
+            if(tableCount > 200)
+            {
+                _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", "The connected database has so many tables (over 200), so you **MUST NOT** retrieve all table names (using the `search_tables_by_name` function with the parameter is empty string) in any case! Remember to prompt the user about this and ask for some hints to search for the table names");
+            }
+            else
+            {
+                _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", $"The connected database has {tableCount} tables");
+            }
+
+            _generator = new Generator(Cache.ApiKey).EnableChatHistory(150);
 
             InitFunctionCalling();
+
+            SetLoading(false);
         }
         private async void ExportButton_Click(object sender, RoutedEventArgs e)
         {
@@ -126,6 +141,7 @@ namespace AskDB.App.Pages
             catch (Exception ex)
             {
                 SetUserMessage($"Error: {ex.Message}. {ex.InnerException?.Message}", false);
+                SetProgressMessage($"An error occurred while processing your request: {ex.Message}\n\n```json\n{_generator.HistoryContent.AsString()}\n```");
             }
             finally
             {
@@ -293,12 +309,10 @@ It **MUST** include at least:
 
         private async Task HandleUserInputAsync(string userInput)
         {
-            var instruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
-            instruction = instruction.Replace("{Database_Type}", _extractor.DatabaseType.ToString());
             var functionDeclarations = FunctionDeclarationHelper.FunctionDeclarations;
 
             var apiRequest = new ApiRequestBuilder()
-                .WithSystemInstruction(instruction)
+                .WithSystemInstruction(_globalInstruction)
                 .WithPrompt(userInput)
                 .DisableAllSafetySettings()
                 .WithTools(new ToolBuilder().AddFunctionDeclarations(functionDeclarations))
@@ -351,14 +365,14 @@ It **MUST** include at least:
                     }
 
                     var apiRequestWithFunctions = new ApiRequestBuilder()
-                        .WithSystemInstruction(instruction)
+                        .WithSystemInstruction(_globalInstruction)
                         .DisableAllSafetySettings()
                         .WithTools(new ToolBuilder().AddFunctionDeclarations(functionDeclarations))
                         .SetFunctionCallingMode(FunctionCallingMode.AUTO)
                         .WithFunctionResponses(functionResponses)
                         .Build();
 
-                    var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash_Lite);
+                    var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash);
 
                     functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
 
@@ -459,9 +473,7 @@ It **MUST** include at least:
 
         private async void CopySqlButton_Click(object sender, RoutedEventArgs e)
         {
-            var context = (sender as Button)?.DataContext as ProgressContent;
-
-            if (context == null || string.IsNullOrEmpty(context.SqlCommand))
+            if ((sender as Button)?.DataContext is not ProgressContent context || string.IsNullOrEmpty(context.SqlCommand))
             {
                 return;
             }

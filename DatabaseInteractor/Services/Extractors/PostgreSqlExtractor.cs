@@ -89,5 +89,19 @@ namespace DatabaseInteractor.Services.Extractors
             var data = await ExecuteQueryAsync(command.CommandText);
             return data.ToListString();
         }
+
+        public override async Task<int> GetTableCountAsync()
+        {
+            var query = @"
+                SELECT COUNT(*) 
+                FROM information_schema.tables 
+                WHERE table_type = 'BASE TABLE' 
+                AND table_schema NOT IN ('pg_catalog', 'information_schema');";
+            await using var command = new NpgsqlCommand(query);
+            await using var connection = new NpgsqlConnection(ConnectionString);
+            command.Connection = connection;
+            await connection.OpenAsync();
+            return Convert.ToInt32(await command.ExecuteScalarAsync());
+        }
     }
 }

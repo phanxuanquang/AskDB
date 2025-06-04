@@ -53,7 +53,7 @@ namespace DatabaseInteractor.Services.Extractors
 
         public override async Task EnsureDatabaseConnectionAsync()
         {
-            using var connection = new SqliteConnection(ConnectionString);
+            await using var connection = new SqliteConnection(ConnectionString);
             try
             {
                 await connection.OpenAsync();
@@ -72,6 +72,15 @@ namespace DatabaseInteractor.Services.Extractors
             var data = await ExecuteQueryAsync(command.CommandText);
 
             return data.ToListString();
+        }
+
+        public override async Task<int> GetTableCountAsync()
+        {
+            var query = "SELECT COUNT(*) FROM sqlite_master WHERE type='table';";
+            await using var connection = new SqliteConnection(ConnectionString);
+            await using var command = new SqliteCommand(query, connection);
+            await connection.OpenAsync();
+            return Convert.ToInt32(await command.ExecuteScalarAsync());
         }
     }
 }

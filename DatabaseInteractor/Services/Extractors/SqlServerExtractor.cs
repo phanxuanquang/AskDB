@@ -7,9 +7,29 @@ namespace DatabaseInteractor.Services.Extractors
 {
     public class SqlServerExtractor : ExtractorBase
     {
+        private readonly List<string> _systemSchemas = new List<string>
+        {
+            "sys", "INFORMATION_SCHEMA", "db_owner", "db_accessadmin", "db_securityadmin",
+            "db_backupoperator", "db_ddladmin", "db_datareader", "db_datawriter",
+            "db_denydatareader", "db_denydatawriter"
+        };
+
         public SqlServerExtractor(string connectionString) : base(connectionString)
         {
             DatabaseType = DatabaseType.SqlServer;
+        }
+        public async Task<DataTable> ExecuteQueryAsync(SqlCommand command)
+        {
+            await using var connection = new SqlConnection(ConnectionString);
+            command.Connection = connection;
+
+            await connection.OpenAsync();
+
+            var dataTable = new DataTable();
+            await using var reader = await command.ExecuteReaderAsync();
+            dataTable.Load(reader);
+
+            return dataTable;
         }
 
         public override async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
@@ -18,20 +38,6 @@ namespace DatabaseInteractor.Services.Extractors
             await using var command = new SqlCommand(sqlQuery, connection);
             
             await connection.OpenAsync();
-            var dataTable = new DataTable();
-            await using var reader = await command.ExecuteReaderAsync();
-            dataTable.Load(reader);
-
-            return dataTable;
-        }
-
-        public async Task<DataTable> ExecuteQueryAsync(SqlCommand command)
-        {
-            await using var connection = new SqlConnection(ConnectionString);
-            command.Connection = connection;
-
-            await connection.OpenAsync();
-
             var dataTable = new DataTable();
             await using var reader = await command.ExecuteReaderAsync();
             dataTable.Load(reader);
@@ -126,21 +132,28 @@ namespace DatabaseInteractor.Services.Extractors
 
         public override async Task<List<string>> SearchTablesByNameAsync(string? keyword)
         {
-            var systemSchemas = new List<string>
-            {
-               "sys",  "INFORMATION_SCHEMA",  "db_owner",  "db_accessadmin",  "db_securityadmin",  "db_backupoperator",  "db_ddladmin",  "db_datareader",  "db_datawriter",  "db_denydatareader",  "db_denydatawriter"
-            };
-
             var query = @$"
                 SELECT '[' + table_schema + '].[' + table_name + ']' as TableFullName
                 FROM information_schema.tables 
-                WHERE table_type = 'BASE TABLE' AND TABLE_SCHEMA NOT IN ({string.Join(',', $"'{systemSchemas}'")}) AND table_name LIKE @keyword";
+                WHERE table_type = 'BASE TABLE' AND TABLE_SCHEMA NOT IN ({string.Join(',', $"'{_systemSchemas}'")}) AND table_name LIKE @keyword";
 
             await using var command = new SqlCommand(query);
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
 
             var data = await ExecuteQueryAsync(command);
             return data.ToListString();
+        }
+
+        public override async Task<int> GetTableCountAsync()
+        {
+            var query = @$"SELECT COUNT(*) FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND TABLE_SCHEMA NOT IN ({string.Join(',', $"'{_systemSchemas}'")})";
+
+            await using var command = new SqlCommand(query);
+            await using var connection = new SqlConnection(ConnectionString);
+            command.Connection = connection;
+            await connection.OpenAsync();
+
+            return Convert.ToInt32(await command.ExecuteScalarAsync());
         }
     }
 }

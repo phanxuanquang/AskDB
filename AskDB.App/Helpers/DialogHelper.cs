@@ -43,7 +43,7 @@ namespace AskDB.App.Helpers
                 Title = title,
                 Content = message,
                 PrimaryButtonText = primaryButtonText,
-                SecondaryButtonText = "Skip",
+                SecondaryButtonText = "Cancel",
                 XamlRoot = App.Window.Content.XamlRoot,
                 DefaultButton = defaultButton
             };

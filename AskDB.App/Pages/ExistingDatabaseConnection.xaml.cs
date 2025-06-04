@@ -120,9 +120,17 @@ namespace AskDB.App.Pages
             }
             catch (Exception ex)
             {
-                ExistingDatabaseConnectionInfors.Remove(data);
-                await _db.RemoveDatabaseCredentialAsync(data.Id);
-                await DialogHelper.ShowErrorAsync(ex.Message);
+                var result = await DialogHelper.ShowDialogWithOptions("Error", ex.Message, "Remove permanently");
+
+                if (result == ContentDialogResult.Primary)
+                {
+                    await _db.RemoveDatabaseCredentialAsync(data.Id);
+                    ExistingDatabaseConnectionInfors.Remove(data);
+                    if (ExistingDatabaseConnectionInfors.Count == 0)
+                    {
+                        ConnectionCredentialsPanel.Visibility = VisibilityHelper.SetVisible(false);
+                    }
+                }
             }
             finally
             {
@@ -160,7 +168,17 @@ namespace AskDB.App.Pages
             }
             catch (Exception ex)
             {
-                await DialogHelper.ShowErrorAsync(ex.Message);
+                var result = await DialogHelper.ShowDialogWithOptions("Error", ex.Message, "Remove permanently");
+
+                if (result == ContentDialogResult.Primary)
+                {
+                    await _db.RemoveConnectionStringAsync(data.Id);
+                    ExistingConnectionStringInfors.Remove(data);
+                    if (ExistingConnectionStringInfors.Count == 0)
+                    {
+                        ConnectionStringsPanel.Visibility = VisibilityHelper.SetVisible(false);
+                    }
+                }
             }
             finally
             {

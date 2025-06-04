@@ -231,5 +231,6 @@ If the user doesn’t specify a schema or the schema is unclear:
         public abstract Task<DataTable> GetTableStructureDetailAsync(string? schema, string table);
 
         public abstract Task EnsureDatabaseConnectionAsync();
+        public abstract Task<int> GetTableCountAsync();
     }
 }
