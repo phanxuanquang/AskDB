@@ -16,7 +16,7 @@ namespace DatabaseInteractor.Services.Extractors
         {
             await using var connection = new NpgsqlConnection(ConnectionString);
             await using var command = new NpgsqlCommand(sqlQuery, connection);
-           
+
             await connection.OpenAsync();
 
             var dataTable = new DataTable();
@@ -85,7 +85,7 @@ namespace DatabaseInteractor.Services.Extractors
 
             await using var command = new NpgsqlCommand(query);
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
-           
+
             var data = await ExecuteQueryAsync(command.CommandText);
             return data.ToListString();
         }

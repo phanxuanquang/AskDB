@@ -48,17 +48,17 @@
                                         CanUserReorderColumns="True" 
                                         CanUserResizeColumns="True"
                                         CanUserSortColumns="True"
-                                        IsDoubleTapEnabled="False"
                                         GridLinesVisibility="All"
-                                        AutoGenerateColumns="False" 
+                                        AutoGenerateColumns="True" 
                                         VerticalScrollBarVisibility="Auto"
-                                        ClipboardCopyMode="ExcludeHeader"
                                         BorderThickness="1"
                                         BorderBrush="{ThemeResource ControlElevationBorderBrush}"
                                         RowBackground="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
                                         AlternatingRowBackground="{ThemeResource ControlAltFillColorTertiaryBrush}"
                                         MaxHeight="500"
-                                        ItemsSource="{x:Bind QueryResults}"/>
+                                        ItemsSource="{x:Bind QueryResults}"
+                                        AutoGeneratingColumn="DataGrid_AutoGeneratingColumn"/>
+
                                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" Padding="8">
                                         <Button Padding="6" ToolTipService.ToolTip="Copy the SQL command" ToolTipService.Placement="Left" Click="CopySqlButton_Click">
                                             <FontIcon Glyph="&#xE8C8;" FontSize="14"/>
@@ -76,10 +76,6 @@
         </SplitView.Pane>
         <Grid>
             <Grid RowSpacing="8" Margin="0,0,8,0" x:Name="MessageSpace" Padding="12">
-                <Grid.OpacityTransition>
-                    <ScalarTransition />
-                </Grid.OpacityTransition>
-
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>

@@ -36,7 +36,7 @@ namespace DatabaseInteractor.Services.Extractors
         {
             await using var connection = new SqlConnection(ConnectionString);
             await using var command = new SqlCommand(sqlQuery, connection);
-            
+
             await connection.OpenAsync();
             var dataTable = new DataTable();
             await using var reader = await command.ExecuteReaderAsync();

@@ -5,7 +5,6 @@ using AskDB.Commons.Extensions;
 using CommunityToolkit.WinUI.UI.Controls;
 using DatabaseInteractor.Services;
 using DatabaseInteractor.Services.Extractors;
-using Gemini.NET;
 using GeminiDotNET;
 using GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling;
 using GeminiDotNET.ApiModels.Enums;
@@ -24,7 +23,6 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
-using Windows.Globalization;
 using Windows.Storage.Pickers;
 using Windows.System;
 using WinRT.Interop;
@@ -71,7 +69,7 @@ namespace AskDB.App.Pages
             };
 
             var tableCount = await _extractor.GetTableCountAsync();
-            if(tableCount > 200)
+            if (tableCount > 200)
             {
                 _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", "The connected database has so many tables (over 200), so you **MUST NOT** retrieve all table names (using the `search_tables_by_name` function with the parameter is empty string) in any case! Remember to prompt the user about this and ask for some hints to search for the table names");
             }
@@ -161,9 +159,9 @@ namespace AskDB.App.Pages
         #region Message and Progress Content Bindings
         private void SetLoading(bool isLoading)
         {
-            LoadingIndicator.SetLoading("Analyzing", isLoading);
+            LoadingIndicator.SetLoading("Working", isLoading);
             LoadingOverlay.Visibility = VisibilityHelper.SetVisible(isLoading);
-            MessageSpace.Opacity = isLoading ? 0.2 : 1;
+            MessageSpace.Opacity = isLoading ? 0.5 : 1;
         }
         private void SetUserMessage(string? message, bool isFromUser = false)
         {
@@ -192,22 +190,13 @@ namespace AskDB.App.Pages
                 return;
             }
 
-            var dataGrid = new DataGrid();
-            for (int i = 0; i < dataTable.Columns.Count; i++)
-            {
-                dataGrid.Columns.Add(new DataGridTextColumn()
-                {
-                    Header = dataTable.Columns[i].ColumnName,
-                    Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
-                });
-            }
-
             var progressContent = new ProgressContent
             {
                 Message = null,
                 SqlCommand = sqlCommand,
                 ActionButtonVisibility = VisibilityHelper.SetVisible(dataTable.Rows.Count > 0),
                 QueryResults = new ObservableCollection<object>(dataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray)),
+                Data = dataTable
             };
 
             ProgressContents.Add(progressContent);
@@ -370,6 +359,7 @@ It **MUST** include at least:
                         .WithTools(new ToolBuilder().AddFunctionDeclarations(functionDeclarations))
                         .SetFunctionCallingMode(FunctionCallingMode.AUTO)
                         .WithFunctionResponses(functionResponses)
+                        .WithPrompt("Now, based on the function responses and my request, provide the functions to call in order to satify my request, or provide me the final answer to my request if you can!")
                         .Build();
 
                     var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash);
@@ -425,7 +415,7 @@ It **MUST** include at least:
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_extractor.SearchTablesByNameAsync):
                     {
                         var keyword = FunctionCallingHelper.GetParameterValue<string>(function, "keyword");
-                        if(string.IsNullOrEmpty(keyword))
+                        if (string.IsNullOrEmpty(keyword))
                         {
                             SetProgressMessage("Searching for all accessible tables...");
                         }
@@ -723,6 +713,27 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
             var searchResponse = await generator.GenerateContentAsync(searchRequest, ModelVersion.Gemini_20_Flash);
             return searchResponse.Content;
+        }
+
+        private void DataGrid_AutoGeneratingColumn(object sender, DataGridAutoGeneratingColumnEventArgs e)
+        {
+            var dataGrid = sender as DataGrid;
+
+            if (dataGrid == null || dataGrid?.DataContext is not ProgressContent context || (context.Data == null || context.Data.Rows.Count == 0))
+            {
+                return;
+            }
+
+            dataGrid.Columns.Clear();
+
+            for (int i = 0; i < context.Data.Columns.Count; i++)
+            {
+                dataGrid.Columns.Add(new DataGridTextColumn()
+                {
+                    Header = context.Data.Columns[i].ColumnName,
+                    Binding = new Binding { Path = new PropertyPath("[" + i.ToString() + "]") }
+                });
+            }
         }
     }
 }

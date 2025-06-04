@@ -16,7 +16,7 @@ namespace DatabaseInteractor.Services.Extractors
         {
             await using var connection = new MySqlConnection(ConnectionString);
             await using var command = new MySqlCommand(sqlQuery, connection);
-            
+
             await connection.OpenAsync();
 
             await using var reader = await command.ExecuteReaderAsync();
