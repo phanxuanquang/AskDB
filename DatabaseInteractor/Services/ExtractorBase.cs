@@ -9,66 +9,105 @@ namespace DatabaseInteractor.Services
         protected string ConnectionString = connectionString;
         public DatabaseType DatabaseType { get; protected set; }
 
-        [FunctionDeclaration("execute_query", @"Retrieve a list of database-level and object-level permissions granted to the current user (i.e., the identity under which the current session is connected to the database).
+        [FunctionDeclaration("execute_query", @"Execute a **read-only SQL query** against the current database and return the result as a structured dataset (rows and columns).
+This function is strictly for executing `SELECT` statements or other **non-modifying**, **safe** SQL queries/scripts.
 
-Use this function **exclusively** to check what operations the current user is authorized to perform, both globally and per table/view/procedure.
+### **Purpose**
 
----
+Use this function when you need to **read**, **inspect**, or **analyze data** without altering the database state.
+This includes:
 
-### **When to call this function:**
+* Executing SELECT queries to retrieve specific information
+* Exploring data patterns
+* Building a mental model of the database structure and contents
+* Supporting intelligent recommendations or follow-up tool usage
 
-This function is **critical** in the following situations:
-
-#### **Diagnosing Errors or Failures**
-
-* A query fails with errors like:
-
-  * “Permission denied”
-  * “The SELECT/INSERT/UPDATE permission was denied on the object…”
-* You suspect that the user is trying to perform an action they are **not authorized** to do.
-
-#### **Proactive Permission Checking**
-
-* Before attempting an operation such as:
-
-  * `INSERT INTO` a table
-  * `DELETE FROM` a table
-  * Running a `SELECT` with JOINs across multiple tables
-  * Executing a stored procedure
-* Use this function to ensure that the current user **has the required permissions** and prevent failure in advance.
-
-#### **Explaining Capabilities**
-
-* The user may asks:
-
-  * “What can I do in this database?”
-  * “Do I have permission to update this table?”
-  * “Why can’t I run this query?”
-* You want to provide an **informative explanation** of the user's current access rights.
-
-#### **Security Context Awareness**
-
-* You’re working in a **multi-tenant system**, shared environment, or limited-access user session and need to understand the **boundaries of access**.
-* You are trying to assess whether a user can:
-
-  * Create new tables or views.
-  * Modify the schema.
-  * Drop objects.
-  * Execute admin-like commands.
-
-#### **Adaptive Query Generation**
-
-* You want to dynamically **generate SQL** based on the user’s actual capabilities (e.g., only suggest `SELECT` queries if they lack `INSERT`/`UPDATE`).
-* You want to provide **limited UI options** or disable actions based on their permission level (e.g., in a SQL assistant or admin tool).
+> “If your goal is to *observe* or *explore* the database — this is the tool.”
 
 ---
 
-### **Important notes:**
+### **When to Use**
 
-* This function only checks permissions **granted to the current session’s database user**.
-* It **does not modify** permissions or impersonate other users.
-* If the user’s identity is unclear or error messages point to possible permission issues, **call this function first** before attempting further diagnostics.
-")]
+This function can be used in a wide range of scenarios, including but not limited to:
+
+#### **General Data Exploration**
+
+* Browse sample rows from a table.
+* Understand value distributions of a column.
+* Examine recent entries.
+
+#### **Analytical Queries**
+
+* Summarize data.
+* Aggregate for trends.
+* Perform comparisons.
+
+#### **Data Profiling for Other Tools**
+
+* Retrieve column values to suggest filters.
+* Detect missing data.
+* Identify high-volume tables.
+
+#### **Context Building (Agent-Initiated)**
+
+Use this tool proactively to:
+
+* Build internal **knowledge of table contents** to support more accurate query generation
+* Create a **knowledge base** of common values, relationships, or patterns
+* Support intelligent **follow-up actions** or **suggestions to the user**
+* Confirm whether a certain assumption about the data is true before generating a recommendation
+* **Validate or enrich hypotheses** before attempting a multi-step operation
+* Prepare input for another function such as `generate_select_query` or `generate_update_query`
+
+#### **User Assistance & Clarification**
+
+* When user input is vague or underspecified (e.g., ""get me data on recent customers""), you can explore tables that might be relevant and validate them
+* If the user omits table or column names, use exploratory queries to infer likely sources
+* When the user provides partial criteria, use this tool to identify how to map them to actual data structures
+
+#### **Debugging & Investigation**
+
+* Check whether a previous action had any effect:
+  `SELECT * FROM Users WHERE Status = 'Deactivated'`
+* Confirm the presence or absence of problematic records
+* Investigate abnormal trends or suspicious data (e.g., spikes in logs, nulls, outliers)
+
+#### **Complex Workflow Support**
+
+Use as part of a multi-step logic chain:
+
+* Fetch data from one table to join or compare with another
+* Test a subquery separately before using it in a larger `generate_query`
+* Preview intermediate results for building nested queries
+
+---
+
+### **When NOT to Use**
+
+Do **not** use this function for any query that:
+
+* Modifies data or schema (INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, TRUNCATE)
+* Produces side effects (e.g., SELECT INTO, execution of procedures that mutate state)
+* Relies on transactional effects or triggers unless you're certain they’re read-only
+
+In such cases, escalate to:
+
+* `generate_update_query`, `generate_insert_query` for data changes
+* `request_for_action_plan` for ambiguous or high-risk paths
+
+---
+
+### **Tips**
+
+* **Explore before asking**: Run small `SELECT` queries to understand data when the user's request is vague or missing details. When in doubt, or when a user query is ambiguous, consider using `execute_query` **proactively** to explore potential answers, validate assumptions, and prepare smarter responses.
+* **Preview before action**: Always check affected rows with a `SELECT` before suggesting `UPDATE` or `DELETE`.
+* **Build context**: Query data to understand table relationships, key columns, and typical values before using other tools.
+* **Validate assumptions**: Confirm that target data exists and meets conditions before proceeding with logic or tool calls.
+* **Use for JOIN discovery**: Look for shared fields (e.g., `UserId`, `OrderId`) across tables to build safe JOINs.
+* **Sample rows smartly**: Pull a few rows to clarify structure, content, or to guide other tool outputs (like summaries or suggestions).
+* **Explore freely when helpful**: You’re allowed to query the DB to learn, build knowledge, or assist the user better — even without direct user instruction.
+* **Avoid surprises**: Don’t assume column names, data types, or content. Check first. 
+* **Think ahead**: Use early queries to prepare for more complex operations later.")]
         public abstract Task<DataTable> ExecuteQueryAsync(string sqlQuery);
 
         [FunctionDeclaration("execute_non_query", @"Execute a SQL query that does not return any result (e.g., INSERT, UPDATE, DELETE).
