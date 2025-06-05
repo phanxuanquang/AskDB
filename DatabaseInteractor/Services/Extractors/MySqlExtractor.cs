@@ -12,18 +12,24 @@ namespace DatabaseInteractor.Services.Extractors
             DatabaseType = DatabaseType.MySQL;
         }
 
-        public override async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
+        private async Task<DataTable> ExecuteQueryAsync(MySqlCommand command)
         {
             await using var connection = new MySqlConnection(ConnectionString);
-            await using var command = new MySqlCommand(sqlQuery, connection);
+            command.Connection = connection;
 
             await connection.OpenAsync();
 
-            await using var reader = await command.ExecuteReaderAsync();
             var dataTable = new DataTable();
+            await using var reader = await command.ExecuteReaderAsync();
             dataTable.Load(reader);
 
             return dataTable;
+        }
+
+        public override async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
+        {
+            await using var command = new MySqlCommand(sqlQuery);
+            return await ExecuteQueryAsync(command);
         }
 
         public override async Task ExecuteNonQueryAsync(string sqlQuery)
@@ -84,7 +90,7 @@ namespace DatabaseInteractor.Services.Extractors
             command.Parameters.AddWithValue("@schema", (object?)schema ?? DBNull.Value);
             command.Parameters.AddWithValue("@table", table);
 
-            return await ExecuteQueryAsync(command.CommandText);
+            return await ExecuteQueryAsync(command);
         }
 
         public override async Task EnsureDatabaseConnectionAsync()
@@ -108,11 +114,10 @@ namespace DatabaseInteractor.Services.Extractors
         {
             var query = "SELECT table_name FROM information_schema.tables WHERE table_name COLLATE utf8mb4_general_ci LIKE CONCAT('%', @keyword, '%');";
 
-            using var connection = new MySqlConnection(ConnectionString);
-            using var command = new MySqlCommand(query, connection);
+            using var command = new MySqlCommand(query);
             command.Parameters.AddWithValue("@keyword", keyword);
 
-            var data = await ExecuteQueryAsync(command.CommandText);
+            var data = await ExecuteQueryAsync(command);
             return data.ToListString();
         }
 

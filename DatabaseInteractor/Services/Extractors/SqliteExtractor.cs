@@ -12,18 +12,24 @@ namespace DatabaseInteractor.Services.Extractors
             DatabaseType = DatabaseType.SQLite;
         }
 
-        public override async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
+        private async Task<DataTable> ExecuteQueryAsync(SqliteCommand command)
         {
             await using var connection = new SqliteConnection(ConnectionString);
-            await using var command = new SqliteCommand(sqlQuery, connection);
-            var dataTable = new DataTable();
+            command.Connection = connection;
 
             await connection.OpenAsync();
 
+            var dataTable = new DataTable();
             await using var reader = await command.ExecuteReaderAsync();
             dataTable.Load(reader);
 
             return dataTable;
+        }
+
+        public override async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
+        {
+            await using var command = new SqliteCommand(sqlQuery);
+            return await ExecuteQueryAsync(command);
         }
 
         public override async Task ExecuteNonQueryAsync(string sqlQuery)
@@ -70,7 +76,6 @@ namespace DatabaseInteractor.Services.Extractors
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
 
             var data = await ExecuteQueryAsync(command.CommandText);
-
             return data.ToListString();
         }
 

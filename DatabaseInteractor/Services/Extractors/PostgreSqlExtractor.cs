@@ -12,10 +12,10 @@ namespace DatabaseInteractor.Services.Extractors
             DatabaseType = DatabaseType.PostgreSQL;
         }
 
-        public override async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
+        private async Task<DataTable> ExecuteQueryAsync(NpgsqlCommand command)
         {
             await using var connection = new NpgsqlConnection(ConnectionString);
-            await using var command = new NpgsqlCommand(sqlQuery, connection);
+            command.Connection = connection;
 
             await connection.OpenAsync();
 
@@ -24,6 +24,12 @@ namespace DatabaseInteractor.Services.Extractors
             dataTable.Load(reader);
 
             return dataTable;
+        }
+
+        public override async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
+        {
+            await using var command = new NpgsqlCommand(sqlQuery);
+            return await ExecuteQueryAsync(command);
         }
 
         public override async Task ExecuteNonQueryAsync(string sqlQuery)
@@ -86,7 +92,7 @@ namespace DatabaseInteractor.Services.Extractors
             await using var command = new NpgsqlCommand(query);
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
 
-            var data = await ExecuteQueryAsync(command.CommandText);
+            var data = await ExecuteQueryAsync(command);
             return data.ToListString();
         }
 

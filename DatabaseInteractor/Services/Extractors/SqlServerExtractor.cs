@@ -18,7 +18,8 @@ namespace DatabaseInteractor.Services.Extractors
         {
             DatabaseType = DatabaseType.SqlServer;
         }
-        public async Task<DataTable> ExecuteQueryAsync(SqlCommand command)
+
+        private async Task<DataTable> ExecuteQueryAsync(SqlCommand command)
         {
             await using var connection = new SqlConnection(ConnectionString);
             command.Connection = connection;
@@ -34,15 +35,8 @@ namespace DatabaseInteractor.Services.Extractors
 
         public override async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
         {
-            await using var connection = new SqlConnection(ConnectionString);
-            await using var command = new SqlCommand(sqlQuery, connection);
-
-            await connection.OpenAsync();
-            var dataTable = new DataTable();
-            await using var reader = await command.ExecuteReaderAsync();
-            dataTable.Load(reader);
-
-            return dataTable;
+            await using var command = new SqlCommand(sqlQuery);
+            return await ExecuteQueryAsync(command);
         }
 
         public override async Task ExecuteNonQueryAsync(string sqlQuery)
