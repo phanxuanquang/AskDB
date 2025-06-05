@@ -22,7 +22,7 @@
             </StackPanel>
             <StackPanel Spacing="12" x:Name="ConnectionCredentialsPanel">
                 <TextBlock Text="Connection Credentials" Style="{StaticResource BodyStrongTextBlockStyle}"/>
-                <ItemsView Padding="12,0"  SelectionMode="None" ItemsSource="{x:Bind ExistingDatabaseConnectionInfors}" MaxHeight="360" IsItemInvokedEnabled="True" ItemInvoked="DatabaseCredentionItemsView_ItemInvoked">
+                <ItemsView Padding="12,0" SelectionMode="None" ItemsSource="{x:Bind ExistingDatabaseConnectionInfors}" MaxHeight="360" IsItemInvokedEnabled="True" ItemInvoked="DatabaseCredentionItemsView_ItemInvoked">
                     <ItemsView.Layout>
                         <LinedFlowLayout ItemsStretch="Fill" LineSpacing="8" MinItemSpacing="8"/>
                     </ItemsView.Layout>

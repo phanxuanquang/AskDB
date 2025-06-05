@@ -85,9 +85,10 @@
             </Grid>
         </SplitView.Pane>
         <Grid>
-            <Grid RowSpacing="8" Margin="0,0,8,0" x:Name="MessageSpace" Padding="12">
+            <Grid RowSpacing="6" Margin="0,0,8,0" x:Name="MessageSpace" Padding="12">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0">
@@ -123,7 +124,20 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-                <Grid Grid.Row="1" Background="Transparent" ColumnSpacing="8">
+                <ItemsView Grid.Row="1" SelectionMode="None" IsItemInvokedEnabled="True" ItemsSource="{x:Bind AgentSuggestions, Mode=OneWay}" ItemInvoked="SuggestionItemView_ItemInvoked">
+                    <ItemsView.Layout>
+                        <LinedFlowLayout LineSpacing="4" MinItemSpacing="4"/>
+                    </ItemsView.Layout>
+                    <ItemsView.ItemTemplate>
+                        <DataTemplate x:DataType="view_models:AgentSuggestion">
+                            <ItemContainer>
+                                <HyperlinkButton Content="{x:Bind UserResponseSuggestion, Mode=OneWay}"/>
+                            </ItemContainer>
+                        </DataTemplate>
+                    </ItemsView.ItemTemplate>
+                </ItemsView>
+
+                <Grid Grid.Row="2" Background="Transparent" ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
