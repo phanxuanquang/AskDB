@@ -8,7 +8,6 @@ using AskDB.Database;
 using AskDB.Database.Extensions;
 using AskDB.Database.Models;
 using DatabaseInteractor.Services;
-using DatabaseInteractor.Services.Extractors;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
@@ -95,15 +94,9 @@ namespace AskDB.App
                 if (_useConnectionString)
                 {
                     var connectionString = ConnectionString.Value?.Trim();
-                    var extractor = ConnectionCredential.DatabaseType switch
-                    {
-                        DatabaseType.SqlServer => (ExtractorBase)new SqlServerExtractor(connectionString),
-                        DatabaseType.MySQL => new MySqlExtractor(connectionString),
-                        DatabaseType.PostgreSQL => new PostgreSqlExtractor(connectionString),
-                        DatabaseType.SQLite => new SqliteExtractor(connectionString),
-                        _ => throw new NotImplementedException(),
-                    };
-                    await extractor.EnsureDatabaseConnectionAsync();
+                    var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, connectionString);
+
+                    await databaseInteractor.EnsureDatabaseConnectionAsync();
                     await _db.SaveConnectionStringAsync(ConnectionString);
                 }
                 else
@@ -114,16 +107,9 @@ namespace AskDB.App
                         return;
                     }
 
-                    var extractor = ConnectionCredential.DatabaseType switch
-                    {
-                        DatabaseType.SqlServer => (ExtractorBase)new SqlServerExtractor(ConnectionCredential.BuildConnectionString(5)),
-                        DatabaseType.MySQL => new MySqlExtractor(ConnectionCredential.BuildConnectionString(5)),
-                        DatabaseType.PostgreSQL => new PostgreSqlExtractor(ConnectionCredential.BuildConnectionString(5)),
-                        DatabaseType.SQLite => new SqliteExtractor(_sqliteFilePath),
-                        _ => throw new NotImplementedException(),
-                    };
+                    var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, ConnectionCredential.BuildConnectionString(5));
 
-                    await extractor.EnsureDatabaseConnectionAsync();
+                    await databaseInteractor.EnsureDatabaseConnectionAsync();
 
                     await _db.SaveDatabaseCredentialAsync(ConnectionCredential);
                 }

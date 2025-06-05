@@ -25,7 +25,7 @@ namespace AskDB.Database.Extensions
                         sb.Append($"User Id={databaseCredential.Username.Trim()};");
                         sb.Append($"Password={databaseCredential.Password.Trim()};");
                     }
-                        
+
                     sb.Append($"TrustServerCertificate={(databaseCredential.EnableTrustServerCertificate ? "True" : "False")};");
                     sb.Append($"Encrypt={(databaseCredential.EnableSsl ? "True" : "False")};");
                     sb.Append($"Connection Timeout={timeOutInSeconds};");

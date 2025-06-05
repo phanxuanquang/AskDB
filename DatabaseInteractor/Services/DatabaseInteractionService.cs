@@ -1,13 +1,73 @@
 ﻿using AskDB.Commons.Enums;
 using GeminiDotNET.FunctionCallings.Attributes;
+using Microsoft.Data.SqlClient;
+using Microsoft.Data.Sqlite;
+using MySql.Data.MySqlClient;
+using Npgsql;
 using System.Data;
+using System.Data.Common;
 
 namespace DatabaseInteractor.Services
 {
-    public abstract class ExtractorBase(string connectionString)
+    public abstract class DatabaseInteractionService(string connectionString)
     {
-        protected string ConnectionString = connectionString;
         public DatabaseType DatabaseType { get; protected set; }
+        public string ConnectionString { get; } = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+
+        protected DbConnection GetConnection() => ServiceFactory.CreateConnection(DatabaseType, connectionString) as DbConnection
+            ?? throw new NotSupportedException($"Database type {DatabaseType} is not supported or does not return a DbConnection.");
+        public async Task EnsureDatabaseConnectionAsync()
+        {
+            using var connection = GetConnection();
+            await connection.OpenAsync();
+            await connection.CloseAsync();
+        }
+        public abstract Task<int> GetTableCountAsync();
+
+        protected static async Task<DataTable> ExecuteQueryAsync(DbCommand command)
+        {
+            if (command.Connection == null) throw new ArgumentNullException(nameof(command.Connection), "Command must have a valid connection.");
+
+            if (command.Connection.State != ConnectionState.Open) await command.Connection.OpenAsync();
+
+            var dataTable = new DataTable();
+
+            switch (command.Connection)
+            {
+                case SqlConnection:
+                    using (var adapter = new SqlDataAdapter((SqlCommand)command))
+                    {
+                        adapter.Fill(dataTable);
+                    }
+                    break;
+
+                case MySqlConnection:
+                    using (var adapter = new MySqlDataAdapter((MySqlCommand)command))
+                    {
+                        await adapter.FillAsync(dataTable);
+                    }
+                    break;
+
+                case NpgsqlConnection:
+                    using (var adapter = new NpgsqlDataAdapter((NpgsqlCommand)command))
+                    {
+                        adapter.Fill(dataTable);
+                    }
+                    break;
+
+                case SqliteConnection:
+                    await using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        dataTable.Load(reader);
+                    }
+                    break;
+
+                default:
+                    throw new NotSupportedException("Connection type not supported.");
+            }
+
+            return dataTable;
+        }
 
         [FunctionDeclaration("execute_query", @"Execute a **read-only SQL query** against the current database and return the result as a structured dataset (rows and columns).
 This function is strictly for executing `SELECT` statements or other **non-modifying**, **safe** SQL queries/scripts.
@@ -108,7 +168,17 @@ In such cases, escalate to:
 * **Explore freely when helpful**: You’re allowed to query the DB to learn, build knowledge, or assist the user better — even without direct user instruction.
 * **Avoid surprises**: Don’t assume column names, data types, or content. Check first. 
 * **Think ahead**: Use early queries to prepare for more complex operations later.")]
-        public abstract Task<DataTable> ExecuteQueryAsync(string sqlQuery);
+        public async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
+        {
+            await using var connection = GetConnection();
+            await connection.OpenAsync();
+
+            await using var command = connection.CreateCommand();
+            command.CommandText = sqlQuery;
+            command.Connection = connection;
+
+            return await ExecuteQueryAsync(command);
+        }
 
         [FunctionDeclaration("execute_non_query", @"Execute a SQL query that does not return any result (e.g., INSERT, UPDATE, DELETE).
 Use this function **EXCLUSIVELY** for executing SQL commands or SQL scripts that modify the database data or schema.
@@ -127,7 +197,27 @@ This includes, but is not limited to:
 - Prefer to use `get_table_structure` function to check and understand the structure of the relevant tables before executing if you are unsure about the query or its impact.
 - Prefer to use `execute_query` function to check the data of the impacted tables before executing if you are unsure about the query or its impact.
 - **DO NOT** use this function for SELECT statements or other read-only queries that are expected to return data")]
-        public abstract Task ExecuteNonQueryAsync(string sqlQuery);
+        public async Task ExecuteNonQueryAsync(string sqlCommand)
+        {
+            using var connection = GetConnection();
+            await connection.OpenAsync();
+
+            using var transaction = await connection.BeginTransactionAsync();
+            try
+            {
+                using var command = connection.CreateCommand();
+                command.CommandText = sqlCommand;
+                command.Transaction = transaction;
+
+                await command.ExecuteNonQueryAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
 
         [FunctionDeclaration("get_user_permissions", @"Get the list of permissions for the current user.
 Use this function **EXCLUSIVELY** to retrieve a list of the database permissions currently granted to the application's user session.
@@ -268,8 +358,5 @@ If the user doesn’t specify a schema or the schema is unclear:
 * Use the `search_tables_by_name` function first to identify available tables and their corresponding schemas.
 * If multiple candidates are returned or ambiguity remains, **prompt the user to clarify** which table/schema they meant before calling this function.")]
         public abstract Task<DataTable> GetTableStructureDetailAsync(string? schema, string table);
-
-        public abstract Task EnsureDatabaseConnectionAsync();
-        public abstract Task<int> GetTableCountAsync();
     }
 }

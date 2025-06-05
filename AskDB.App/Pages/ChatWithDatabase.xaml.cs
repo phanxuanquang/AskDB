@@ -1,10 +1,8 @@
 ﻿using AskDB.App.Helpers;
 using AskDB.App.View_Models;
-using AskDB.Commons.Enums;
 using AskDB.Commons.Extensions;
 using CommunityToolkit.WinUI.UI.Controls;
 using DatabaseInteractor.Services;
-using DatabaseInteractor.Services.Extractors;
 using GeminiDotNET;
 using GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling;
 using GeminiDotNET.ApiModels.Enums;
@@ -19,7 +17,6 @@ using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
@@ -36,7 +33,7 @@ namespace AskDB.App.Pages
         private readonly ObservableCollection<ProgressContent> ProgressContents = new ObservableCollection<ProgressContent>();
 
         private Generator _generator;
-        private ExtractorBase _extractor;
+        private DatabaseInteractionService _databaseInteractor;
         private string _globalInstruction;
 
         public ChatWithDatabase()
@@ -57,19 +54,12 @@ namespace AskDB.App.Pages
 
             SetLoading(true);
 
-            _extractor = request.DatabaseType switch
-            {
-                DatabaseType.SqlServer => new SqlServerExtractor(request.ConnectionString),
-                DatabaseType.MySQL => new MySqlExtractor(request.ConnectionString),
-                DatabaseType.PostgreSQL => new PostgreSqlExtractor(request.ConnectionString),
-                DatabaseType.SQLite => new SqliteExtractor(request.ConnectionString),
-                _ => throw new NotImplementedException(),
-            };
+            _databaseInteractor = ServiceFactory.CreateInteractionService(request.DatabaseType, request.ConnectionString);
 
             _globalInstruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
             ChangeTheConversationLanguage("English");
 
-            var tableCount = await _extractor.GetTableCountAsync();
+            var tableCount = await _databaseInteractor.GetTableCountAsync();
             if (tableCount > 200)
             {
                 _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", "The connected database has so many tables (over 200), so you **MUST NOT** retrieve all table names (using the `search_tables_by_name` function with the parameter is empty string) in any case! Remember to prompt the user about this and ask for some hints to search for the table names");
@@ -244,7 +234,7 @@ It **MUST** include at least:
                 Required = ["language"]
             });
 
-            FunctionDeclarationHelper.RegisterFunction(_extractor.ExecuteQueryAsync, new Parameters
+            FunctionDeclarationHelper.RegisterFunction(_databaseInteractor.ExecuteQueryAsync, new Parameters
             {
                 Properties = new
                 {
@@ -256,7 +246,7 @@ It **MUST** include at least:
                 },
                 Required = ["sqlQuery"]
             });
-            FunctionDeclarationHelper.RegisterFunction(_extractor.ExecuteNonQueryAsync, new Parameters
+            FunctionDeclarationHelper.RegisterFunction(_databaseInteractor.ExecuteNonQueryAsync, new Parameters
             {
                 Properties = new
                 {
@@ -268,8 +258,8 @@ It **MUST** include at least:
                 },
                 Required = ["sqlQuery"]
             });
-            FunctionDeclarationHelper.RegisterFunction(_extractor.GetUserPermissionsAsync);
-            FunctionDeclarationHelper.RegisterFunction(_extractor.SearchTablesByNameAsync, new Parameters
+            FunctionDeclarationHelper.RegisterFunction(_databaseInteractor.GetUserPermissionsAsync);
+            FunctionDeclarationHelper.RegisterFunction(_databaseInteractor.SearchTablesByNameAsync, new Parameters
             {
                 Properties = new
                 {
@@ -281,7 +271,7 @@ It **MUST** include at least:
                 },
                 Required = ["keyword"]
             });
-            FunctionDeclarationHelper.RegisterFunction(_extractor.GetTableStructureDetailAsync, new Parameters
+            FunctionDeclarationHelper.RegisterFunction(_databaseInteractor.GetTableStructureDetailAsync, new Parameters
             {
                 Properties = new
                 {
@@ -392,32 +382,32 @@ It **MUST** include at least:
         {
             switch (function.Name)
             {
-                case var name when name == FunctionDeclarationHelper.GetFunctionName(_extractor.ExecuteQueryAsync):
+                case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.ExecuteQueryAsync):
                     {
                         var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
                         SetProgressMessage($"Let me execute this query to check the data:\n\n```sql\n{sqlQuery}\n```");
-                        var dataTable = await _extractor.ExecuteQueryAsync(sqlQuery);
+                        var dataTable = await _databaseInteractor.ExecuteQueryAsync(sqlQuery);
                         SetProgressDataTable(sqlQuery, dataTable);
                         return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
                     }
-                case var name when name == FunctionDeclarationHelper.GetFunctionName(_extractor.ExecuteNonQueryAsync):
+                case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.ExecuteNonQueryAsync):
                     {
                         var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
                         SetProgressMessage($"Let me execute the command:\n\n```sql\n{sqlQuery}\n```");
-                        await _extractor.ExecuteNonQueryAsync(sqlQuery);
+                        await _databaseInteractor.ExecuteNonQueryAsync(sqlQuery);
                         SetProgressMessage("Command executed successfully.");
                         return FunctionCallingHelper.CreateResponse(name, $"Command executed successfully.\n\n```sql\n{sqlQuery}\n```");
                     }
-                case var name when name == FunctionDeclarationHelper.GetFunctionName(_extractor.GetTableStructureDetailAsync):
+                case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.GetTableStructureDetailAsync):
                     {
                         var schema = FunctionCallingHelper.GetParameterValue<string>(function, "schema");
                         var table = FunctionCallingHelper.GetParameterValue<string>(function, "table");
                         SetProgressMessage($"Let me check the schema information for the table `{schema}.{table}`");
-                        var schemaInfo = await _extractor.GetTableStructureDetailAsync(schema, table);
+                        var schemaInfo = await _databaseInteractor.GetTableStructureDetailAsync(schema, table);
                         SetProgressDataTable(null, schemaInfo);
                         return FunctionCallingHelper.CreateResponse(name, schemaInfo.ToMarkdown());
                     }
-                case var name when name == FunctionDeclarationHelper.GetFunctionName(_extractor.SearchTablesByNameAsync):
+                case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.SearchTablesByNameAsync):
                     {
                         var keyword = FunctionCallingHelper.GetParameterValue<string>(function, "keyword");
                         if (string.IsNullOrEmpty(keyword))
@@ -428,15 +418,15 @@ It **MUST** include at least:
                         {
                             SetProgressMessage($"Searching for tables using keyword `{keyword}`...");
                         }
-                        var tableNames = await _extractor.SearchTablesByNameAsync(keyword);
+                        var tableNames = await _databaseInteractor.SearchTablesByNameAsync(keyword);
                         var tableNamesInMarkdown = string.Join(", ", tableNames.Select(x => $"`{x}`"));
                         SetProgressMessage($"Found {tableNames.Count} tables with keyword `{keyword}`:\n\n{tableNamesInMarkdown}");
                         return FunctionCallingHelper.CreateResponse(name, tableNamesInMarkdown);
                     }
-                case var name when name == FunctionDeclarationHelper.GetFunctionName(_extractor.GetUserPermissionsAsync):
+                case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.GetUserPermissionsAsync):
                     {
                         SetProgressMessage("Retrieving user permissions...");
-                        var permissions = await _extractor.GetUserPermissionsAsync();
+                        var permissions = await _databaseInteractor.GetUserPermissionsAsync();
                         var permissionsInMarkdown = string.Join(", ", permissions.Select(x => $"`{x}`"));
                         SetProgressMessage($"Found {permissions.Count} permissions:\n\n{permissionsInMarkdown}");
                         return FunctionCallingHelper.CreateResponse(name, permissionsInMarkdown);
@@ -489,7 +479,7 @@ It **MUST** include at least:
             _globalInstruction = _globalInstruction
                 .Replace("{Language}", language)
                 .Replace("{DateTime_Now}", DateTime.Now.ToString("HH:mm:ss, mm.MM.yyyy"))
-                .Replace("{Database_Type}", _extractor.DatabaseType.GetDescription());
+                .Replace("{Database_Type}", _databaseInteractor.DatabaseType.GetDescription());
         }
 
         [FunctionDeclaration("request_for_action_plan", @"Request an action plan based on the current situation.
@@ -582,7 +572,7 @@ Use this function when you:
             var instruction = await FileHelper.ReadFileAsync("Instructions/Action Plan.md");
 
             var actionPlanRequest = new ApiRequestBuilder()
-                .WithSystemInstruction(instruction.Replace("{Database_Type}", _extractor.DatabaseType.ToString()))
+                .WithSystemInstruction(instruction.Replace("{Database_Type}", _databaseInteractor.DatabaseType.ToString()))
                 .DisableAllSafetySettings()
                 .WithTools(new ToolBuilder().AddFunctionDeclarations(FunctionDeclarationHelper.FunctionDeclarations))
                 .SetFunctionCallingMode(FunctionCallingMode.NONE)

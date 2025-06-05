@@ -1,11 +1,9 @@
 using AskDB.App.Helpers;
 using AskDB.App.View_Models;
-using AskDB.Commons.Enums;
 using AskDB.Commons.Extensions;
 using AskDB.Database;
 using AskDB.Database.Extensions;
 using DatabaseInteractor.Services;
-using DatabaseInteractor.Services.Extractors;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
@@ -101,16 +99,9 @@ namespace AskDB.App.Pages
 
             try
             {
-                var extractorForConnectionString = data.DatabaseType switch
-                {
-                    DatabaseType.SqlServer => (ExtractorBase)new SqlServerExtractor(data.ConnectionString),
-                    DatabaseType.MySQL => new MySqlExtractor(data.ConnectionString),
-                    DatabaseType.PostgreSQL => new PostgreSqlExtractor(data.ConnectionString),
-                    DatabaseType.SQLite => new SqliteExtractor(data.ConnectionString),
-                    _ => throw new NotImplementedException(),
-                };
+                var databaseInteractor = ServiceFactory.CreateInteractionService(data.DatabaseType, data.ConnectionString);
 
-                await extractorForConnectionString.EnsureDatabaseConnectionAsync();
+                await databaseInteractor.EnsureDatabaseConnectionAsync();
 
                 this.Frame.Navigate(typeof(ChatWithDatabase), new DatabaseConnectionInfo
                 {
@@ -149,16 +140,9 @@ namespace AskDB.App.Pages
 
             try
             {
-                var extractorForConnectionString = data.DatabaseType switch
-                {
-                    DatabaseType.SqlServer => (ExtractorBase)new SqlServerExtractor(data.Value),
-                    DatabaseType.MySQL => new MySqlExtractor(data.Value),
-                    DatabaseType.PostgreSQL => new PostgreSqlExtractor(data.Value),
-                    DatabaseType.SQLite => new SqliteExtractor(data.Value),
-                    _ => throw new NotImplementedException(),
-                };
+                var databaseInteractor = ServiceFactory.CreateInteractionService(data.DatabaseType, data.Value);
 
-                await extractorForConnectionString.EnsureDatabaseConnectionAsync();
+                await databaseInteractor.EnsureDatabaseConnectionAsync();
 
                 this.Frame.Navigate(typeof(ChatWithDatabase), new DatabaseConnectionInfo
                 {

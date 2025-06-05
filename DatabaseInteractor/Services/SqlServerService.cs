@@ -3,65 +3,32 @@ using AskDB.Commons.Extensions;
 using Microsoft.Data.SqlClient;
 using System.Data;
 
-namespace DatabaseInteractor.Services.Extractors
+namespace DatabaseInteractor.Services
 {
-    public class SqlServerExtractor : ExtractorBase
+    public class SqlServerService : DatabaseInteractionService
     {
-        private readonly List<string> _systemSchemas = new List<string>
-        {
+        private readonly List<string> _systemSchemas =
+        [
             "sys", "INFORMATION_SCHEMA", "db_owner", "db_accessadmin", "db_securityadmin",
             "db_backupoperator", "db_ddladmin", "db_datareader", "db_datawriter",
             "db_denydatareader", "db_denydatawriter"
-        };
+        ];
 
-        public SqlServerExtractor(string connectionString) : base(connectionString)
+        public SqlServerService(string connectionString) : base(connectionString)
         {
             DatabaseType = DatabaseType.SqlServer;
         }
 
-        private async Task<DataTable> ExecuteQueryAsync(SqlCommand command)
+        public override async Task<int> GetTableCountAsync()
         {
+            var query = @$"SELECT COUNT(*) FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND TABLE_SCHEMA NOT IN ({string.Join(',', $"'{_systemSchemas}'")})";
+
+            await using var command = new SqlCommand(query);
             await using var connection = new SqlConnection(ConnectionString);
             command.Connection = connection;
-
             await connection.OpenAsync();
 
-            var dataTable = new DataTable();
-            await using var reader = await command.ExecuteReaderAsync();
-            dataTable.Load(reader);
-
-            return dataTable;
-        }
-
-        public override async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
-        {
-            await using var command = new SqlCommand(sqlQuery);
-            return await ExecuteQueryAsync(command);
-        }
-
-        public override async Task ExecuteNonQueryAsync(string sqlQuery)
-        {
-            await using var connection = new SqlConnection(ConnectionString);
-            await connection.OpenAsync();
-            await using var transaction = await connection.BeginTransactionAsync();
-            try
-            {
-                await using var command = new SqlCommand(sqlQuery, connection, (SqlTransaction)transaction);
-                await command.ExecuteNonQueryAsync();
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
-        public override async Task<List<string>> GetUserPermissionsAsync()
-        {
-            var query = "SELECT permission_name FROM fn_my_permissions(NULL, 'DATABASE')";
-            var data = await ExecuteQueryAsync(query);
-            return data.ToListString();
+            return Convert.ToInt32(await command.ExecuteScalarAsync());
         }
 
         public override async Task<DataTable> GetTableStructureDetailAsync(string? schema, string table)
@@ -95,7 +62,8 @@ namespace DatabaseInteractor.Services.Extractors
                WHERE t.name = @table AND s.name = @schema   
                ORDER BY c.column_id";
 
-            await using var command = new SqlCommand(query);
+            await using var connection = GetConnection();
+            await using var command = new SqlCommand(query, connection as SqlConnection);
 
             command.Parameters.AddWithValue("@table", table);
             command.Parameters.AddWithValue("@schema", string.IsNullOrEmpty(schema) ? "dbo" : schema);
@@ -103,25 +71,11 @@ namespace DatabaseInteractor.Services.Extractors
             return await ExecuteQueryAsync(command);
         }
 
-        public override async Task EnsureDatabaseConnectionAsync()
+        public override async Task<List<string>> GetUserPermissionsAsync()
         {
-            await using var connection = new SqlConnection(ConnectionString);
-
-            try
-            {
-                await connection.OpenAsync();
-            }
-            catch (SqlException ex)
-            {
-                throw new InvalidOperationException(ex.Message, ex.InnerException);
-            }
-            finally
-            {
-                if (connection.State == ConnectionState.Open)
-                {
-                    await connection.CloseAsync();
-                }
-            }
+            var query = "SELECT permission_name FROM fn_my_permissions(NULL, 'DATABASE')";
+            var data = await ExecuteQueryAsync(query);
+            return data.ToListString();
         }
 
         public override async Task<List<string>> SearchTablesByNameAsync(string? keyword)
@@ -131,23 +85,12 @@ namespace DatabaseInteractor.Services.Extractors
                 FROM information_schema.tables 
                 WHERE table_type = 'BASE TABLE' AND TABLE_SCHEMA NOT IN ({string.Join(',', $"'{_systemSchemas}'")}) AND table_name LIKE @keyword";
 
-            await using var command = new SqlCommand(query);
+            await using var connection = GetConnection();
+            await using var command = new SqlCommand(query, connection as SqlConnection);
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
 
             var data = await ExecuteQueryAsync(command);
             return data.ToListString();
-        }
-
-        public override async Task<int> GetTableCountAsync()
-        {
-            var query = @$"SELECT COUNT(*) FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND TABLE_SCHEMA NOT IN ({string.Join(',', $"'{_systemSchemas}'")})";
-
-            await using var command = new SqlCommand(query);
-            await using var connection = new SqlConnection(ConnectionString);
-            command.Connection = connection;
-            await connection.OpenAsync();
-
-            return Convert.ToInt32(await command.ExecuteScalarAsync());
         }
     }
 }
