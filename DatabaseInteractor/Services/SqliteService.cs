@@ -41,10 +41,10 @@ namespace DatabaseInteractor.Services
 
         public override async Task<List<string>> SearchTablesByNameAsync(string? keyword)
         {
-            await using var command = new SqliteCommand($"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE @keyword");
+            await using var command = new SqliteCommand("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE @keyword");
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
 
-            var data = await ExecuteQueryAsync(command.CommandText);
+            var data = await ExecuteQueryAsync(command);
             return data.ToListString();
         }
     }

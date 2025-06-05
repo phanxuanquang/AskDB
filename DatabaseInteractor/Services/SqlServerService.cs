@@ -62,8 +62,7 @@ namespace DatabaseInteractor.Services
                WHERE t.name = @table AND s.name = @schema   
                ORDER BY c.column_id";
 
-            await using var connection = GetConnection();
-            await using var command = new SqlCommand(query, connection as SqlConnection);
+            await using var command = new SqlCommand(query);
 
             command.Parameters.AddWithValue("@table", table);
             command.Parameters.AddWithValue("@schema", string.IsNullOrEmpty(schema) ? "dbo" : schema);
@@ -85,8 +84,7 @@ namespace DatabaseInteractor.Services
                 FROM information_schema.tables 
                 WHERE table_type = 'BASE TABLE' AND TABLE_SCHEMA NOT IN ({string.Join(',', $"'{_systemSchemas}'")}) AND table_name LIKE @keyword";
 
-            await using var connection = GetConnection();
-            await using var command = new SqlCommand(query, connection as SqlConnection);
+            await using var command = new SqlCommand(query);
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
 
             var data = await ExecuteQueryAsync(command);

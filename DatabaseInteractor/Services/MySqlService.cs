@@ -48,8 +48,7 @@ namespace DatabaseInteractor.Services
                 ORDER BY
                     cols.ORDINAL_POSITION;";
 
-            await using var connection = GetConnection();
-            await using var command = new MySqlCommand(query, connection as MySqlConnection);
+            await using var command = new MySqlCommand(query);
             command.Parameters.AddWithValue("@schema", (object?)schema ?? DBNull.Value);
             command.Parameters.AddWithValue("@table", table);
 
@@ -67,8 +66,7 @@ namespace DatabaseInteractor.Services
         {
             var query = "SELECT table_name FROM information_schema.tables WHERE table_name COLLATE utf8mb4_general_ci LIKE CONCAT('%', @keyword, '%');";
 
-            await using var connection = GetConnection();
-            using var command = new MySqlCommand(query, connection as MySqlConnection);
+            using var command = new MySqlCommand(query);
             command.Parameters.AddWithValue("@keyword", keyword);
 
             var data = await ExecuteQueryAsync(command);

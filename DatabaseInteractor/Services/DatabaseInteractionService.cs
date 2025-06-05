@@ -20,9 +20,10 @@ namespace DatabaseInteractor.Services
         }
         public abstract Task<int> GetTableCountAsync();
 
-        protected static async Task<DataTable> ExecuteQueryAsync(DbCommand command)
+        protected async Task<DataTable> ExecuteQueryAsync(DbCommand command)
         {
-            if (command.Connection == null) throw new ArgumentNullException(nameof(command.Connection), "Command must have a valid connection.");
+            await using var connection = GetConnection();
+            command.Connection ??= connection;
 
             if (command.Connection.State != ConnectionState.Open) await command.Connection.OpenAsync();
 
@@ -134,8 +135,6 @@ In such cases, escalate to:
         public async Task<DataTable> ExecuteQueryAsync(string sqlQuery)
         {
             await using var connection = GetConnection();
-            await connection.OpenAsync();
-
             await using var command = connection.CreateCommand();
             command.CommandText = sqlQuery;
             command.Connection = connection;

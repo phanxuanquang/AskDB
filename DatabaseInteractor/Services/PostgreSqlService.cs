@@ -51,8 +51,7 @@ namespace DatabaseInteractor.Services
                 ORDER BY 
                     table_schema, table_name;";
 
-            await using var connection = GetConnection();
-            await using var command = new NpgsqlCommand(query, connection as NpgsqlConnection);
+            await using var command = new NpgsqlCommand(query);
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
             var data = await ExecuteQueryAsync(command);
             return data.ToListString();
