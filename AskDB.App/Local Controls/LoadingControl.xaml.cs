@@ -1,9 +1,6 @@
 ﻿using AskDB.App.Helpers;
 using Microsoft.UI.Xaml.Controls;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
-
 namespace AskDB.App
 {
     public sealed partial class LoadingControl : UserControl

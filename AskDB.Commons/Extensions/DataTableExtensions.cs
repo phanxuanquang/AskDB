@@ -5,10 +5,12 @@ namespace AskDB.Commons.Extensions
 {
     public static class DataTableExtensions
     {
-        public static List<string> ToListString(this DataTable data)
+        public static List<string> ToListString(this DataTable dataTable)
         {
+            if (dataTable == null || dataTable.Rows.Count == 0) return [];
+
             var results = new List<string>();
-            foreach (DataRow row in data.Rows)
+            foreach (DataRow row in dataTable.Rows)
             {
                 var value = row[0]?.ToString();
                 if (!string.IsNullOrEmpty(value))
@@ -19,27 +21,27 @@ namespace AskDB.Commons.Extensions
             return results;
         }
 
-        public static string? ToMarkdown(this DataTable table)
+        public static string? ToMarkdown(this DataTable dataTable)
         {
-            if (table == null || table.Rows.Count == 0) return null;
+            if (dataTable == null || dataTable.Rows.Count == 0) return null;
 
             var sb = new StringBuilder();
 
-            for (int i = 0; i < table.Columns.Count; i++)
+            for (int i = 0; i < dataTable.Columns.Count; i++)
             {
-                sb.Append("| " + table.Columns[i].ColumnName + " ");
+                sb.Append("| " + dataTable.Columns[i].ColumnName + " ");
             }
             sb.AppendLine("|");
 
-            for (int i = 0; i < table.Columns.Count; i++)
+            for (int i = 0; i < dataTable.Columns.Count; i++)
             {
                 sb.Append("| --- ");
             }
             sb.AppendLine("|");
 
-            foreach (DataRow row in table.Rows)
+            foreach (DataRow row in dataTable.Rows)
             {
-                for (int i = 0; i < table.Columns.Count; i++)
+                for (int i = 0; i < dataTable.Columns.Count; i++)
                 {
                     sb.Append("| " + row[i].ToString() + " ");
                 }
@@ -49,25 +51,25 @@ namespace AskDB.Commons.Extensions
             return sb.ToString();
         }
 
-        public static async Task ToCsvAsync(this DataTable table, string filePath)
+        public static async Task ToCsvAsync(this DataTable dataTable, string filePath)
         {
-            ArgumentNullException.ThrowIfNull(table);
+            ArgumentNullException.ThrowIfNull(dataTable);
 
             var sb = new StringBuilder();
 
-            for (int i = 0; i < table.Columns.Count; i++)
+            for (int i = 0; i < dataTable.Columns.Count; i++)
             {
-                sb.Append(EscapeCsvField(table.Columns[i].ColumnName));
-                if (i < table.Columns.Count - 1) sb.Append(',');
+                sb.Append(EscapeCsvField(dataTable.Columns[i].ColumnName));
+                if (i < dataTable.Columns.Count - 1) sb.Append(',');
             }
             sb.AppendLine();
 
-            foreach (DataRow row in table.Rows)
+            foreach (DataRow row in dataTable.Rows)
             {
-                for (int i = 0; i < table.Columns.Count; i++)
+                for (int i = 0; i < dataTable.Columns.Count; i++)
                 {
                     sb.Append(EscapeCsvField(row[i]?.ToString()));
-                    if (i < table.Columns.Count - 1) sb.Append(',');
+                    if (i < dataTable.Columns.Count - 1) sb.Append(',');
                 }
                 sb.AppendLine();
             }

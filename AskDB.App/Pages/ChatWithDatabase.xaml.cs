@@ -29,17 +29,16 @@ namespace AskDB.App.Pages
 {
     public sealed partial class ChatWithDatabase : Page
     {
-        private readonly ObservableCollection<ChatMessage> Messages = new ObservableCollection<ChatMessage>();
-        private readonly ObservableCollection<ProgressContent> ProgressContents = new ObservableCollection<ProgressContent>();
+        private readonly ObservableCollection<ChatMessage> Messages = [];
+        private readonly ObservableCollection<ProgressContent> ProgressContents = [];
 
         private Generator _generator;
-        private DatabaseInteractionService _databaseInteractor;
         private string _globalInstruction;
+        private DatabaseInteractionService _databaseInteractor;
 
         public ChatWithDatabase()
         {
             this.InitializeComponent();
-            SetLoading(false);
         }
 
         #region Event Handlers
@@ -55,8 +54,8 @@ namespace AskDB.App.Pages
             SetLoading(true);
 
             _databaseInteractor = ServiceFactory.CreateInteractionService(request.DatabaseType, request.ConnectionString);
-
             _globalInstruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
+
             ChangeTheConversationLanguage("English");
 
             var tableCount = await _databaseInteractor.GetTableCountAsync();
@@ -68,7 +67,6 @@ namespace AskDB.App.Pages
             {
                 _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", $"The connected database has {tableCount} tables");
             }
-
 
             _generator = new Generator(Cache.ApiKey).EnableChatHistory(150);
 

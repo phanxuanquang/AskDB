@@ -1,9 +1,5 @@
 ﻿using AskDB.Commons.Enums;
 using GeminiDotNET.FunctionCallings.Attributes;
-using Microsoft.Data.SqlClient;
-using Microsoft.Data.Sqlite;
-using MySql.Data.MySqlClient;
-using Npgsql;
 using System.Data;
 using System.Data.Common;
 
@@ -31,41 +27,8 @@ namespace DatabaseInteractor.Services
             if (command.Connection.State != ConnectionState.Open) await command.Connection.OpenAsync();
 
             var dataTable = new DataTable();
-
-            switch (command.Connection)
-            {
-                case SqlConnection:
-                    using (var adapter = new SqlDataAdapter((SqlCommand)command))
-                    {
-                        adapter.Fill(dataTable);
-                    }
-                    break;
-
-                case MySqlConnection:
-                    using (var adapter = new MySqlDataAdapter((MySqlCommand)command))
-                    {
-                        await adapter.FillAsync(dataTable);
-                    }
-                    break;
-
-                case NpgsqlConnection:
-                    using (var adapter = new NpgsqlDataAdapter((NpgsqlCommand)command))
-                    {
-                        adapter.Fill(dataTable);
-                    }
-                    break;
-
-                case SqliteConnection:
-                    await using (var reader = await command.ExecuteReaderAsync())
-                    {
-                        dataTable.Load(reader);
-                    }
-                    break;
-
-                default:
-                    throw new NotSupportedException("Connection type not supported.");
-            }
-
+            await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
+            dataTable.Load(reader);
             return dataTable;
         }
 

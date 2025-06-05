@@ -110,7 +110,6 @@ namespace AskDB.App
                     var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, ConnectionCredential.BuildConnectionString(5));
 
                     await databaseInteractor.EnsureDatabaseConnectionAsync();
-
                     await _db.SaveDatabaseCredentialAsync(ConnectionCredential);
                 }
 
