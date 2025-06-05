@@ -6,23 +6,9 @@ namespace AskDB.App.Converters
     public partial class BoolToNegativeBoolConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, string language)
-        {
-            if (value is bool boolValue)
-            {
-                return !boolValue;
-            }
-
-            throw new InvalidOperationException("Unsupported data type");
-        }
+            => value is bool boolValue && !boolValue;
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
-        {
-            if (value is bool boolValue)
-            {
-                return !boolValue;
-            }
-
-            throw new InvalidOperationException("The data type is not supported");
-        }
+            => value is bool boolValue && !boolValue;
     }
 }

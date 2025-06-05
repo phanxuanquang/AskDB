@@ -190,7 +190,7 @@ namespace AskDB.App
 
         private void UseConnectionStringCheckBox_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         {
-            _useConnectionString = (sender as CheckBox).IsChecked == true;
+            _useConnectionString = ((CheckBox)sender).IsChecked == true;
 
             UseConnectionStringSpace.Visibility = VisibilityHelper.SetVisible(_useConnectionString);
             NotSqliteComponents.Visibility = VisibilityHelper.SetVisible(!_useConnectionString);
@@ -199,12 +199,12 @@ namespace AskDB.App
 
         private void UseWindowsAuthenticationCheckBox_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         {
-            var isChecked = (sender as CheckBox).IsChecked == true;
+            var isChecked = ((CheckBox)sender).IsChecked == true;
 
             UseWindowsAuthentication = isChecked;
             if (isChecked)
             {
-                ConnectionCredential.Username = ConnectionCredential.Password = null;
+                ConnectionCredential.Username = ConnectionCredential.Password = string.Empty;
             }
         }
     }

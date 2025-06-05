@@ -1,5 +1,4 @@
-﻿using Microsoft.UI.Xaml;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Data;
 
 namespace AskDB.App.View_Models
@@ -10,6 +9,5 @@ namespace AskDB.App.View_Models
         public string? SqlCommand { get; set; }
         public DataTable? Data { get; set; }
         public ObservableCollection<object> QueryResults { get; set; } = [];
-        public Visibility ActionButtonVisibility { get; set; }
     }
 }

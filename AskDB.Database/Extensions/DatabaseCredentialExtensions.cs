@@ -15,8 +15,17 @@ namespace AskDB.Database.Extensions
                 case DatabaseType.SqlServer:
                     sb.Append($"Server={databaseCredential.Host.Trim()},{databaseCredential.Port};");
                     sb.Append($"Database={databaseCredential.Database.Trim()};");
-                    sb.Append($"User Id={databaseCredential.Username.Trim()};");
-                    sb.Append($"Password={databaseCredential.Password.Trim()};");
+                    if (string.IsNullOrEmpty(databaseCredential.Username) || string.IsNullOrEmpty(databaseCredential.Password))
+                    {
+                        sb.Append("Integrated Security=True;");  // Use Windows Authentication if no credentials are provided
+                        sb.Append("Trust Connection=True;"); // Trust connection for Windows Authentication
+                    }
+                    else
+                    {
+                        sb.Append($"User Id={databaseCredential.Username.Trim()};");
+                        sb.Append($"Password={databaseCredential.Password.Trim()};");
+                    }
+                        
                     sb.Append($"TrustServerCertificate={(databaseCredential.EnableTrustServerCertificate ? "True" : "False")};");
                     sb.Append($"Encrypt={(databaseCredential.EnableSsl ? "True" : "False")};");
                     sb.Append($"Connection Timeout={timeOutInSeconds};");

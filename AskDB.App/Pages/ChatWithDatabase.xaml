@@ -9,8 +9,13 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
     xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls" 
     xmlns:view_models="using:AskDB.App.View_Models" 
-    xmlns:animations="using:CommunityToolkit.WinUI.Animations"
+    xmlns:animations="using:CommunityToolkit.WinUI.Animations" xmlns:converters="using:AskDB.App.Converters"
     mc:Ignorable="d">
+
+    <Page.Resources>
+        <converters:DataTableToVisibilityConverter x:Key="DataTableToVisibilityConverter"/>
+        <converters:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
+    </Page.Resources>
 
     <SplitView IsPaneOpen="False" x:Name="MainView" OpenPaneLength="640" PanePlacement="Right" DisplayMode="Inline" PaneBackground="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
         <SplitView.Pane>
@@ -36,28 +41,33 @@
                                 <controls1:MarkdownTextBlock 
                                     TextWrapping="WrapWholeWords" 
                                     Background="Transparent" 
-                                    Text="{x:Bind Message}"
                                     CodePadding="12"
+                                    QuotePadding="6"
+                                    QuoteBackground="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
                                     InlineCodeBackground="{ThemeResource SystemFillColorCautionBackgroundBrush}"
                                     CodeBackground="{ThemeResource SolidBackgroundFillColorBaseAltBrush}"
-                                    QuoteBackground="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
-                                    QuotePadding="6"/>
-                                <StackPanel Spacing="8" Visibility="{x:Bind ActionButtonVisibility}" Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}" CornerRadius="{StaticResource ControlCornerRadius}">
+                                    Visibility="{x:Bind Message, Mode=OneWay, Converter={StaticResource EmptyStringToVisibilityConverter}}"
+                                    Text="{x:Bind Message}"/>
+                                <StackPanel 
+                                    Spacing="4" 
+                                    Visibility="{x:Bind Data, Mode=OneWay, Converter={StaticResource DataTableToVisibilityConverter}}" 
+                                    Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}" 
+                                    CornerRadius="{StaticResource ControlCornerRadius}">
                                     <controls1:DataGrid 
                                         IsReadOnly="True" 
                                         CanUserReorderColumns="True" 
                                         CanUserResizeColumns="True"
                                         CanUserSortColumns="True"
-                                        GridLinesVisibility="All"
                                         AutoGenerateColumns="True" 
                                         VerticalScrollBarVisibility="Auto"
+                                        GridLinesVisibility="All"
                                         BorderThickness="1"
+                                        MaxHeight="500"
+                                        AutoGeneratingColumn="DataGrid_AutoGeneratingColumn"
                                         BorderBrush="{ThemeResource ControlElevationBorderBrush}"
                                         RowBackground="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
                                         AlternatingRowBackground="{ThemeResource ControlAltFillColorTertiaryBrush}"
-                                        MaxHeight="500"
-                                        ItemsSource="{x:Bind QueryResults}"
-                                        AutoGeneratingColumn="DataGrid_AutoGeneratingColumn"/>
+                                        ItemsSource="{x:Bind QueryResults}"/>
 
                                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" Padding="8">
                                         <Button Padding="6" ToolTipService.ToolTip="Copy the SQL command" ToolTipService.Placement="Left" Click="CopySqlButton_Click">

@@ -19,6 +19,7 @@ using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
@@ -31,8 +32,8 @@ namespace AskDB.App.Pages
 {
     public sealed partial class ChatWithDatabase : Page
     {
-        private readonly ObservableCollection<ChatMessage> Messages = [];
-        private readonly ObservableCollection<ProgressContent> ProgressContents = [];
+        private readonly ObservableCollection<ChatMessage> Messages = new ObservableCollection<ChatMessage>();
+        private readonly ObservableCollection<ProgressContent> ProgressContents = new ObservableCollection<ProgressContent>();
 
         private Generator _generator;
         private ExtractorBase _extractor;
@@ -56,9 +57,6 @@ namespace AskDB.App.Pages
 
             SetLoading(true);
 
-            _globalInstruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
-            ChangeTheConversationLanguage("English");
-
             _extractor = request.DatabaseType switch
             {
                 DatabaseType.SqlServer => new SqlServerExtractor(request.ConnectionString),
@@ -67,6 +65,9 @@ namespace AskDB.App.Pages
                 DatabaseType.SQLite => new SqliteExtractor(request.ConnectionString),
                 _ => throw new NotImplementedException(),
             };
+
+            _globalInstruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
+            ChangeTheConversationLanguage("English");
 
             var tableCount = await _extractor.GetTableCountAsync();
             if (tableCount > 200)
@@ -78,6 +79,7 @@ namespace AskDB.App.Pages
                 _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", $"The connected database has {tableCount} tables");
             }
 
+
             _generator = new Generator(Cache.ApiKey).EnableChatHistory(150);
 
             InitFunctionCalling();
@@ -88,8 +90,13 @@ namespace AskDB.App.Pages
         {
             try
             {
-                var button = sender as Button;
-                var dataTable = (button?.DataContext as ProgressContent)?.Data;
+                DataTable? dataTable = ((sender as Button)?.DataContext as ProgressContent)?.Data;
+
+                if (dataTable == null || dataTable.Rows.Count == 0)
+                {
+                    await DialogHelper.ShowErrorAsync("No data available to export.");
+                    return;
+                }
 
                 var savePicker = new FileSavePicker
                 {
@@ -178,7 +185,6 @@ namespace AskDB.App.Pages
             {
                 Message = message,
                 SqlCommand = null,
-                ActionButtonVisibility = VisibilityHelper.SetVisible(false),
             };
 
             ProgressContents.Add(progressContent);
@@ -194,7 +200,6 @@ namespace AskDB.App.Pages
             {
                 Message = null,
                 SqlCommand = sqlCommand,
-                ActionButtonVisibility = VisibilityHelper.SetVisible(dataTable.Rows.Count > 0),
                 QueryResults = new ObservableCollection<object>(dataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray)),
                 Data = dataTable
             };
@@ -463,7 +468,10 @@ It **MUST** include at least:
 
         private async void CopySqlButton_Click(object sender, RoutedEventArgs e)
         {
-            if ((sender as Button)?.DataContext is not ProgressContent context || string.IsNullOrEmpty(context.SqlCommand))
+            var button = sender as Button;
+            var context = button?.DataContext as ProgressContent;
+
+            if (string.IsNullOrEmpty(context?.SqlCommand))
             {
                 return;
             }
@@ -480,7 +488,8 @@ It **MUST** include at least:
         {
             _globalInstruction = _globalInstruction
                 .Replace("{Language}", language)
-                .Replace("{DateTime_Now}", DateTime.Now.ToString("HH:mm:ss, mm.MM.yyyy"));
+                .Replace("{DateTime_Now}", DateTime.Now.ToString("HH:mm:ss, mm.MM.yyyy"))
+                .Replace("{Database_Type}", _extractor.DatabaseType.GetDescription());
         }
 
         [FunctionDeclaration("request_for_action_plan", @"Request an action plan based on the current situation.

@@ -1,13 +1,14 @@
 ﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 using System;
+using System.Data;
 
 namespace AskDB.App.Converters
 {
-    public partial class BoolToVisibilityConverter : IValueConverter
+    public partial class DataTableToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, string language)
-            => value is bool isVisible && isVisible
+            => value is DataTable table && table.Rows.Count > 0
                 ? Visibility.Visible
                 : Visibility.Collapsed;
 

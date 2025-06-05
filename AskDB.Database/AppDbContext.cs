@@ -8,12 +8,11 @@ namespace AskDB.Database
 {
     public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
     {
-        public static readonly string DbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AskDb", "AskDb-v0.0.4.sqlite");
+        public static readonly string DbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AskDb", "AskDb-v0.0.5.sqlite");
 
         #region Tables
         public DbSet<UserSetting> UserSettings { get; set; }
         public DbSet<ConnectionString> ConnectionStrings { get; set; }
-        public DbSet<Prompt> Prompts { get; set; }
         public DbSet<DatabaseCredential> DatabaseCredentials { get; set; }
         #endregion
 
