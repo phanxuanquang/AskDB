@@ -1,4 +1,5 @@
 ﻿using AskDB.Commons.Enums;
+using DatabaseInteractor.Factories;
 using GeminiDotNET.FunctionCallings.Attributes;
 using System.Data;
 using System.Data.Common;
@@ -10,8 +11,7 @@ namespace DatabaseInteractor.Services
         public DatabaseType DatabaseType { get; protected set; }
         public string ConnectionString { get; } = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
 
-        protected DbConnection GetConnection() => ServiceFactory.CreateConnection(DatabaseType, connectionString) as DbConnection
-            ?? throw new NotSupportedException($"Database type {DatabaseType} is not supported or does not return a DbConnection.");
+        protected DbConnection GetConnection() => ServiceFactory.CreateConnection(DatabaseType, connectionString);
         public async Task EnsureDatabaseConnectionAsync()
         {
             using var connection = GetConnection();

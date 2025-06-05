@@ -2,6 +2,7 @@
 using AskDB.App.View_Models;
 using AskDB.Commons.Extensions;
 using CommunityToolkit.WinUI.UI.Controls;
+using DatabaseInteractor.Factories;
 using DatabaseInteractor.Services;
 using GeminiDotNET;
 using GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling;

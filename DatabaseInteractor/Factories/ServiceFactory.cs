@@ -1,15 +1,16 @@
 ﻿using AskDB.Commons.Enums;
+using DatabaseInteractor.Services;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using MySql.Data.MySqlClient;
 using Npgsql;
-using System.Data;
+using System.Data.Common;
 
-namespace DatabaseInteractor.Services
+namespace DatabaseInteractor.Factories
 {
     public static class ServiceFactory
     {
-        public static IDbConnection CreateConnection(DatabaseType dbType, string connectionString)
+        public static DbConnection CreateConnection(DatabaseType dbType, string connectionString)
         {
             return dbType switch
             {

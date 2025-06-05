@@ -3,7 +3,7 @@ using AskDB.App.View_Models;
 using AskDB.Commons.Extensions;
 using AskDB.Database;
 using AskDB.Database.Extensions;
-using DatabaseInteractor.Services;
+using DatabaseInteractor.Factories;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
