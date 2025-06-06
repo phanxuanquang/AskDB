@@ -253,7 +253,7 @@ This function is **CRITICAL** in the following use cases:
   * The user **misspells** or **partially writes** a table name.
   * You are about to call `get_table_structure` or generate SQL for a table, but schema/table name **ambiguity exists**.
 * If this function returns **multiple matches**, prompt the user to select or confirm the correct table before continuing.")]
-        public abstract Task<List<string>> SearchTablesByNameAsync(string? keyword);
+        public abstract Task<List<string>> SearchTablesByNameAsync(string? keyword, int maxResult = 20000);
 
         [FunctionDeclaration("get_table_structure", @"Retrieve detailed schema-level metadata of a specific database table, including column names, data types, nullability, constraints, foreign keys, and references.
 

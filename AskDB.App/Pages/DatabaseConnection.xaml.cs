@@ -29,16 +29,31 @@ namespace AskDB.App
         private bool _useWindowsAuthentication = false;
         private DatabaseCredential _connectionCredential = new();
 
+        public bool UseConnectionString
+        {
+            get => _useConnectionString;
+            set
+            {
+                _useConnectionString = value;
+
+                OnPropertyChanged();
+
+                NotSqliteComponents.Visibility = VisibilityHelper.SetVisible(!_useConnectionString);
+                SqliteComponents.Visibility = VisibilityHelper.SetVisible(false);
+            }
+        }
         public bool UseWindowsAuthentication
         {
             get => _useWindowsAuthentication;
             set
             {
-                if (_useWindowsAuthentication != value)
-                {
-                    _useWindowsAuthentication = value;
+                _useWindowsAuthentication = value;
 
-                    OnPropertyChanged();
+                OnPropertyChanged();
+
+                if (_useWindowsAuthentication)
+                {
+                    ConnectionCredential.Username = ConnectionCredential.Password = string.Empty;
                 }
             }
         }
@@ -57,7 +72,7 @@ namespace AskDB.App
             get => new(_databaseTypes);
             set
             {
-                _databaseTypes = value.ToList();
+                _databaseTypes = [.. value];
                 OnPropertyChanged();
             }
         }
@@ -170,26 +185,6 @@ namespace AskDB.App
                 var isSqliteSelected = ConnectionCredential.DatabaseType == DatabaseType.SQLite;
                 NotSqliteComponents.Visibility = VisibilityHelper.SetVisible(!isSqliteSelected);
                 SqliteComponents.Visibility = VisibilityHelper.SetVisible(isSqliteSelected);
-            }
-        }
-
-        private void UseConnectionStringCheckBox_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
-        {
-            _useConnectionString = ((CheckBox)sender).IsChecked == true;
-
-            UseConnectionStringSpace.Visibility = VisibilityHelper.SetVisible(_useConnectionString);
-            NotSqliteComponents.Visibility = VisibilityHelper.SetVisible(!_useConnectionString);
-            SqliteComponents.Visibility = VisibilityHelper.SetVisible(!_useConnectionString);
-        }
-
-        private void UseWindowsAuthenticationCheckBox_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
-        {
-            var isChecked = ((CheckBox)sender).IsChecked == true;
-
-            UseWindowsAuthentication = isChecked;
-            if (isChecked)
-            {
-                ConnectionCredential.Username = ConnectionCredential.Password = string.Empty;
             }
         }
     }

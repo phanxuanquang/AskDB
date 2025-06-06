@@ -12,7 +12,6 @@ using GeminiDotNET.FunctionCallings.Attributes;
 using GeminiDotNET.Helpers;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Navigation;
 using System;
@@ -21,7 +20,6 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using Windows.ApplicationModel.DataTransfer;                                    
 using Windows.Storage.Pickers;
 using Windows.System;
 using WinRT.Interop;
@@ -31,7 +29,6 @@ namespace AskDB.App.Pages
     public sealed partial class ChatWithDatabase : Page
     {
         private readonly ObservableCollection<ChatMessage> Messages = [];
-        private readonly ObservableCollection<ProgressContent> ProgressContents = [];
         private readonly ObservableCollection<AgentSuggestion> AgentSuggestions = [];
 
         private Generator _generator;
@@ -303,19 +300,26 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
             ChangeTheConversationLanguage("English");
 
-            var tableCount = await _databaseInteractor.GetTableCountAsync();
-            if (tableCount > 200)
+            var tableNames = await _databaseInteractor.SearchTablesByNameAsync(string.Empty, 100);
+            if (tableNames.Count > 75)
             {
                 _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", "- **Note on Known Large Tables:** All tables are pre-identified as being extremely large. Any query against them MUST be treated as High-Risk and requires extra caution.");
             }
             else
             {
-                _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", $"- The connected database has {tableCount} tables and you should be careful while querying them. Please consider consulting with the documentation before proceeding.");
+                _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", $"- The connected database has {tableNames.Count} tables and you should be careful while querying them. Please consider consulting with the documentation before proceeding.");
             }
 
             _generator = new Generator(Cache.ApiKey).EnableChatHistory(150);
 
             InitFunctionCalling();
+
+            await GenerateAgentSuggestionsAsync(_generator, $@"Based on the list of table names provided below, generate up to 5 helpful, consice, natural-sounding suggestions from the viewpoint of the user that a user might ask to start the conversation.
+The suggestions should be phrased as questions or commands in plain English, assuming the user is not technical but wants to understand the data.
+Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table schema, etc.
+Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, consice, specific, user-friendly, and **MUST NOT** be relavant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
+
+This is the list of first {tableNames.Count} table names in the database: {string.Join(", ", tableNames)}");
 
             SetLoading(false);
         }
@@ -323,7 +327,7 @@ Use this function to retrieve **critical, missing context** from the internet wh
         {
             try
             {
-                DataTable? dataTable = ((sender as Button)?.DataContext as ProgressContent)?.Data;
+                DataTable? dataTable = ((sender as Button)?.DataContext as ChatMessage)?.Data;
 
                 if (dataTable == null || dataTable.Rows.Count == 0)
                 {
@@ -354,11 +358,6 @@ Use this function to retrieve **critical, missing context** from the internet wh
                 await DialogHelper.ShowErrorAsync(ex.Message);
             }
         }
-        private void ShowProgressToggle_Click(object sender, RoutedEventArgs e)
-        {
-            var toggleButton = sender as ToggleButton;
-            MainView.IsPaneOpen = toggleButton?.IsChecked == true;
-        }
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
             var userInput = QueryBox.Text.Trim();
@@ -383,7 +382,7 @@ Use this function to retrieve **critical, missing context** from the internet wh
         {
             var dataGrid = sender as DataGrid;
 
-            if (dataGrid == null || dataGrid?.DataContext is not ProgressContent context || (context.Data == null || context.Data.Rows.Count == 0))
+            if (dataGrid == null || dataGrid?.DataContext is not ChatMessage context || (context.Data == null || context.Data.Rows.Count == 0))
             {
                 return;
             }
@@ -415,22 +414,6 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
             await HandleUserInputAsync(userInput);
         }
-        private async void CopySqlButton_Click(object sender, RoutedEventArgs e)
-        {
-            var button = sender as Button;
-            var context = button?.DataContext as ProgressContent;
-
-            if (string.IsNullOrEmpty(context?.SqlCommand))
-            {
-                return;
-            }
-
-            var package = new DataPackage();
-            package.SetText(context.SqlCommand);
-            Clipboard.SetContent(package);
-
-            await DialogHelper.ShowSuccessAsync("SQL command has been copied to clipboard.");
-        }
         #endregion
 
         #region Message and Progress Content Bindings
@@ -440,41 +423,32 @@ Use this function to retrieve **critical, missing context** from the internet wh
             LoadingOverlay.Visibility = VisibilityHelper.SetVisible(isLoading);
             MessageSpace.Opacity = isLoading ? 0.5 : 1;
         }
-        private void SetUserMessage(string? message, bool isFromUser = false)
+        private void SetUserMessage(string message)
         {
             var chatMessage = new ChatMessage
             {
-                Content = message,
-                Alignment = isFromUser ? HorizontalAlignment.Right : HorizontalAlignment.Left
+                Message = message,
+                IsFromUser = true,
+                IsFromAgent = false,
             };
+
             Messages.Add(chatMessage);
         }
-        private void SetProgressMessage(string? message)
+
+        private void SetAgentMessage(string? message, DataTable? dataTable = null)
         {
-            var progressContent = new ProgressContent
+            var isDataTableEmpty = dataTable == null || dataTable.Rows.Count == 0;
+
+            var chatMessage = new ChatMessage
             {
-                Message = message,
-                SqlCommand = null,
+                Message = message ?? string.Empty,
+                IsFromUser = false,
+                IsFromAgent = true,
+                QueryResults = isDataTableEmpty ? [] : new ObservableCollection<object>(dataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray)),
+                Data = isDataTableEmpty ? null : dataTable
             };
 
-            ProgressContents.Add(progressContent);
-        }
-        private void SetProgressDataTable(string? sqlCommand, DataTable dataTable)
-        {
-            if (dataTable == null || dataTable.Rows.Count == 0)
-            {
-                return;
-            }
-
-            var progressContent = new ProgressContent
-            {
-                Message = null,
-                SqlCommand = sqlCommand,
-                QueryResults = new ObservableCollection<object>(dataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray)),
-                Data = dataTable
-            };
-
-            ProgressContents.Add(progressContent);
+            Messages.Add(chatMessage);
         }
 
         private void InitFunctionCalling()
@@ -576,7 +550,7 @@ It **MUST** include at least:
             try
             {
                 SetLoading(true);
-                SetUserMessage(userInput, true); 
+                SetUserMessage(userInput);
                 AgentSuggestions.Clear();
 
                 var functionDeclarations = FunctionDeclarationHelper.FunctionDeclarations;
@@ -595,7 +569,7 @@ It **MUST** include at least:
 
                 if (functionCalls.Count == 0)
                 {
-                    SetUserMessage(modelResponse.Content, false);
+                    SetAgentMessage(modelResponse.Content);
                     return;
                 }
 
@@ -626,11 +600,11 @@ It **MUST** include at least:
                                     Name = function.Name,
                                     Response = new Response
                                     {
-                                        Output = $"{output}\n\nAction plan or clarification or internet search is required.",
+                                        Output = $"{output}\n\nAction plan or user clarification or internet search is required.",
                                     }
                                 });
 
-                                SetProgressMessage(output);
+                                SetAgentMessage(output);
                             }
                         }
 
@@ -640,71 +614,26 @@ It **MUST** include at least:
                             .WithTools(new ToolBuilder().AddFunctionDeclarations(functionDeclarations))
                             .SetFunctionCallingMode(FunctionCallingMode.AUTO)
                             .WithFunctionResponses(functionResponses)
-                            .WithPrompt(@"Please review the function responses against the user's initial request to check if it has been fulfilled.
-
-* **If not**, return the list of function declarations that still need to be called, as the **next steps to take action**.
-* **If there is a blocking point** or clarification is needed, **do not return any function declarations**. Instead, provide the reponse as your monologue to **review your current context, your problems, and the user's expectations** in order to proceed effectively. This will be used as the context for the next action of agent.")
+                            .WithPrompt(@"Please review the function responses and your action history against the user's initial request in order to take action: continue on function calling until the request is satified, or reply to the user immediately to provide the final answer or ask for user's clarification!")
                             .Build();
 
                         var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash);
-                        SetProgressMessage(modelResponseForFunction.Content);
+                        SetAgentMessage(modelResponseForFunction.Content);
 
                         functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
                     }
                     catch (Exception ex)
                     {
-                        SetUserMessage($"Error: {ex.Message}. {ex.InnerException?.Message}", false);
+                        SetAgentMessage($"Error: {ex.Message}. {ex.InnerException?.Message}");
                         functionCalls = [];
                     }
                 }
 
-                var requestForAgentResponse = new ApiRequestBuilder()
-                           .WithSystemInstruction(_globalInstruction)
-                           .DisableAllSafetySettings()
-                           .WithDefaultGenerationConfig(0.5F)
-                           .WithResponseSchema(new
-                           {
-                               type = "object",
-                               properties = new
-                               {
-                                   Summarization = new
-                                   {
-                                       type = "string"
-                                   },
-                                   UserResponseSuggestions = new
-                                   {
-                                       type = "array",
-                                       items = new
-                                       {
-                                           type = "string"
-                                       }
-                                   }
-                               },
-                               required = new[] { "Summarization", "UserResponseSuggestions" }
-                           })
-                           .WithPrompt("Please provide the summary of the current context, and the up to 5 short and concise suggestions for the next step in the viewpoint of the user for the user to use as the quick reply to the agent.")
-                           .Build();
-
-                var response = await _generator.GenerateContentAsync(requestForAgentResponse, ModelVersion.Gemini_20_Flash_Lite);
-                var agentResponse = JsonHelper.AsObject<AgentResponse>(response.Content);
-
-                if (agentResponse?.UserResponseSuggestions != null && agentResponse.UserResponseSuggestions.Count > 0)
-                {
-                    foreach (var suggestion in agentResponse.UserResponseSuggestions)
-                    {
-                        AgentSuggestions.Add(new AgentSuggestion
-                        {
-                            UserResponseSuggestion = suggestion
-                        });
-                    }
-                }
-
-                SetUserMessage(agentResponse.Summarization, false);
+                await GenerateAgentSuggestionsAsync(_generator, "Based on the current context and the action history, please provide up to 5 **short** and **concise** suggestions as the next step in the viewpoint of the user, for the user to use as the quick reply to AskDB.");
             }
             catch (Exception ex)
             {
-                SetUserMessage($"Error: {ex.Message}. {ex.InnerException?.Message}", false);
-                SetProgressMessage($"An error occurred while processing your request: {ex.Message}\n\n```json\n{_generator.HistoryContent.AsString()}\n```");
+                SetAgentMessage($"Error: {ex.Message}. {ex.InnerException?.Message}");
             }
             finally
             {
@@ -718,26 +647,26 @@ It **MUST** include at least:
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.ExecuteQueryAsync):
                     {
                         var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
-                        SetProgressMessage($"Let me execute this query to check the data:\n\n```sql\n{sqlQuery}\n```");
+                        SetAgentMessage($"Let me execute this query to check the data:\n\n```sql\n{sqlQuery}\n```");
                         var dataTable = await _databaseInteractor.ExecuteQueryAsync(sqlQuery);
-                        SetProgressDataTable(sqlQuery, dataTable);
+                        SetAgentMessage(null, dataTable);
                         return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.ExecuteNonQueryAsync):
                     {
                         var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
-                        SetProgressMessage($"Let me execute the command:\n\n```sql\n{sqlQuery}\n```");
+                        SetAgentMessage($"Let me execute the command:\n\n```sql\n{sqlQuery}\n```");
                         await _databaseInteractor.ExecuteNonQueryAsync(sqlQuery);
-                        SetProgressMessage("Command executed successfully.");
+                        SetAgentMessage("Command executed successfully.");
                         return FunctionCallingHelper.CreateResponse(name, $"Command executed successfully.\n\n```sql\n{sqlQuery}\n```");
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.GetTableStructureDetailAsync):
                     {
                         var schema = FunctionCallingHelper.GetParameterValue<string>(function, "schema");
                         var table = FunctionCallingHelper.GetParameterValue<string>(function, "table");
-                        SetProgressMessage($"Let me check the schema information for the table `{schema}.{table}`");
+                        SetAgentMessage($"Let me check the schema information for the table `{schema}.{table}`");
                         var schemaInfo = await _databaseInteractor.GetTableStructureDetailAsync(schema, table);
-                        SetProgressDataTable(null, schemaInfo);
+                        SetAgentMessage(null, schemaInfo);
                         return FunctionCallingHelper.CreateResponse(name, schemaInfo.ToMarkdown());
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.SearchTablesByNameAsync):
@@ -745,38 +674,38 @@ It **MUST** include at least:
                         var keyword = FunctionCallingHelper.GetParameterValue<string>(function, "keyword");
                         if (string.IsNullOrEmpty(keyword))
                         {
-                            SetProgressMessage("Searching for all accessible tables...");
+                            SetAgentMessage("Searching for all accessible tables...");
                         }
                         else
                         {
-                            SetProgressMessage($"Searching for tables using keyword `{keyword}`...");
+                            SetAgentMessage($"Searching for tables using keyword `{keyword}`...");
                         }
                         var tableNames = await _databaseInteractor.SearchTablesByNameAsync(keyword);
                         var tableNamesInMarkdown = string.Join(", ", tableNames.Select(x => $"`{x}`"));
-                        SetProgressMessage($"{tableNames.Count} tables found:\n\n{tableNamesInMarkdown}");
+                        SetAgentMessage($"{tableNames.Count} tables found:\n\n{tableNamesInMarkdown}");
                         return FunctionCallingHelper.CreateResponse(name, tableNamesInMarkdown);
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.GetUserPermissionsAsync):
                     {
-                        SetProgressMessage("Retrieving user permissions...");
+                        SetAgentMessage("Retrieving user permissions...");
                         var permissions = await _databaseInteractor.GetUserPermissionsAsync();
                         var permissionsInMarkdown = string.Join(", ", permissions.Select(x => $"`{x}`"));
-                        SetProgressMessage($"{permissions.Count} permissions found:\n\n{permissionsInMarkdown}");
+                        SetAgentMessage($"{permissions.Count} permissions found:\n\n{permissionsInMarkdown}");
                         return FunctionCallingHelper.CreateResponse(name, permissionsInMarkdown);
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(RequestForActionPlanAsync):
                     {
-                        SetProgressMessage("Analyzing the situation and creating an action plan...");
+                        SetAgentMessage("Analyzing the situation and creating an action plan...");
                         var actionPlan = await RequestForActionPlanAsync();
-                        SetProgressMessage(actionPlan);
+                        SetAgentMessage(actionPlan);
                         return FunctionCallingHelper.CreateResponse(name, actionPlan);
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(RequestForInternetSearchAsync):
                     {
                         var requirement = FunctionCallingHelper.GetParameterValue<string>(function, "query");
-                        SetProgressMessage($"Let me perform an in-depth internet search following this description:\n\n{requirement}");
+                        SetAgentMessage($"Let me perform an in-depth internet search following this description:\n\n{requirement}");
                         var searchResult = await RequestForInternetSearchAsync(requirement);
-                        SetProgressMessage(searchResult);
+                        SetAgentMessage(searchResult);
                         return FunctionCallingHelper.CreateResponse(name, searchResult);
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(ChangeTheConversationLanguage):
@@ -786,6 +715,48 @@ It **MUST** include at least:
                         return FunctionCallingHelper.CreateResponse(name, $"From now on, AskDB **must use {language}** for the conversation (except for the tool calling).");
                     }
                 default: throw new NotImplementedException($"Function '{function.Name}' is not implemented.");
+            }
+        }
+
+        private async Task GenerateAgentSuggestionsAsync(Generator generator, string prompt)
+        {
+            if (AgentSuggestions.Count > 0) AgentSuggestions.Clear();
+
+            var requestForAgentSuggestions = new ApiRequestBuilder()
+                   .WithSystemInstruction(_globalInstruction)
+                   .DisableAllSafetySettings()
+                   .WithDefaultGenerationConfig()
+                   .WithResponseSchema(new
+                   {
+                       type = "object",
+                       properties = new
+                       {
+                           UserResponseSuggestions = new
+                           {
+                               type = "array",
+                               items = new
+                               {
+                                   type = "string"
+                               }
+                           }
+                       },
+                       required = new[] { "UserResponseSuggestions" }
+                   })
+                   .WithPrompt(prompt)
+                   .Build();
+
+            var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
+            var agentResponse = JsonHelper.AsObject<AgentResponse>(response.Content);
+
+            if (agentResponse?.UserResponseSuggestions != null && agentResponse.UserResponseSuggestions.Count > 0)
+            {
+                foreach (var suggestion in agentResponse.UserResponseSuggestions)
+                {
+                    AgentSuggestions.Add(new AgentSuggestion
+                    {
+                        UserResponseSuggestion = suggestion
+                    });
+                }
             }
         }
     }

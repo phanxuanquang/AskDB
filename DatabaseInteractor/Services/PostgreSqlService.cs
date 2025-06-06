@@ -37,9 +37,9 @@ namespace DatabaseInteractor.Services
             return data.ToListString();
         }
 
-        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword)
+        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword, int maxResult = 20000)
         {
-            var query = @"
+            var query = @$"
                 SELECT 
                     quote_ident(table_schema) || '.' || quote_ident(table_name) AS full_table_name
                 FROM 
@@ -49,7 +49,8 @@ namespace DatabaseInteractor.Services
                     AND (table_schema NOT IN ('pg_catalog', 'information_schema'))
                     AND table_name ILIKE @keyword
                 ORDER BY 
-                    table_schema, table_name;";
+                    table_schema, table_name
+                LIMIT {maxResult};";
 
             await using var command = new NpgsqlCommand(query);
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");

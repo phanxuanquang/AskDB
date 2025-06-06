@@ -62,9 +62,9 @@ namespace DatabaseInteractor.Services
             return data.ToListString();
         }
 
-        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword)
+        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword, int maxResult = 20000)
         {
-            var query = "SELECT table_name FROM information_schema.tables WHERE table_name COLLATE utf8mb4_general_ci LIKE CONCAT('%', @keyword, '%');";
+            var query = $"SELECT table_name FROM information_schema.tables WHERE table_name COLLATE utf8mb4_general_ci LIKE CONCAT('%', @keyword, '%') LIMIT {maxResult};";
 
             using var command = new MySqlCommand(query);
             command.Parameters.AddWithValue("@keyword", keyword);

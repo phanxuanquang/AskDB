@@ -12,6 +12,7 @@
 
     <Page.Resources>
         <converters:BoolToNegativeBoolConverter x:Key="BoolToNegativeBoolConverter"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Page.Resources>
 
     <Grid MaxWidth="1000">
@@ -32,7 +33,7 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0" Header="Host" PlaceholderText="127.0.0.1" Text="{x:Bind ConnectionCredential.Host, Mode=TwoWay}"/>
+                            <TextBox Grid.Column="0" Header="Server" PlaceholderText="127.0.0.1" Text="{x:Bind ConnectionCredential.Host, Mode=TwoWay}"/>
                             <NumberBox Grid.Column="1" Header="Port" Minimum="0" MinWidth="120" SpinButtonPlacementMode="Compact" SmallChange="1" LargeChange="10" Value="{x:Bind ConnectionCredential.Port, Mode=TwoWay}"/>
                         </Grid>
                         <StackPanel Spacing="8">
@@ -44,7 +45,7 @@
                                 <TextBox Grid.Column="0" Header="Username" Text="{x:Bind ConnectionCredential.Username, Mode=TwoWay}" IsEnabled="{x:Bind UseWindowsAuthentication,Converter={StaticResource BoolToNegativeBoolConverter},Mode=OneWay}"/>
                                 <PasswordBox Grid.Column="1" Header="Password" Password="{x:Bind ConnectionCredential.Password, Mode=TwoWay}" IsEnabled="{x:Bind UseWindowsAuthentication,Converter={StaticResource BoolToNegativeBoolConverter},Mode=OneWay}"/>
                             </Grid>
-                            <CheckBox Content="I want to use Windows Authentication" IsChecked="{x:Bind UseWindowsAuthentication,Mode=TwoWay}" Click="UseWindowsAuthenticationCheckBox_Click"/>
+                            <CheckBox Content="I want to use Windows Authentication" IsChecked="{x:Bind UseWindowsAuthentication,Mode=TwoWay}"/>
                         </StackPanel>
                         
                         <TextBox Header="Database" Text="{x:Bind ConnectionCredential.Database, Mode=TwoWay}"/>
@@ -64,7 +65,7 @@
                         </Grid>
                     </Grid>
                 </Grid>
-                <Grid Visibility="Collapsed" x:Name="UseConnectionStringSpace" ColumnSpacing="12" Padding="16" Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}" CornerRadius="{StaticResource ControlCornerRadius}">
+                <Grid Visibility="{x:Bind UseConnectionString, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" x:Name="UseConnectionStringSpace" ColumnSpacing="12" Padding="16" Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}" CornerRadius="{StaticResource ControlCornerRadius}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
@@ -73,7 +74,7 @@
                     <TextBox Grid.Column="1" Header="Profile name" MinWidth="200" PlaceholderText="Enter a friendly name" Padding="12,4" Text="{x:Bind ConnectionString.Name, Mode=TwoWay}"/>
                 </Grid>
             </Grid>
-            <CheckBox Content="I want to use connection string instead" IsChecked="False" Click="UseConnectionStringCheckBox_Click"/>
+            <CheckBox Content="I want to use connection string instead" IsChecked="{x:Bind UseConnectionString, Mode=TwoWay}"/>
             <Button Content="Connect" HorizontalAlignment="Stretch" Style="{StaticResource AccentButtonStyle}" Padding="8" Click="ContinueButton_Click"/>
         </StackPanel>
         <local:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>

@@ -77,12 +77,12 @@ namespace DatabaseInteractor.Services
             return data.ToListString();
         }
 
-        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword)
+        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword, int maxResult = 20000)
         {
             var query = @$"
-                SELECT '[' + table_schema + '].[' + table_name + ']' as TableFullName
+                SELECT TOP {maxResult} '[' + table_schema + '].[' + table_name + ']' as TableFullName
                 FROM information_schema.tables 
-                WHERE table_type = 'BASE TABLE' AND TABLE_SCHEMA NOT IN ({string.Join(',', $"'{_systemSchemas}'")}) AND table_name LIKE @keyword";
+                WHERE table_type = 'BASE TABLE' AND TABLE_SCHEMA NOT IN ({string.Join(',', $"'{_systemSchemas}'")}) AND table_name LIKE @keyword;";
 
             await using var command = new SqlCommand(query);
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");

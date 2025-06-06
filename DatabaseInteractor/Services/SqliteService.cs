@@ -39,9 +39,9 @@ namespace DatabaseInteractor.Services
             ];
         }
 
-        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword)
+        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword, int maxResult = 20000)
         {
-            await using var command = new SqliteCommand("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE @keyword");
+            await using var command = new SqliteCommand($"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE @keyword LIMIT {maxResult}");
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
 
             var data = await ExecuteQueryAsync(command);

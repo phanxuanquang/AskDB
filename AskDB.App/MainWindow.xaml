@@ -12,7 +12,7 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid x:Name="RootGrid" RequestedTheme="Light">
+    <Grid x:Name="RootGrid" RequestedTheme="Dark">
         <Grid.BackgroundTransition>
             <BrushTransition />
         </Grid.BackgroundTransition>
