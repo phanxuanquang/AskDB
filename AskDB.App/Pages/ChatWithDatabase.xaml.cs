@@ -300,8 +300,8 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
             ChangeTheConversationLanguage("English");
 
-            var tableNames = await _databaseInteractor.SearchTablesByNameAsync(string.Empty, 100);
-            if (tableNames.Count > 75)
+            var tableNames = await _databaseInteractor.SearchTablesByNameAsync(string.Empty, 200);
+            if (tableNames.Count > 100)
             {
                 _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", "- **Note on Known Large Tables:** All tables are pre-identified as being extremely large. Any query against them MUST be treated as High-Risk and requires extra caution.");
             }

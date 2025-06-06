@@ -88,7 +88,11 @@ namespace DatabaseInteractor.Services
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
 
             var data = await ExecuteQueryAsync(command);
-            return data.ToListString();
+            var tableNames = data.ToListString();
+
+            CachedTableNames.UnionWith(tableNames);
+
+            return tableNames;
         }
     }
 }

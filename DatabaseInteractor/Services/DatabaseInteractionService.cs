@@ -8,6 +8,8 @@ namespace DatabaseInteractor.Services
 {
     public abstract class DatabaseInteractionService(string connectionString)
     {
+        public static HashSet<string> CachedTableNames { get; protected set; } = [];
+
         public DatabaseType DatabaseType { get; protected set; }
         public string ConnectionString { get; } = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
 
@@ -320,5 +322,12 @@ If the user doesn’t specify a schema or the schema is unclear:
 * Use the `search_tables_by_name` function first to identify available tables and their corresponding schemas.
 * If multiple candidates are returned or ambiguity remains, **prompt the user to clarify** which table/schema they meant before calling this function.")]
         public abstract Task<DataTable> GetTableStructureDetailAsync(string? schema, string table);
+
+        protected List<string> FindCachedTableNames(string? keyword)
+        {
+            return string.IsNullOrEmpty(keyword)
+                ? [.. CachedTableNames]
+                : CachedTableNames.Where(name => name.Contains(keyword, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
     }
 }
