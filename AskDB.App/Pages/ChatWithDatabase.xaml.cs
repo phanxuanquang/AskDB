@@ -21,7 +21,7 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using Windows.ApplicationModel.DataTransfer;
+using Windows.ApplicationModel.DataTransfer;                                    
 using Windows.Storage.Pickers;
 using Windows.System;
 using WinRT.Interop;
@@ -576,7 +576,8 @@ It **MUST** include at least:
             try
             {
                 SetLoading(true);
-                SetUserMessage(userInput, true);
+                SetUserMessage(userInput, true); 
+                AgentSuggestions.Clear();
 
                 var functionDeclarations = FunctionDeclarationHelper.FunctionDeclarations;
 
@@ -684,7 +685,6 @@ It **MUST** include at least:
                            .WithPrompt("Please provide the summary of the current context, and the up to 5 short and concise suggestions for the next step in the viewpoint of the user for the user to use as the quick reply to the agent.")
                            .Build();
 
-                AgentSuggestions.Clear();
                 var response = await _generator.GenerateContentAsync(requestForAgentResponse, ModelVersion.Gemini_20_Flash_Lite);
                 var agentResponse = JsonHelper.AsObject<AgentResponse>(response.Content);
 
