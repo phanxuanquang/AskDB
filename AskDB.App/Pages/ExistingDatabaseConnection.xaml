@@ -6,13 +6,12 @@
     xmlns:local="using:AskDB.App.Pages"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-    xmlns:app="using:AskDB.App" 
     xmlns:view_models="using:AskDB.App.View_Models" 
     xmlns:models="using:AskDB.Database.Models" 
+    xmlns:app="using:AskDB.App"
     mc:Ignorable="d">
 
-    <Grid MaxWidth="1000">
-        <app:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <Grid MaxWidth="1280">
         <StackPanel x:Name="MainPanel" Spacing="16" Padding="30" VerticalAlignment="Center" Background="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}" CornerRadius="{StaticResource OverlayCornerRadius}">
             <StackPanel Spacing="8">
                 <TextBlock Text="Connect to your database" Style="{StaticResource TitleTextBlockStyle}"  FontWeight="Bold"/>
@@ -40,7 +39,7 @@
                                                 <FontIcon Glyph="&#xE774;" FontSize="12" VerticalAlignment="Center"/>
                                                 <TextBlock Text="{x:Bind Host}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center"/>
                                             </StackPanel>
-                                            <FontIcon Grid.Column="1" Glyph="&#xE8A7;"/>
+                                            <FontIcon Grid.Column="1" Glyph="&#xE8A7;" FontSize="12"/>
                                         </Grid>
                                         <TextBlock Text="{x:Bind Database}" Style="{StaticResource BodyStrongTextBlockStyle}" FontWeight="SemiBold"/>
                                         <StackPanel Padding="8"/>
@@ -96,5 +95,6 @@
             </StackPanel>
             <HyperlinkButton Content="Skip and setup a new connection" Padding="14,8" HorizontalAlignment="Right" Click="SkipButton_Click"/>
         </StackPanel>
+        <app:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
     </Grid>
 </Page>

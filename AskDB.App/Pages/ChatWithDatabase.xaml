@@ -27,7 +27,7 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid Grid.Row="0">
-                <Image Source="/Assets/icon.png" MaxHeight="200" Opacity="0.05"/>
+                <Image Source="/Images/icon.png" MaxHeight="300" Opacity="0.05"/>
             </Grid>
             <ListView Grid.Row="0" IsItemClickEnabled="False" CanDragItems="False" CanReorderItems="False" SelectionMode="None" ItemsSource="{x:Bind Messages}">
                 <ListView.ItemsPanel>
@@ -81,10 +81,10 @@
                                     BorderBrush="{ThemeResource ControlElevationBorderBrush}"
                                     RowBackground="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
                                     AlternatingRowBackground="{ThemeResource ControlAltFillColorTertiaryBrush}"
-                                    Visibility="{x:Bind Data, Converter={StaticResource DataTableToVisibilityConverter}}"
-                                    ItemsSource="{x:Bind QueryResults}"/>
+                                    Visibility="{x:Bind Data, Converter={StaticResource DataTableToVisibilityConverter}, Mode=OneWay}"
+                                    ItemsSource="{x:Bind QueryResults, Mode=OneWay}"/>
                                 <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left">
-                                    <Button Padding="6" ToolTipService.ToolTip="Export the data" ToolTipService.Placement="Left" Click="ExportButton_Click" Visibility="{x:Bind Data, Converter={StaticResource DataTableToVisibilityConverter}}">
+                                    <Button Padding="6" ToolTipService.ToolTip="Export the data" ToolTipService.Placement="Left" Click="ExportButton_Click" Visibility="{x:Bind Data, Converter={StaticResource DataTableToVisibilityConverter}, Mode=OneWay}">
                                         <FontIcon Glyph="&#xE896;" FontSize="14"/>
                                     </Button>
                                     <Button Padding="6" ToolTipService.ToolTip="Copy" ToolTipService.Placement="Left">
@@ -120,11 +120,14 @@
                 </Button>
             </Grid>
         </Grid>
-        <Grid x:Name="LoadingOverlay" Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}" CornerRadius="{StaticResource OverlayCornerRadius}" >
+        <Grid x:Name="LoadingOverlay" Opacity="1" Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}" CornerRadius="{StaticResource OverlayCornerRadius}" >
             <Grid.OpacityTransition>
                 <ScalarTransition />
             </Grid.OpacityTransition>
-            <controls:LoadingControl x:Name="LoadingIndicator" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <StackPanel VerticalAlignment="Center" MinWidth="200" HorizontalAlignment="Center" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="{StaticResource OverlayCornerRadius}" Padding="12">
+                <controls:LoadingControl x:Name="LoadingIndicator" HorizontalAlignment="Center"  Padding="0"/>
+                <Button Content="Cancel" HorizontalAlignment="Center"/>
+            </StackPanel>
         </Grid>
     </Grid>
 </Page>

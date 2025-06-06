@@ -315,7 +315,7 @@ Use this function to retrieve **critical, missing context** from the internet wh
             InitFunctionCalling();
 
             await GenerateAgentSuggestionsAsync(_generator, $@"Based on the list of table names provided below, generate up to 5 helpful, consice, natural-sounding suggestions from the viewpoint of the user that a user might ask to start the conversation.
-The suggestions should be phrased as questions or commands in plain English, assuming the user is not technical but wants to understand the data.
+The suggestions should be phrased as questions or commands in natural language, assuming the user is not technical but wants to understand and explore the data for analysis purpose or predictional purpose.
 Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table schema, etc.
 Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, consice, specific, user-friendly, and **MUST NOT** be relavant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
 
@@ -419,7 +419,7 @@ This is the list of first {tableNames.Count} table names in the database: {strin
         #region Message and Progress Content Bindings
         private void SetLoading(bool isLoading)
         {
-            LoadingIndicator.SetLoading("Working", isLoading);
+            LoadingIndicator.SetLoading(null, isLoading);
             LoadingOverlay.Visibility = VisibilityHelper.SetVisible(isLoading);
             MessageSpace.Opacity = isLoading ? 0.5 : 1;
         }
@@ -570,62 +570,63 @@ It **MUST** include at least:
                 if (functionCalls.Count == 0)
                 {
                     SetAgentMessage(modelResponse.Content);
-                    return;
                 }
-
-                while (functionCalls.Count > 0)
+                else
                 {
-                    await Task.Delay(2000);
-
-                    try
+                    while (functionCalls.Count > 0)
                     {
-                        var functionResponses = new List<FunctionResponse>();
+                        await Task.Delay(2345);
 
-                        foreach (var function in functionCalls)
+                        try
                         {
-                            try
+                            var functionResponses = new List<FunctionResponse>();
+
+                            foreach (var function in functionCalls)
                             {
-                                var functionResponse = await CallFunctionAsync(function);
-                                if (functionResponse != null)
+                                try
                                 {
-                                    functionResponses.Add(functionResponse);
+                                    var functionResponse = await CallFunctionAsync(function);
+                                    if (functionResponse != null)
+                                    {
+                                        functionResponses.Add(functionResponse);
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    var output = $"Error in function **{function.Name}**:\n\n```plaintext\n{ex.Message}. {ex.InnerException?.Message}\n```";
+
+                                    functionResponses.Add(new FunctionResponse
+                                    {
+                                        Name = function.Name,
+                                        Response = new Response
+                                        {
+                                            Output = $"{output}\n\nAction plan or user clarification or internet search is required.",
+                                        }
+                                    });
+
+                                    SetAgentMessage(output);
                                 }
                             }
-                            catch (Exception ex)
-                            {
-                                var output = $"Error in function **{function.Name}**:\n\n```plaintext\n{ex.Message}. {ex.InnerException?.Message}\n```";
 
-                                functionResponses.Add(new FunctionResponse
-                                {
-                                    Name = function.Name,
-                                    Response = new Response
-                                    {
-                                        Output = $"{output}\n\nAction plan or user clarification or internet search is required.",
-                                    }
-                                });
+                            var apiRequestWithFunctions = new ApiRequestBuilder()
+                                .WithSystemInstruction(_globalInstruction)
+                                .DisableAllSafetySettings()
+                                .WithTools(new ToolBuilder().AddFunctionDeclarations(functionDeclarations))
+                                .SetFunctionCallingMode(FunctionCallingMode.AUTO)
+                                .WithFunctionResponses(functionResponses)
+                                .WithPrompt(@"Please review the function responses and your action history against the user's initial request in order to take action: continue on function calling until the request is satified, or reply to the user immediately to provide the final answer or ask for user's clarification!")
+                                .Build();
 
-                                SetAgentMessage(output);
-                            }
+                            var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash);
+                            SetAgentMessage(modelResponseForFunction.Content);
+
+                            functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
                         }
-
-                        var apiRequestWithFunctions = new ApiRequestBuilder()
-                            .WithSystemInstruction(_globalInstruction)
-                            .DisableAllSafetySettings()
-                            .WithTools(new ToolBuilder().AddFunctionDeclarations(functionDeclarations))
-                            .SetFunctionCallingMode(FunctionCallingMode.AUTO)
-                            .WithFunctionResponses(functionResponses)
-                            .WithPrompt(@"Please review the function responses and your action history against the user's initial request in order to take action: continue on function calling until the request is satified, or reply to the user immediately to provide the final answer or ask for user's clarification!")
-                            .Build();
-
-                        var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash);
-                        SetAgentMessage(modelResponseForFunction.Content);
-
-                        functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
-                    }
-                    catch (Exception ex)
-                    {
-                        SetAgentMessage($"Error: {ex.Message}. {ex.InnerException?.Message}");
-                        functionCalls = [];
+                        catch (Exception ex)
+                        {
+                            SetAgentMessage($"Error: {ex.Message}. {ex.InnerException?.Message}");
+                            functionCalls = [];
+                        }
                     }
                 }
 
@@ -649,7 +650,10 @@ It **MUST** include at least:
                         var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
                         SetAgentMessage($"Let me execute this query to check the data:\n\n```sql\n{sqlQuery}\n```");
                         var dataTable = await _databaseInteractor.ExecuteQueryAsync(sqlQuery);
-                        SetAgentMessage(null, dataTable);
+                        if (dataTable != null && dataTable.Rows.Count > 1)
+                        {
+                            SetAgentMessage(null, dataTable);
+                        }
                         return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.ExecuteNonQueryAsync):
@@ -665,9 +669,12 @@ It **MUST** include at least:
                         var schema = FunctionCallingHelper.GetParameterValue<string>(function, "schema");
                         var table = FunctionCallingHelper.GetParameterValue<string>(function, "table");
                         SetAgentMessage($"Let me check the schema information for the table `{schema}.{table}`");
-                        var schemaInfo = await _databaseInteractor.GetTableStructureDetailAsync(schema, table);
-                        SetAgentMessage(null, schemaInfo);
-                        return FunctionCallingHelper.CreateResponse(name, schemaInfo.ToMarkdown());
+                        var dataTable = await _databaseInteractor.GetTableStructureDetailAsync(schema, table);
+                        if (dataTable != null && dataTable.Rows.Count > 1)
+                        {
+                            SetAgentMessage(null, dataTable);
+                        }
+                        return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.SearchTablesByNameAsync):
                     {
@@ -681,9 +688,17 @@ It **MUST** include at least:
                             SetAgentMessage($"Searching for tables using keyword `{keyword}`...");
                         }
                         var tableNames = await _databaseInteractor.SearchTablesByNameAsync(keyword);
-                        var tableNamesInMarkdown = string.Join(", ", tableNames.Select(x => $"`{x}`"));
-                        SetAgentMessage($"{tableNames.Count} tables found:\n\n{tableNamesInMarkdown}");
-                        return FunctionCallingHelper.CreateResponse(name, tableNamesInMarkdown);
+
+                        if (tableNames.Count > 0)
+                        {
+                            var tableNamesInMarkdown = string.Join(", ", tableNames.Select(x => $"`{x}`"));
+                            SetAgentMessage($"{tableNames.Count} tables found:\n\n{tableNamesInMarkdown}");
+                            return FunctionCallingHelper.CreateResponse(name, tableNamesInMarkdown);
+                        }
+
+                        SetAgentMessage("I found no tables.");
+                        return FunctionCallingHelper.CreateResponse(name, "No tables found. Try another approach!");
+
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.GetUserPermissionsAsync):
                     {
@@ -722,7 +737,9 @@ It **MUST** include at least:
         {
             if (AgentSuggestions.Count > 0) AgentSuggestions.Clear();
 
-            var requestForAgentSuggestions = new ApiRequestBuilder()
+            try
+            {
+                var requestForAgentSuggestions = new ApiRequestBuilder()
                    .WithSystemInstruction(_globalInstruction)
                    .DisableAllSafetySettings()
                    .WithDefaultGenerationConfig()
@@ -745,18 +762,23 @@ It **MUST** include at least:
                    .WithPrompt(prompt)
                    .Build();
 
-            var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
-            var agentResponse = JsonHelper.AsObject<AgentResponse>(response.Content);
+                var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
+                var agentResponse = JsonHelper.AsObject<AgentResponse>(response.Content);
 
-            if (agentResponse?.UserResponseSuggestions != null && agentResponse.UserResponseSuggestions.Count > 0)
-            {
-                foreach (var suggestion in agentResponse.UserResponseSuggestions)
+                if (agentResponse?.UserResponseSuggestions != null && agentResponse.UserResponseSuggestions.Count > 0)
                 {
-                    AgentSuggestions.Add(new AgentSuggestion
+                    foreach (var suggestion in agentResponse.UserResponseSuggestions)
                     {
-                        UserResponseSuggestion = suggestion
-                    });
+                        AgentSuggestions.Add(new AgentSuggestion
+                        {
+                            UserResponseSuggestion = suggestion
+                        });
+                    }
                 }
+            }
+            catch 
+            {
+                // Skip generating agent suggestions if an error occurs
             }
         }
     }

@@ -95,7 +95,7 @@ namespace AskDB.App.Pages
                 return;
             }
 
-            LoadingOverlay.SetLoading("Connecting", true);
+            SetLoading(true);
 
             try
             {
@@ -125,7 +125,7 @@ namespace AskDB.App.Pages
             }
             finally
             {
-                LoadingOverlay.SetLoading("Connecting", false);
+                SetLoading(false);
             }
         }
 

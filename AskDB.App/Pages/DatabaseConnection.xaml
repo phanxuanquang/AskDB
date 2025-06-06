@@ -28,14 +28,17 @@
             <Grid>
                 <Grid x:Name="NotUseConnectionStringSpace" Padding="16,18" Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}" CornerRadius="{StaticResource ControlCornerRadius}">
                     <StackPanel x:Name="NotSqliteComponents" Spacing="12">
-                        <Grid ColumnSpacing="12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0" Header="Server" PlaceholderText="127.0.0.1" Text="{x:Bind ConnectionCredential.Host, Mode=TwoWay}"/>
-                            <NumberBox Grid.Column="1" Header="Port" Minimum="0" MinWidth="120" SpinButtonPlacementMode="Compact" SmallChange="1" LargeChange="10" Value="{x:Bind ConnectionCredential.Port, Mode=TwoWay}"/>
-                        </Grid>
+                        <StackPanel Spacing="8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" Header="Server" PlaceholderText="127.0.0.1" Text="{x:Bind ConnectionCredential.Host, Mode=TwoWay}"/>
+                                <NumberBox Margin="12,0,0,0" Grid.Column="1" Header="Port" Minimum="0" MinWidth="120" Visibility="{x:Bind IncludePort, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" SpinButtonPlacementMode="Compact" SmallChange="1" LargeChange="10" Value="{x:Bind ConnectionCredential.Port, Mode=TwoWay}"/>
+                            </Grid>
+                            <CheckBox Content="Specify TCP port" IsChecked="{x:Bind IncludePort, Mode=TwoWay}"/>
+                        </StackPanel>
                         <StackPanel Spacing="8">
                             <Grid ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>

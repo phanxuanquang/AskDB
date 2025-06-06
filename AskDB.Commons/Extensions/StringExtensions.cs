@@ -8,7 +8,7 @@ namespace AskDB.Commons.Extensions
     {
         private static readonly byte[] IV = new byte[16];
 
-        public static string AesEncrypt(this string content)
+        public static string AesEncrypt(this string? content)
         {
             if (string.IsNullOrEmpty(content)) return string.Empty;
 
@@ -24,7 +24,7 @@ namespace AskDB.Commons.Extensions
             return Convert.ToBase64String(encryptedBytes);
         }
 
-        public static string AesDecrypt(this string content)
+        public static string AesDecrypt(this string? content)
         {
             if (string.IsNullOrEmpty(content)) return string.Empty;
 

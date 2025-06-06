@@ -1,7 +1,6 @@
 using AskDB.App.Helpers;
 using AskDB.App.Pages;
 using AskDB.App.View_Models;
-using AskDB.Commons.Attributes;
 using AskDB.Commons.Enums;
 using AskDB.Commons.Extensions;
 using AskDB.Database;
@@ -27,6 +26,7 @@ namespace AskDB.App
         private string _sqliteFilePath;
         private bool _useConnectionString = false;
         private bool _useWindowsAuthentication = false;
+        private bool _includePort = false;
         private DatabaseCredential _connectionCredential = new();
 
         public bool UseConnectionString
@@ -54,6 +54,19 @@ namespace AskDB.App
                 if (_useWindowsAuthentication)
                 {
                     ConnectionCredential.Username = ConnectionCredential.Password = string.Empty;
+                }
+            }
+        }
+        public bool IncludePort
+        {
+            get => _includePort;
+            set
+            {
+                _includePort = value;
+                OnPropertyChanged();
+                if (!_includePort)
+                {
+                    ConnectionCredential.Port = default;
                 }
             }
         }
@@ -171,14 +184,6 @@ namespace AskDB.App
         private void DatabaseTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ConnectionCredential.DatabaseType = (DatabaseType)(sender as ComboBox).SelectedIndex;
-
-            ConnectionCredential.Port = ConnectionCredential.Port == default
-                ? ConnectionCredential.DatabaseType.GetAttributeValue<DefaultPortAttribute>().Port
-                : ConnectionCredential.Port;
-
-            ConnectionCredential.Host = string.IsNullOrWhiteSpace(ConnectionCredential.Host)
-                ? ConnectionCredential.DatabaseType.GetAttributeValue<DefaultHostAttribute>().Host
-                : ConnectionCredential.Host;
 
             if (!_useConnectionString)
             {

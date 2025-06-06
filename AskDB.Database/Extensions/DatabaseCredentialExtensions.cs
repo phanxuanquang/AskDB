@@ -13,12 +13,19 @@ namespace AskDB.Database.Extensions
             switch (databaseCredential.DatabaseType)
             {
                 case DatabaseType.SqlServer:
-                    sb.Append($"Server={databaseCredential.Host.Trim()},{databaseCredential.Port};");
+                    if (databaseCredential.Port != default)
+                    {
+                        sb.Append($"Server={databaseCredential.Host.Trim()},{databaseCredential.Port};");
+
+                    }
+                    else
+                    {
+                        sb.Append($"Server={databaseCredential.Host.Trim()};");
+                    }
                     sb.Append($"Database={databaseCredential.Database.Trim()};");
                     if (string.IsNullOrEmpty(databaseCredential.Username) || string.IsNullOrEmpty(databaseCredential.Password))
                     {
                         sb.Append("Integrated Security=True;");  // Use Windows Authentication if no credentials are provided
-                        sb.Append("Trust Connection=True;"); // Trust connection for Windows Authentication
                     }
                     else
                     {
@@ -32,7 +39,10 @@ namespace AskDB.Database.Extensions
                     break;
                 case DatabaseType.PostgreSQL:
                     sb.Append($"Host={databaseCredential.Host.Trim()};");
-                    sb.Append($"Port={databaseCredential.Port};");
+                    if (databaseCredential.Port != default)
+                    {
+                        sb.Append($"Port={databaseCredential.Port};");
+                    }
                     sb.Append($"Database={databaseCredential.Database.Trim()};");
                     sb.Append($"Username={databaseCredential.Username.Trim()};");
                     sb.Append($"Password={databaseCredential.Password.Trim()};");
@@ -41,7 +51,10 @@ namespace AskDB.Database.Extensions
                     break;
                 case DatabaseType.MySQL:
                     sb.Append($"Server={databaseCredential.Host.Trim()};");
-                    sb.Append($"Port={databaseCredential.Port};");
+                    if (databaseCredential.Port != default)
+                    {
+                        sb.Append($"Port={databaseCredential.Port};");
+                    }
                     sb.Append($"Database={databaseCredential.Database.Trim()};");
                     sb.Append($"User={databaseCredential.Username.Trim()};");
                     sb.Append($"Password={databaseCredential.Password.Trim()};");
