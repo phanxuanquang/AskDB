@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Windows.Storage.Pickers;
@@ -29,6 +30,16 @@ namespace AskDB.App
         private bool _includePort = false;
         private DatabaseCredential _connectionCredential = new();
 
+        public string SqliteFilePath
+        {
+            get => _sqliteFilePath;
+            set
+            {
+                _sqliteFilePath = value;
+
+                OnPropertyChanged();
+            }
+        }
         public bool UseConnectionString
         {
             get => _useConnectionString;
@@ -119,9 +130,11 @@ namespace AskDB.App
 
             try
             {
+                var connectionString = string.Empty;
+
                 if (_useConnectionString)
                 {
-                    var connectionString = ConnectionString.Value?.Trim();
+                    connectionString = ConnectionString.Value?.Trim();
                     var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, connectionString);
 
                     await databaseInteractor.EnsureDatabaseConnectionAsync();
@@ -129,23 +142,40 @@ namespace AskDB.App
                 }
                 else
                 {
-                    if (ConnectionCredential.DatabaseType == DatabaseType.SQLite && string.IsNullOrWhiteSpace(_sqliteFilePath))
+                    if (ConnectionCredential.DatabaseType == DatabaseType.SQLite && string.IsNullOrEmpty(SqliteFilePath))
                     {
                         await DialogHelper.ShowErrorAsync("Please select the SQLite database file.");
                         return;
                     }
 
-                    var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, ConnectionCredential.BuildConnectionString(5));
+                    if(ConnectionCredential.DatabaseType == DatabaseType.SQLite)
+                    {
+                        connectionString = $"Data Source={SqliteFilePath}";
+                        var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, connectionString);
 
-                    await databaseInteractor.EnsureDatabaseConnectionAsync();
-                    await _db.SaveDatabaseCredentialAsync(ConnectionCredential);
+                        await databaseInteractor.EnsureDatabaseConnectionAsync();
+                        await _db.SaveConnectionStringAsync(new ConnectionString
+                        {
+                             Name = Path.GetFileNameWithoutExtension(SqliteFilePath),
+                             DatabaseType = DatabaseType.SQLite,
+                             Value = connectionString
+                        });
+                    }
+                    else
+                    {
+                        connectionString = ConnectionCredential.BuildConnectionString(5);
+                        var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, connectionString);
+
+                        await databaseInteractor.EnsureDatabaseConnectionAsync();
+                        await _db.SaveDatabaseCredentialAsync(ConnectionCredential);
+                    }
                 }
 
                 Frame.Navigate(
                     typeof(ChatWithDatabase),
                     new DatabaseConnectionInfo
                     {
-                        ConnectionString = _useConnectionString ? ConnectionString.Value?.Trim() : ConnectionCredential.BuildConnectionString(),
+                        ConnectionString = connectionString,
                         DatabaseType = ConnectionCredential.DatabaseType,
                     },
                     new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
@@ -175,7 +205,7 @@ namespace AskDB.App
 
             if (file != null)
             {
-                _sqliteFilePath = file.Path;
+                SqliteFilePath = file.Path;
             }
 
             senderButton.IsEnabled = true;

@@ -323,7 +323,7 @@ If the user doesn’t specify a schema or the schema is unclear:
 * If multiple candidates are returned or ambiguity remains, **prompt the user to clarify** which table/schema they meant before calling this function.")]
         public abstract Task<DataTable> GetTableStructureDetailAsync(string? schema, string table);
 
-        protected List<string> FindCachedTableNames(string? keyword)
+        protected static List<string> FindCachedTableNames(string? keyword)
         {
             return string.IsNullOrEmpty(keyword)
                 ? [.. CachedTableNames]

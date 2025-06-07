@@ -63,7 +63,7 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0" PlaceholderText="path\\to\\YourDatabaseFile.db" IsReadOnly="True" Text="{x:Bind _sqliteFilePath,Mode=TwoWay}"/>
+                            <TextBox Grid.Column="0" PlaceholderText="path\\to\\YourDatabaseFile.db" IsReadOnly="True" Text="{x:Bind SqliteFilePath,Mode=TwoWay}"/>
                             <Button Grid.Column="1" Content="Browse" Click="BrowseButton_Click"/>
                         </Grid>
                     </Grid>
