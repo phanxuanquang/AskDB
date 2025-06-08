@@ -34,7 +34,7 @@ AskDB supports 4 most common database providers as listed below, so you can work
 No matter how complex your database is and how many tables it has, AskDB can help you understand and manage it easily.
 
 ## **What can AskDB do**
-> In this section, I use `AdventureWorksDW2019` sample database (can be found and downloaded [**HERE**](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure)) that is a large-scale sample data warehouse provided by Microsoft, designed for simulating real-world business analytics scenarios.
+> _In this section, the `AdventureWorksDW2019` database is used for demonstration. AdventureWorks is a large-scale sample data warehouse provided by Microsoft, designed for simulating real-world business analytics scenarios, it can be found and downloaded [**HERE**](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure)_
 
 AskDB can understands your questions and gives you clear answers, even if you're not a database expert. No need for complex code for many tasks, just tell AskDB what you need in everyday words.
 
