@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.UI.Xaml;
-using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -29,12 +28,7 @@ namespace AskDB.App
             Stopwatch.StartNew();
             Window = new MainWindow();
             Window.Activate();
-            _ = InitializeAndLogAsync();
-        }
-
-        public static AppDbContext GetAppDbContextService()
-        {
-            return Host.Services.GetService<AppDbContext>() ?? throw new InvalidOperationException("Service AppDbContext not found.");
+            _ = InitializeAsync();
         }
 
         private static IHost CreateHostBuilder()
@@ -48,7 +42,7 @@ namespace AskDB.App
                 .Build();
         }
 
-        private static async Task InitializeAndLogAsync()
+        private static async Task InitializeAsync()
         {
             if (!File.Exists(AppDbContext.DbPath))
             {
@@ -58,8 +52,8 @@ namespace AskDB.App
             var apiKeyTask = LocalDb.GetApiKeyAsync();
             var hasUserTask = LocalDb.IsDatabaseCredentialOrConnectionStringExistsAsync();
             await Task.WhenAll(apiKeyTask, hasUserTask).ConfigureAwait(false);
-            Cache.ApiKey = apiKeyTask.Result;
-            Cache.HasUserEverConnectedToDatabase = hasUserTask.Result;
+            Cache.ApiKey = await apiKeyTask;
+            Cache.HasUserEverConnectedToDatabase = await hasUserTask;
         }
     }
 }
