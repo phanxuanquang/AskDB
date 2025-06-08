@@ -1,9 +1,9 @@
-{
+﻿{
   "profiles": {
-    "AskDB.App (Package)": {
+    "Packaged": {
       "commandName": "MsixPackage"
     },
-    "AskDB.App (Unpackaged)": {
+    "Unpackaged": {
       "commandName": "Project"
     }
   }

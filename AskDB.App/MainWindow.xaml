@@ -9,36 +9,54 @@
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     mc:Ignorable="d">
     <Window.SystemBackdrop>
-        <DesktopAcrylicBackdrop />
+        <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid>
+    <Grid x:Name="RootGrid" RequestedTheme="Light">
+        <Grid.BackgroundTransition>
+            <BrushTransition />
+        </Grid.BackgroundTransition>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <CommandBar Background="Transparent" IsOpen="False" DefaultLabelPosition="Right">
-            <AppBarButton Icon="Setting" Label="General Settings"/>
-            <AppBarButton Icon="Edit" Label="Custom Instructions">
-                <AppBarButton.Flyout>
-                    <MenuFlyout>
-                        <MenuFlyoutItem Text="Reset to Default"/>
-                        <MenuFlyoutSeparator/>
-                        <MenuFlyoutItem Text="Query Optimization"/>
-                        <MenuFlyoutItem Text="Natural Language to SQL Convertion"/>
-                        <MenuFlyoutItem Text="Data Analysis"/>
-                    </MenuFlyout>
-                </AppBarButton.Flyout>
+        <CommandBar Grid.Row="0" Background="Transparent" IsOpen="False" DefaultLabelPosition="Right" HorizontalAlignment="Left">
+            <AppBarButton LabelPosition="Collapsed" ToolTipService.ToolTip="Back" Click="BackButton_Click">
+                <AppBarButton.Icon>
+                    <FontIcon Glyph="&#xE72B;" />
+                </AppBarButton.Icon>
             </AppBarButton>
-            <AppBarButton Icon="Permissions" Label="Credentials Management">
-                <AppBarButton.Flyout>
-                    <MenuFlyout>
-                        <MenuFlyoutItem Text="Gemini API Keys"/>
-                        <MenuFlyoutItem Text="Database Credentials"/>
-                    </MenuFlyout>
-                </AppBarButton.Flyout>
+            <AppBarButton LabelPosition="Collapsed" ToolTipService.ToolTip="Home" Click="HomeButton_Click">
+                <AppBarButton.Icon>
+                    <FontIcon Glyph="&#xE80F;" />
+                </AppBarButton.Icon>
             </AppBarButton>
+            <AppBarSeparator />
+            <AppBarToggleButton LabelPosition="Collapsed" ToolTipService.ToolTip="Change color mode" Click="ColorThemeToggle_Click">
+                <AppBarToggleButton.Icon>
+                    <FontIcon Glyph="&#xE793;" />
+                </AppBarToggleButton.Icon>
+            </AppBarToggleButton>
+            <AppBarButton LabelPosition="Collapsed" ToolTipService.ToolTip="Update my API key" Click="UpdateApiKeyButton_Click">
+                <AppBarButton.Icon>
+                    <FontIcon Glyph="&#xE705;"/>
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <CommandBar.SecondaryCommands>
+                <AppBarButton Label="Check for update" Click="CheckUpdateButton_Click">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xECC5;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton Label="About the developer" Click="GithubProfileButton_Click">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE8D4;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+            </CommandBar.SecondaryCommands>
         </CommandBar>
-        <Frame Grid.Row="1" x:Name="MainFrame"/>
+        <Frame Grid.Row="1" x:Name="MainFrame" Padding="16,0,16,24" />
+        <local:LoadingControl x:Name="LoadingIndicator" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.RowSpan="2" />
     </Grid>
 </Window>

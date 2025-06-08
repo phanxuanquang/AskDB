@@ -1,43 +1,59 @@
-﻿using Microsoft.UI.Xaml;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+﻿using AskDB.App.Helpers;
+using AskDB.Database;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.UI.Xaml;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace AskDB.App
 {
-    /// <summary>
-    /// Provides application-specific behavior to supplement the default Application class.
-    /// </summary>
     public partial class App : Application
     {
-        /// <summary>
-        /// Initializes the singleton application object.  This is the first line of authored code
-        /// executed, and as such is the logical equivalent of main() or WinMain().
-        /// </summary>
+        public static IHost Host { get; private set; }
+        public static Window Window { get; private set; }
+        public static AppDbContext LocalDb { get; private set; }
+
         public App()
         {
             this.InitializeComponent();
+            Host = CreateHostBuilder();
+            LocalDb = Host.Services.GetService<AppDbContext>();
         }
 
-        /// <summary>
-        /// Invoked when the application is launched.
-        /// </summary>
-        /// <param name="args">Details about the launch request and process.</param>
-        protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+        protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
+            Stopwatch.StartNew();
             Window = new MainWindow();
-
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(Window);
-            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-            var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
-
-            var iconPath = "Assets/icon.ico";
-            appWindow.SetIcon(iconPath);
-
             Window.Activate();
+            _ = InitializeAsync();
         }
 
-        public static Window Window { get; private set; }
+        private static IHost CreateHostBuilder()
+        {
+            return Microsoft.Extensions.Hosting.Host
+                .CreateDefaultBuilder()
+                .ConfigureServices((context, services) =>
+                {
+                    services.AddDbContext<AppDbContext>(options => options.UseSqlite($"Data Source={AppDbContext.DbPath}"));
+                })
+                .Build();
+        }
 
+        private static async Task InitializeAsync()
+        {
+            if (!File.Exists(AppDbContext.DbPath))
+            {
+                await LocalDb.Database.EnsureCreatedAsync().ConfigureAwait(false);
+            }
+
+            var apiKeyTask = LocalDb.GetApiKeyAsync();
+            var hasUserTask = LocalDb.IsDatabaseCredentialOrConnectionStringExistsAsync();
+            await Task.WhenAll(apiKeyTask, hasUserTask).ConfigureAwait(false);
+            Cache.ApiKey = await apiKeyTask;
+            Cache.HasUserEverConnectedToDatabase = await hasUserTask;
+        }
     }
 }

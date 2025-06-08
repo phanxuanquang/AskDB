@@ -1,43 +1,33 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.26100.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>AskDB.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-	<Platforms>x86;x64</Platforms>
-	<RuntimeIdentifiers>win-x86;win-x64</RuntimeIdentifiers>
-    <PublishProfile>win-$(Platform).pubxml</PublishProfile>
-	  <UseAppLocalCoreFramework>true</UseAppLocalCoreFramework>
-	  <UseWinUI>true</UseWinUI>
+	  <Platforms>x86;x64;ARM64</Platforms>
+	  <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
+    <Nullable>enable</Nullable>
     <EnableMsixTooling>true</EnableMsixTooling>
+    <SelfContained>true</SelfContained>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <PublishTrimmed>False</PublishTrimmed>
+    <PublishReadyToRun>true</PublishReadyToRun>
+
     <AssemblyName>AskDB</AssemblyName>
-    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
-    <PackageCertificateThumbprint>AF2A5AD07432D7732A3276A9E91ADDB399976084</PackageCertificateThumbprint>
-    <PackageCertificateKeyFile>AskDB.App_TemporaryKey.pfx</PackageCertificateKeyFile>
-    <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
-	<WindowsPackageType>None</WindowsPackageType>
-	<WindowsAppSDKBootstrapAutoInitializeOptions_OnNoMatch_ShowUI>true</WindowsAppSDKBootstrapAutoInitializeOptions_OnNoMatch_ShowUI>
-	<PublishSingleFile>true</PublishSingleFile>
-	<SelfContained>true</SelfContained>
-	<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-    <PublishTrimmed>true</PublishTrimmed>
-	 <PublishReadyToRun>true</PublishReadyToRun>
-    <UseWPF>false</UseWPF>
-	<PackageId>AskDB</PackageId>
+    <ApplicationIcon>Images\icon.ico</ApplicationIcon>
+	  <PackageId>AskDB</PackageId>
     <Title>AskDB</Title>
     <Authors>Phan Xuan Quang</Authors>
     <Company>Phan Xuan Quang</Company>
     <Description>Ask the AI about your SQL database</Description>
     <Copyright>© 2024 Phan Xuan Quang / AskDb Project</Copyright>
     <PackageProjectUrl>https://github.com/phanxuanquang/AskDB</PackageProjectUrl>
-    <PackageIcon>icon.png</PackageIcon>
     <RepositoryUrl>https://github.com/phanxuanquang/AskDB</RepositoryUrl>
-    <NeutralLanguage>en-001</NeutralLanguage>
-    <PlatformTarget>x64</PlatformTarget>
+    <PackageIcon>icon.png</PackageIcon>
     <PublishAot>False</PublishAot>
-    <AssemblyVersion>2.5.0</AssemblyVersion>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 	<Target Name="RemoveFoldersWithMuiFiles" AfterTargets="Build">
 		<ItemGroup>
@@ -48,28 +38,51 @@
 	</Target>
   <ItemGroup>
     <None Remove="DatabaseConnection.xaml" />
-    <None Remove="DbConnectPage.xaml" />
     <None Remove="GeminiConnection.xaml" />
+    <None Remove="Images\icon.ico" />
     <None Remove="LoadingControl.xaml" />
-    <None Remove="MainPage.xaml" />
     <None Remove="MainPanel.xaml" />
-    <None Remove="TableSelection.xaml" />
+    <None Remove="Pages\ChatWithDatabase.xaml" />
+    <None Remove="Pages\ExistingDatabaseConnection.xaml" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Assets\SplashScreen.scale-200.png" />
-    <Content Include="Assets\LockScreenLogo.scale-200.png" />
-    <Content Include="Assets\Square150x150Logo.scale-200.png" />
-    <Content Include="Assets\Square44x44Logo.scale-200.png" />
-    <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
-    <Content Include="Assets\StoreLogo.png" />
-    <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Content Include="Images\icon.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\LockScreenLogo.scale-200.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\SplashScreen.scale-200.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square150x150Logo.scale-200.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.scale-200.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.targetsize-24_altform-unplated.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Wide310x150Logo.scale-200.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.WinUI.Animations" Version="8.2.250402" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.Sizers" Version="8.2.250402" />
     <PackageReference Include="CommunityToolkit.WinUI.UI.Controls.DataGrid" Version="7.1.2" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240802000" />
+    <PackageReference Include="CommunityToolkit.WinUI.UI.Controls.Markdown" Version="7.1.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4188" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250513003" />
+    <PackageReference Include="Octokit" Version="14.0.0" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
@@ -82,18 +95,26 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DatabaseAnalyzer\DatabaseAnalyzer.csproj" />
-    <ProjectReference Include="..\Helper\Helper.csproj" />
+    <ProjectReference Include="..\AskDB.Database\AskDB.Database.csproj" />
+    <ProjectReference Include="..\DatabaseInteractor\DatabaseInteractor.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="Assets\icon.png">
+    <None Update="Images\icon.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Pages\ExistingDatabaseConnection.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="Pages\ChatWithDatabase.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Update="MainPanel.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Update="TableSelection.xaml">
+    <Page Update="QuerySuggestion.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="GeminiConnection.xaml">
@@ -103,16 +124,6 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="LoadingControl.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="DbConnectPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="MainPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

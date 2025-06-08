@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AskDB.App.Pages.ExistingDatabaseConnection"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:AskDB.App.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:view_models="using:AskDB.App.View_Models" 
+    xmlns:models="using:AskDB.Database.Models" 
+    xmlns:app="using:AskDB.App" xmlns:converters="using:AskDB.App.Converters"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <converters:IEnumerableToVisibilityConverter x:Key="IEnumerableToVisibilityConverter"/>
+    </Page.Resources>
+    
+    <Grid MaxWidth="1280">
+        <StackPanel x:Name="MainPanel" Spacing="16" Padding="30" VerticalAlignment="Center" Background="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}" CornerRadius="{StaticResource OverlayCornerRadius}">
+            <StackPanel Spacing="8">
+                <TextBlock Text="Connect to your database" Style="{StaticResource TitleTextBlockStyle}"  FontWeight="Bold"/>
+                <RichTextBlock>
+                    <Paragraph>AskDB found the following connection information from your previous connection sessions. Please choose one or skip to setup a new connection to your database.</Paragraph>
+                </RichTextBlock>
+            </StackPanel>
+            <StackPanel Spacing="12" Visibility="{x:Bind ExistingDatabaseConnectionInfors, Converter={StaticResource IEnumerableToVisibilityConverter}}">
+                <TextBlock Text="Connection Credentials" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                <ItemsView Padding="12,0" SelectionMode="None" ItemsSource="{x:Bind ExistingDatabaseConnectionInfors}" MaxHeight="360" IsItemInvokedEnabled="True" ItemInvoked="DatabaseCredentionItemsView_ItemInvoked">
+                    <ItemsView.Layout>
+                        <LinedFlowLayout ItemsStretch="Fill" LineSpacing="8" MinItemSpacing="8"/>
+                    </ItemsView.Layout>
+                    <ItemsView.ItemTemplate>
+                        <DataTemplate x:DataType="view_models:ExistingDatabaseConnectionInfo">
+                            <ItemContainer>
+                                <Button Padding="12" ToolTipService.ToolTip="Connect">
+                                    <StackPanel MinWidth="250" MaxWidth="300" Spacing="8" >
+                                        <Grid Opacity="0.5" ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" >
+                                                <FontIcon Glyph="&#xE774;" FontSize="12" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{x:Bind Host}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <FontIcon Grid.Column="1" Glyph="&#xE8A7;" FontSize="12"/>
+                                        </Grid>
+                                        <TextBlock Text="{x:Bind Database}" Style="{StaticResource BodyStrongTextBlockStyle}" FontWeight="SemiBold"/>
+                                        <StackPanel Padding="8"/>
+                                        <StackPanel Spacing="6" Orientation="Horizontal">
+                                            <StackPanel CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}" Padding="8,6">
+                                                <TextBlock Text="{x:Bind DatabaseTypeDisplayName}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorSuccessBrush}"/>
+                                            </StackPanel>
+                                            <StackPanel CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource SystemFillColorCautionBackgroundBrush}" Padding="8,6">
+                                                <TextBlock Text="{x:Bind LastAccess}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Button>
+                            </ItemContainer>
+                        </DataTemplate>
+                    </ItemsView.ItemTemplate>
+                </ItemsView>
+            </StackPanel>
+            <StackPanel Spacing="12" Visibility="{x:Bind ExistingConnectionStringInfors, Converter={StaticResource IEnumerableToVisibilityConverter}}">
+                <TextBlock Text="Connection Strings" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                <ItemsView Padding="12,0" SelectionMode="None" ItemsSource="{x:Bind ExistingConnectionStringInfors}" MaxHeight="360" IsItemInvokedEnabled="True" ItemInvoked="ConnectionStringItemsView_ItemInvoked">
+                    <ItemsView.Layout>
+                        <LinedFlowLayout ItemsStretch="Fill" LineSpacing="8" MinItemSpacing="8"/>
+                    </ItemsView.Layout>
+                    <ItemsView.ItemTemplate>
+                        <DataTemplate x:DataType="view_models:ExistingConnectionStringInfor">
+                            <ItemContainer >
+                                <Button Padding="12" ToolTipService.ToolTip="Connect">
+                                    <StackPanel MinWidth="250" MaxWidth="300" Spacing="8" >
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" FontWeight="SemiBold"/>
+                                            <FontIcon Grid.Column="1" Glyph="&#xE8A7;" FontSize="12" Opacity="0.5" />
+                                        </Grid>
+                                        <StackPanel Padding="8"/>
+                                        <StackPanel Spacing="6" Orientation="Horizontal">
+                                            <StackPanel CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}" Padding="8,6">
+                                                <TextBlock Text="{x:Bind DatabaseTypeDisplayName}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorSuccessBrush}"/>
+                                            </StackPanel>
+                                            <StackPanel CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource SystemFillColorCautionBackgroundBrush}" Padding="8,6">
+                                                <TextBlock Text="{x:Bind LastAccess}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Button>
+                            </ItemContainer>
+                        </DataTemplate>
+                    </ItemsView.ItemTemplate>
+                </ItemsView>
+            </StackPanel>
+            <HyperlinkButton Content="Skip and setup a new connection" Padding="14,8" HorizontalAlignment="Right" Click="SkipButton_Click"/>
+        </StackPanel>
+        <app:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    </Grid>
+</Page>
