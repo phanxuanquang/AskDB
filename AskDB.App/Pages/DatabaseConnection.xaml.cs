@@ -148,7 +148,7 @@ namespace AskDB.App
                         return;
                     }
 
-                    if(ConnectionCredential.DatabaseType == DatabaseType.SQLite)
+                    if (ConnectionCredential.DatabaseType == DatabaseType.SQLite)
                     {
                         connectionString = $"Data Source={SqliteFilePath}";
                         var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, connectionString);
@@ -156,9 +156,9 @@ namespace AskDB.App
                         await databaseInteractor.EnsureDatabaseConnectionAsync();
                         await _db.SaveConnectionStringAsync(new ConnectionString
                         {
-                             Name = Path.GetFileNameWithoutExtension(SqliteFilePath),
-                             DatabaseType = DatabaseType.SQLite,
-                             Value = connectionString
+                            Name = Path.GetFileNameWithoutExtension(SqliteFilePath),
+                            DatabaseType = DatabaseType.SQLite,
+                            Value = connectionString
                         });
                     }
                     else

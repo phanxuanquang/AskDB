@@ -20,6 +20,7 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Pickers;
 using Windows.System;
 using WinRT.Interop;
@@ -29,7 +30,8 @@ namespace AskDB.App.Pages
     public sealed partial class ChatWithDatabase : Page
     {
         private readonly ObservableCollection<ChatMessage> Messages = [];
-        private readonly ObservableCollection<AgentSuggestion> AgentSuggestions = [];
+        private ObservableCollection<AgentSuggestion> IntialAgentSuggestions = [];
+        private ObservableCollection<AgentSuggestion> AgentSuggestions = [];
 
         private Generator _generator;
         private DatabaseInteractionService _databaseInteractor;
@@ -137,19 +139,26 @@ Use this function when you:
 * Expect the output to be an **ordered list of actions** (e.g., “First call function X, then verify Y, finally run Z”).")]
         private async Task<string> RequestForActionPlanAsync()
         {
-            var instruction = await FileHelper.ReadFileAsync("Instructions/Action Plan.md");
+            try
+            {
+                var instruction = await FileHelper.ReadFileAsync("Instructions/Action Plan.md");
 
-            var actionPlanRequest = new ApiRequestBuilder()
-                .WithSystemInstruction(instruction.Replace("{Database_Type}", _databaseInteractor.DatabaseType.ToString()))
-                .DisableAllSafetySettings()
-                .WithTools(new ToolBuilder().AddFunctionDeclarations(FunctionDeclarationHelper.FunctionDeclarations))
-                .SetFunctionCallingMode(FunctionCallingMode.NONE)
-                .WithPrompt("I have some blocking points here and need you to make an action plan to overcome. Now think deeply step-by-step about the current situation, then provide a clear and detailed action plan.")
-                .Build();
+                var actionPlanRequest = new ApiRequestBuilder()
+                    .WithSystemInstruction(instruction.Replace("{Database_Type}", _databaseInteractor.DatabaseType.ToString()))
+                    .DisableAllSafetySettings()
+                    .WithTools(new ToolBuilder().AddFunctionDeclarations(FunctionDeclarationHelper.FunctionDeclarations))
+                    .SetFunctionCallingMode(FunctionCallingMode.NONE)
+                    .WithPrompt("I have some blocking points here and need you to make an action plan to overcome. Now think deeply step-by-step about the current situation, then provide a clear and detailed action plan.")
+                    .Build();
 
-            var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, Cache.ReasoningModelAlias);
+                var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, Cache.ReasoningModelAlias);
 
-            return actionPlanResponse.Content;
+                return actionPlanResponse.Content;
+            }
+            catch (Exception ex)
+            {
+                return $"**Error:** {ex.Message}";
+            }
         }
 
         [FunctionDeclaration("request_for_internet_search", @"Perform an in-depth **Google Search** to retrieve external information from the internet.
@@ -268,7 +277,9 @@ Use this function to retrieve **critical, missing context** from the internet wh
 > Use it responsibly. Prioritize internal analysis. Be precise. Always focus on **database-relevant** augmentation.")]
         private async Task<string> RequestForInternetSearchAsync(string requirement)
         {
-            var searchRequest = new ApiRequestBuilder()
+            try
+            {
+                var searchRequest = new ApiRequestBuilder()
                 .WithSystemInstruction(_globalInstruction)
                 .WithTools(new ToolBuilder().EnableGoogleSearch())
                 .WithDefaultGenerationConfig(0.5F)
@@ -276,10 +287,15 @@ Use this function to retrieve **critical, missing context** from the internet wh
                 .WithPrompt($"Now perform an **in-depth internet research**, then provide a detailed reported in markdown format. The search result MUST satify the below requirement:\n\n{requirement}")
                 .Build();
 
-            var generator = new Generator(Cache.ApiKey);
+                var generator = new Generator(Cache.ApiKey);
 
-            var searchResponse = await generator.GenerateContentAsync(searchRequest, ModelVersion.Gemini_20_Flash);
-            return searchResponse.Content;
+                var searchResponse = await generator.GenerateContentAsync(searchRequest, ModelVersion.Gemini_20_Flash);
+                return searchResponse.Content;
+            }
+            catch (Exception ex)
+            {
+                return $"**Error:** {ex.Message}";
+            }
         }
         #endregion
 
@@ -293,35 +309,55 @@ Use this function to retrieve **critical, missing context** from the internet wh
                 return;
             }
 
-            SetLoading(true);
+            SetLoading(true, "Loading Suggestions");
 
-            _databaseInteractor = ServiceFactory.CreateInteractionService(request.DatabaseType, request.ConnectionString);
-            _globalInstruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
-
-            ChangeTheConversationLanguage("English");
-
-            var tableNames = await _databaseInteractor.SearchTablesByNameAsync(string.Empty, 200);
-            if (tableNames.Count > 100)
+            try
             {
-                _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", "- **Note on Known Large Tables:** All tables are pre-identified as being extremely large. Any query against them MUST be treated as High-Risk and requires extra caution.");
-            }
-            else
-            {
-                _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", $"- The connected database has {tableNames.Count} tables and you should be careful while querying them. Please consider consulting with the documentation before proceeding.");
-            }
+                IntialAgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(false);
+                IntialAgentSuggestions.Clear();
+                _databaseInteractor = ServiceFactory.CreateInteractionService(request.DatabaseType, request.ConnectionString);
+                _globalInstruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
 
-            _generator = new Generator(Cache.ApiKey).EnableChatHistory(150);
+                ChangeTheConversationLanguage("English");
 
-            InitFunctionCalling();
+                var tableNames = await _databaseInteractor.SearchTablesByNameAsync(string.Empty, 200);
+                if (tableNames.Count > 100)
+                {
+                    _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", "- **Note on Known Large Tables:** All tables are pre-identified as being extremely large. Any query against them MUST be treated as High-Risk and requires extra caution.");
+                }
+                else
+                {
+                    _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", $"- The connected database has {tableNames.Count} tables and you should be careful while querying them. Please consider consulting with the documentation before proceeding.");
+                }
 
-            await GenerateAgentSuggestionsAsync(_generator, $@"Based on the list of table names provided below, generate up to 5 helpful, consice, natural-sounding suggestions from the viewpoint of the user that a user might ask to start the conversation.
+                _generator = new Generator(Cache.ApiKey).EnableChatHistory(150);
+
+                InitFunctionCalling();
+
+                var suggestions = await GenerateAgentSuggestionsAsync($@"Based on the list of table names provided below, generate up to 10 helpful, consice, natural-sounding suggestions from the viewpoint of the user that a user might ask to start the conversation.
 The suggestions should be phrased as questions or commands in natural language, assuming the user is not technical but wants to understand and explore the data for analysis purpose or predictional purpose.
-Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table schema, etc.
+Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table structure, etc.
 Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, consice, specific, user-friendly, and **MUST NOT** be relavant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
 
 This is the list of first {tableNames.Count} table names in the database: {string.Join(", ", tableNames)}");
-
-            SetLoading(false);
+                if (suggestions.Count > 0)
+                {
+                    foreach (var suggestion in suggestions)
+                    {
+                        IntialAgentSuggestions.Add(suggestion);
+                    }
+                    IntialAgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(true);
+                }
+            }
+            catch (Exception ex)
+            {
+                await DialogHelper.ShowErrorAsync(ex.Message);
+                Frame.GoBack();
+            }
+            finally
+            {
+                SetLoading(false);
+            }
         }
         private async void ExportButton_Click(object sender, RoutedEventArgs e)
         {
@@ -350,12 +386,12 @@ This is the list of first {tableNames.Count} table names in the database: {strin
                 if (file != null)
                 {
                     await dataTable.ToCsvAsync(file.Path);
-                    await DialogHelper.ShowSuccessAsync("CSV file has been exported to your selected location.");
+                    await ShowInforBarAsync("Exported", true);
                 }
             }
             catch (Exception ex)
             {
-                await DialogHelper.ShowErrorAsync(ex.Message);
+                await ShowInforBarAsync(ex.Message, false);
             }
         }
         private async void SendButton_Click(object sender, RoutedEventArgs e)
@@ -417,9 +453,9 @@ This is the list of first {tableNames.Count} table names in the database: {strin
         #endregion
 
         #region Message and Progress Content Bindings
-        private void SetLoading(bool isLoading)
+        private void SetLoading(bool isLoading, string? message = null)
         {
-            LoadingIndicator.SetLoading(null, isLoading);
+            LoadingIndicator.SetLoading(message, isLoading);
             LoadingOverlay.Visibility = VisibilityHelper.SetVisible(isLoading);
             MessageSpace.Opacity = isLoading ? 0.5 : 1;
         }
@@ -441,7 +477,7 @@ This is the list of first {tableNames.Count} table names in the database: {strin
 
             var chatMessage = new ChatMessage
             {
-                Message = message ?? string.Empty,
+                Message = string.IsNullOrEmpty(message) ? "No response from AskDB" : message,
                 IsFromUser = false,
                 IsFromAgent = true,
                 QueryResults = isDataTableEmpty ? [] : new ObservableCollection<object>(dataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray)),
@@ -549,9 +585,15 @@ It **MUST** include at least:
         {
             try
             {
-                SetLoading(true);
+                SetLoading(true, "Working");
                 SetUserMessage(userInput);
+
+                IntialAgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(false);
+                IntialAgentSuggestions.Clear();
+
+                AgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(false);
                 AgentSuggestions.Clear();
+
 
                 var functionDeclarations = FunctionDeclarationHelper.FunctionDeclarations;
 
@@ -564,73 +606,79 @@ It **MUST** include at least:
                     .Build();
 
                 var modelResponse = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash);
-
-                var functionCalls = (modelResponse.FunctionCalls == null || modelResponse.FunctionCalls.Count == 0) ? [] : modelResponse.FunctionCalls;
-
-                if (functionCalls.Count == 0)
+                if (!string.IsNullOrEmpty(modelResponse.Content))
                 {
                     SetAgentMessage(modelResponse.Content);
                 }
-                else
+
+                var functionCalls = (modelResponse.FunctionCalls == null || modelResponse.FunctionCalls.Count == 0) ? [] : modelResponse.FunctionCalls;
+
+                while (functionCalls.Count > 0)
                 {
-                    while (functionCalls.Count > 0)
+                    await Task.Delay(2345);
+
+                    try
                     {
-                        await Task.Delay(2345);
+                        var functionResponses = new List<FunctionResponse>();
 
-                        try
+                        foreach (var function in functionCalls)
                         {
-                            var functionResponses = new List<FunctionResponse>();
-
-                            foreach (var function in functionCalls)
+                            try
                             {
-                                try
+                                var functionResponse = await CallFunctionAsync(function);
+                                if (functionResponse != null)
                                 {
-                                    var functionResponse = await CallFunctionAsync(function);
-                                    if (functionResponse != null)
-                                    {
-                                        functionResponses.Add(functionResponse);
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    var output = $"Error in function **{function.Name}**:\n\n```plaintext\n{ex.Message}. {ex.InnerException?.Message}\n```";
-
-                                    functionResponses.Add(new FunctionResponse
-                                    {
-                                        Name = function.Name,
-                                        Response = new Response
-                                        {
-                                            Output = $"{output}\n\nAction plan or user clarification or internet search is required.",
-                                        }
-                                    });
-
-                                    SetAgentMessage(output);
+                                    functionResponses.Add(functionResponse);
                                 }
                             }
+                            catch (Exception ex)
+                            {
+                                var output = $"Error in function **{function.Name}**:\n\n```plaintext\n{ex.Message}. {ex.InnerException?.Message}\n```";
 
-                            var apiRequestWithFunctions = new ApiRequestBuilder()
-                                .WithSystemInstruction(_globalInstruction)
-                                .DisableAllSafetySettings()
-                                .WithTools(new ToolBuilder().AddFunctionDeclarations(functionDeclarations))
-                                .SetFunctionCallingMode(FunctionCallingMode.AUTO)
-                                .WithFunctionResponses(functionResponses)
-                                .WithPrompt(@"Please review the function responses and your action history against the user's initial request in order to take action: continue on function calling until the request is satified, or reply to the user immediately to provide the final answer or ask for user's clarification!")
-                                .Build();
+                                functionResponses.Add(new FunctionResponse
+                                {
+                                    Name = function.Name,
+                                    Response = new Response
+                                    {
+                                        Output = $"{output}\n\nAction plan or user clarification or internet search is required.",
+                                    }
+                                });
 
-                            var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash);
-                            SetAgentMessage(modelResponseForFunction.Content);
-
-                            functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
+                                SetAgentMessage(output);
+                            }
                         }
-                        catch (Exception ex)
-                        {
-                            SetAgentMessage($"Error: {ex.Message}. {ex.InnerException?.Message}");
-                            functionCalls = [];
-                        }
+
+                        var apiRequestWithFunctions = new ApiRequestBuilder()
+                            .WithSystemInstruction(_globalInstruction)
+                            .DisableAllSafetySettings()
+                            .WithTools(new ToolBuilder().AddFunctionDeclarations(functionDeclarations))
+                            .SetFunctionCallingMode(FunctionCallingMode.AUTO)
+                            .WithFunctionResponses(functionResponses)
+                            .WithPrompt(@"Please review the function responses and your action history against the user's initial request in order to take action: continue on function calling until the request is satified, or reply to the user immediately to provide the final answer or ask for user's clarification!")
+                            .Build();
+
+                        var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash);
+                        SetAgentMessage(modelResponseForFunction.Content);
+
+                        functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
+                    }
+                    catch (Exception ex)
+                    {
+                        SetAgentMessage($"Error: {ex.Message}. {ex.InnerException?.Message}");
+                        functionCalls = [];
                     }
                 }
 
-                await GenerateAgentSuggestionsAsync(_generator, "Based on the current context and the action history, please provide up to 5 **short** and **concise** suggestions as the next step in the viewpoint of the user, for the user to use as the quick reply to AskDB.");
+                var suggestions = await GenerateAgentSuggestionsAsync("Based on the current context and the action history, please provide up to 5 **short** and **concise** suggestions as the next step in the viewpoint of the user, for the user to use as the quick reply to AskDB.");
+
+                if (suggestions.Count > 0)
+                {
+                    foreach (var suggestion in suggestions)
+                    {
+                        AgentSuggestions.Add(suggestion);
+                    }
+                    AgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(true);
+                }
             }
             catch (Exception ex)
             {
@@ -717,7 +765,7 @@ It **MUST** include at least:
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(RequestForInternetSearchAsync):
                     {
-                        var requirement = FunctionCallingHelper.GetParameterValue<string>(function, "query");
+                        var requirement = FunctionCallingHelper.GetParameterValue<string>(function, "requirement");
                         SetAgentMessage($"Let me perform an in-depth internet search following this description:\n\n{requirement}");
                         var searchResult = await RequestForInternetSearchAsync(requirement);
                         SetAgentMessage(searchResult);
@@ -733,10 +781,9 @@ It **MUST** include at least:
             }
         }
 
-        private async Task GenerateAgentSuggestionsAsync(Generator generator, string prompt)
+        private async Task<List<AgentSuggestion>> GenerateAgentSuggestionsAsync(string prompt)
         {
-            if (AgentSuggestions.Count > 0) AgentSuggestions.Clear();
-
+            var results = new List<AgentSuggestion>();
             try
             {
                 var requestForAgentSuggestions = new ApiRequestBuilder()
@@ -767,19 +814,44 @@ It **MUST** include at least:
 
                 if (agentResponse?.UserResponseSuggestions != null && agentResponse.UserResponseSuggestions.Count > 0)
                 {
-                    foreach (var suggestion in agentResponse.UserResponseSuggestions)
+                    results.AddRange(agentResponse.UserResponseSuggestions.Select(suggestion => new AgentSuggestion
                     {
-                        AgentSuggestions.Add(new AgentSuggestion
-                        {
-                            UserResponseSuggestion = suggestion
-                        });
-                    }
+                        UserResponseSuggestion = suggestion
+                    }));
                 }
             }
-            catch 
+            catch (Exception ex)
             {
-                // Skip generating agent suggestions if an error occurs
+                await ShowInforBarAsync($"Cannot load suggestions: {ex.Message}", false);
             }
+
+            return results;
+        }
+
+        private async void CopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            var message = ((sender as Button)?.DataContext as ChatMessage)?.Message;
+
+            if (string.IsNullOrEmpty(message))
+            {
+                return;
+            }
+
+            var dataPackage = new DataPackage();
+            dataPackage.SetText(message);
+            Clipboard.SetContent(dataPackage);
+            Clipboard.Flush();
+
+            await ShowInforBarAsync("Copied", true);
+        }
+
+        private async Task ShowInforBarAsync(string message, bool isSuccess)
+        {
+            MessageInfoBar.Title = message;
+            MessageInfoBar.IsOpen = true;
+            MessageInfoBar.Severity = isSuccess ? InfoBarSeverity.Success : InfoBarSeverity.Error;
+            await Task.Delay(750);
+            MessageInfoBar.IsOpen = false;
         }
     }
 }

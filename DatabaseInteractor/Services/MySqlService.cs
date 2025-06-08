@@ -14,7 +14,7 @@ namespace DatabaseInteractor.Services
 
         public override async Task<int> GetTableCountAsync()
         {
-            var query = "SELECT COUNT(*) FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_schema NOT IN ('mysql', 'information_schema', 'performance_schema', 'sys');";
+            var query = "SELECT COUNT(*) FROM information_schema.tables table_schema = DATABASE() AND WHERE table_type = 'BASE TABLE'";
             using var connection = new MySqlConnection(ConnectionString);
             using var command = new MySqlCommand(query, connection);
             await connection.OpenAsync();
@@ -23,6 +23,11 @@ namespace DatabaseInteractor.Services
 
         public override async Task<DataTable> GetTableStructureDetailAsync(string? schema, string table)
         {
+            if (string.IsNullOrWhiteSpace(table) || string.IsNullOrEmpty(table))
+            {
+                throw new ArgumentException("Table name cannot be null or empty.", nameof(table));
+            }
+
             var query = @"
                 SELECT
                     cols.COLUMN_NAME AS ColumnName,
@@ -49,7 +54,7 @@ namespace DatabaseInteractor.Services
                     cols.ORDINAL_POSITION;";
 
             await using var command = new MySqlCommand(query);
-            command.Parameters.AddWithValue("@schema", (object?)schema ?? DBNull.Value);
+            command.Parameters.AddWithValue("@schema", string.IsNullOrEmpty(schema) ? DBNull.Value : schema);
             command.Parameters.AddWithValue("@table", table);
 
             return await ExecuteQueryAsync(command);
@@ -64,7 +69,7 @@ namespace DatabaseInteractor.Services
 
         public override async Task<List<string>> SearchTablesByNameAsync(string? keyword, int maxResult = 20000)
         {
-            var query = $"SELECT table_name FROM information_schema.tables WHERE table_name COLLATE utf8mb4_general_ci LIKE CONCAT('%', @keyword, '%') LIMIT {maxResult};";
+            var query = $@"SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE' AND table_name LIKE CONCAT('%', @keyword, '%') LIMIT {maxResult};";
 
             using var command = new MySqlCommand(query);
             command.Parameters.AddWithValue("@keyword", keyword);

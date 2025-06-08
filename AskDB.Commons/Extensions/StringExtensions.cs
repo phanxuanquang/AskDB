@@ -10,7 +10,7 @@ namespace AskDB.Commons.Extensions
 
         public static string AesEncrypt(this string? content)
         {
-            if (string.IsNullOrEmpty(content)) return string.Empty;
+            if (string.IsNullOrEmpty(content) || string.IsNullOrWhiteSpace(content)) return string.Empty;
 
             using var aes = Aes.Create();
             aes.Key = CryptographyHelper.GetMachineGuidAesKey();

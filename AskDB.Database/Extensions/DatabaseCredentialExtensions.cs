@@ -15,22 +15,22 @@ namespace AskDB.Database.Extensions
                 case DatabaseType.SqlServer:
                     if (databaseCredential.Port != default)
                     {
-                        sb.Append($"Server={databaseCredential.Host.Trim()},{databaseCredential.Port};");
+                        sb.Append($"Server={databaseCredential.Host},{databaseCredential.Port};");
 
                     }
                     else
                     {
-                        sb.Append($"Server={databaseCredential.Host.Trim()};");
+                        sb.Append($"Server={databaseCredential.Host};");
                     }
-                    sb.Append($"Database={databaseCredential.Database.Trim()};");
+                    sb.Append($"Database={databaseCredential.Database};");
                     if (string.IsNullOrEmpty(databaseCredential.Username) || string.IsNullOrEmpty(databaseCredential.Password))
                     {
                         sb.Append("Integrated Security=True;");  // Use Windows Authentication if no credentials are provided
                     }
                     else
                     {
-                        sb.Append($"User Id={databaseCredential.Username.Trim()};");
-                        sb.Append($"Password={databaseCredential.Password.Trim()};");
+                        sb.Append($"User Id={databaseCredential.Username};");
+                        sb.Append($"Password={databaseCredential.Password};");
                     }
 
                     sb.Append($"TrustServerCertificate={(databaseCredential.EnableTrustServerCertificate ? "True" : "False")};");
@@ -38,26 +38,26 @@ namespace AskDB.Database.Extensions
                     sb.Append($"Connection Timeout={timeOutInSeconds};");
                     break;
                 case DatabaseType.PostgreSQL:
-                    sb.Append($"Host={databaseCredential.Host.Trim()};");
+                    sb.Append($"Host={databaseCredential.Host};");
                     if (databaseCredential.Port != default)
                     {
                         sb.Append($"Port={databaseCredential.Port};");
                     }
-                    sb.Append($"Database={databaseCredential.Database.Trim()};");
-                    sb.Append($"Username={databaseCredential.Username.Trim()};");
-                    sb.Append($"Password={databaseCredential.Password.Trim()};");
+                    sb.Append($"Database={databaseCredential.Database};");
+                    sb.Append($"Username={databaseCredential.Username};");
+                    sb.Append($"Password={databaseCredential.Password};");
                     sb.Append($"SSL Mode={(databaseCredential.EnableSsl ? "Require" : "Disable")};");
                     sb.Append($"Timeout={timeOutInSeconds};");
                     break;
                 case DatabaseType.MySQL:
-                    sb.Append($"Server={databaseCredential.Host.Trim()};");
+                    sb.Append($"Server={databaseCredential.Host};");
                     if (databaseCredential.Port != default)
                     {
                         sb.Append($"Port={databaseCredential.Port};");
                     }
-                    sb.Append($"Database={databaseCredential.Database.Trim()};");
-                    sb.Append($"User={databaseCredential.Username.Trim()};");
-                    sb.Append($"Password={databaseCredential.Password.Trim()};");
+                    sb.Append($"Database={databaseCredential.Database};");
+                    sb.Append($"User={databaseCredential.Username};");
+                    sb.Append($"Password={databaseCredential.Password};");
                     sb.Append($"SslMode={(databaseCredential.EnableSsl ? "Required" : "None")};");
                     sb.Append($"Connection Timeout={timeOutInSeconds};");
                     break;
@@ -71,12 +71,12 @@ namespace AskDB.Database.Extensions
         {
             return new DatabaseCredential
             {
-                Host = databaseCredential.Host.Trim().AesEncrypt(),
+                Host = databaseCredential.Host.AesEncrypt(),
                 Port = databaseCredential.Port,
                 DatabaseType = databaseCredential.DatabaseType,
-                Database = databaseCredential.Database.Trim().AesEncrypt(),
-                Username = databaseCredential.Username.Trim().AesEncrypt(),
-                Password = databaseCredential.Password.Trim().AesEncrypt(),
+                Database = databaseCredential.Database.AesEncrypt(),
+                Username = databaseCredential.Username.AesEncrypt(),
+                Password = databaseCredential.Password.AesEncrypt(),
                 EnableSsl = databaseCredential.EnableSsl,
                 EnableTrustServerCertificate = databaseCredential.EnableTrustServerCertificate,
                 LastAccessTime = databaseCredential.LastAccessTime,
@@ -88,12 +88,12 @@ namespace AskDB.Database.Extensions
         {
             return new DatabaseCredential
             {
-                Host = databaseCredential.Host.Trim().AesDecrypt(),
+                Host = databaseCredential.Host.AesDecrypt(),
                 Port = databaseCredential.Port,
                 DatabaseType = databaseCredential.DatabaseType,
-                Database = databaseCredential.Database.Trim().AesDecrypt(),
-                Username = databaseCredential.Username.Trim().AesDecrypt(),
-                Password = databaseCredential.Password.Trim().AesDecrypt(),
+                Database = databaseCredential.Database.AesDecrypt(),
+                Username = databaseCredential.Username.AesDecrypt(),
+                Password = databaseCredential.Password.AesDecrypt(),
                 EnableSsl = databaseCredential.EnableSsl,
                 EnableTrustServerCertificate = databaseCredential.EnableTrustServerCertificate,
                 LastAccessTime = databaseCredential.LastAccessTime,

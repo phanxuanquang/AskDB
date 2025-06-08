@@ -20,7 +20,7 @@
     </Page.Resources>
 
     <Grid>
-        <Grid RowSpacing="6" Margin="0,0,8,0" x:Name="MessageSpace" Padding="12">
+        <Grid RowSpacing="6" x:Name="MessageSpace" Padding="12">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
@@ -75,10 +75,8 @@
                                     AutoGenerateColumns="True" 
                                     VerticalScrollBarVisibility="Auto"
                                     GridLinesVisibility="All"
-                                    BorderThickness="1"
                                     MaxHeight="500"
                                     AutoGeneratingColumn="DataGrid_AutoGeneratingColumn"
-                                    BorderBrush="{ThemeResource ControlElevationBorderBrush}"
                                     RowBackground="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
                                     AlternatingRowBackground="{ThemeResource ControlAltFillColorTertiaryBrush}"
                                     Visibility="{x:Bind Data, Converter={StaticResource DataTableToVisibilityConverter}, Mode=OneWay}"
@@ -87,7 +85,7 @@
                                     <Button Padding="6" ToolTipService.ToolTip="Export the data" ToolTipService.Placement="Left" Click="ExportButton_Click" Visibility="{x:Bind Data, Converter={StaticResource DataTableToVisibilityConverter}, Mode=OneWay}">
                                         <FontIcon Glyph="&#xE896;" FontSize="14"/>
                                     </Button>
-                                    <Button Padding="6" ToolTipService.ToolTip="Copy" ToolTipService.Placement="Left">
+                                    <Button Padding="6" ToolTipService.ToolTip="Copy" ToolTipService.Placement="Left" Click="CopyButton_Click">
                                         <FontIcon Glyph="&#xE8C8;" FontSize="14"/>
                                     </Button>
                                 </StackPanel>
@@ -96,7 +94,44 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
-            <ItemsView Grid.Row="1" SelectionMode="None" IsItemInvokedEnabled="True" ItemsSource="{x:Bind AgentSuggestions, Mode=OneWay}" ItemInvoked="SuggestionItemView_ItemInvoked">
+            <InfoBar Grid.Row="0" x:Name="MessageInfoBar" Title="Copied" IsOpen="False" Severity="Success" HorizontalAlignment="Right" VerticalAlignment="Top" IsClosable="False"/>
+
+            <ItemsView 
+                x:Name="IntialAgentSuggestionsItemView"
+                Grid.Row="0" 
+                Padding="12,0" 
+                SelectionMode="None" 
+                ItemsSource="{x:Bind IntialAgentSuggestions, Mode=OneWay}" 
+                MaxWidth="1280" 
+                IsItemInvokedEnabled="True" 
+                VerticalAlignment="Center"
+                ItemInvoked="SuggestionItemView_ItemInvoked">
+                <ItemsView.Layout>
+                    <UniformGridLayout MinColumnSpacing="16" MinRowSpacing="16" ItemsJustification="Center" MaximumRowsOrColumns="5"/>
+                </ItemsView.Layout>
+                <ItemsView.ItemTemplate>
+                    <DataTemplate x:DataType="view_models:AgentSuggestion">
+                        <ItemContainer >
+                            <Grid 
+                                Padding="24" 
+                                VerticalAlignment="Stretch" 
+                                HorizontalAlignment="Stretch" 
+                                ToolTipService.ToolTip="{x:Bind UserResponseSuggestion, Mode=OneWay}" 
+                                Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
+                                CornerRadius="{StaticResource OverlayCornerRadius}">
+                                <TextBlock Text="{x:Bind UserResponseSuggestion, Mode=OneWay}" TextWrapping="WrapWholeWords" HorizontalAlignment="Center"/>
+                            </Grid>
+                        </ItemContainer>
+                    </DataTemplate>
+                </ItemsView.ItemTemplate>
+            </ItemsView>
+            <ItemsView 
+                x:Name="AgentSuggestionsItemView"
+                Grid.Row="1" 
+                SelectionMode="None" 
+                IsItemInvokedEnabled="True" 
+                ItemsSource="{x:Bind AgentSuggestions, Mode=OneWay}" 
+                ItemInvoked="SuggestionItemView_ItemInvoked">
                 <ItemsView.Layout>
                     <LinedFlowLayout LineSpacing="4" MinItemSpacing="4"/>
                 </ItemsView.Layout>
@@ -124,9 +159,8 @@
             <Grid.OpacityTransition>
                 <ScalarTransition />
             </Grid.OpacityTransition>
-            <StackPanel VerticalAlignment="Center" MinWidth="200" HorizontalAlignment="Center" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="{StaticResource OverlayCornerRadius}" Padding="12">
+            <StackPanel VerticalAlignment="Center" MinWidth="200" HorizontalAlignment="Center" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="{StaticResource OverlayCornerRadius}" Padding="0,16">
                 <controls:LoadingControl x:Name="LoadingIndicator" HorizontalAlignment="Center"  Padding="0"/>
-                <Button Content="Cancel" HorizontalAlignment="Center"/>
             </StackPanel>
         </Grid>
     </Grid>

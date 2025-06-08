@@ -59,40 +59,31 @@ namespace AskDB.App
                     throw new InvalidOperationException("You are already connected to Gemini with this API key.");
                 }
 
-                try
+                var isApiKeyValid = await Validator.IsValidApiKeyAsync(Cache.ApiKey);
+
+                if (!isApiKeyValid)
                 {
-                    var generator = new Generator(_geminiApiKey);
-                    var apiRequest = new ApiRequestBuilder()
-                        .WithPrompt("Print out `Hello world`")
-                        .DisableAllSafetySettings()
-                        .WithDefaultGenerationConfig(0.2F, 400)
-                        .Build();
-
-                    await generator.GenerateContentAsync(apiRequest);
-
-                    if (!string.IsNullOrEmpty(Cache.ApiKey))
-                    {
-                        await _db.UpdateApiKeyAsync(_geminiApiKey);
-                    }
-                    else
-                    {
-                        await _db.CreateOrUpdateApiKeyAsync(_geminiApiKey);
-                    }
-
-                    Cache.ApiKey = _geminiApiKey;
-
-                    if (Cache.HasUserEverConnectedToDatabase)
-                    {
-                        this.Frame.Navigate(typeof(ExistingDatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
-                    }
-                    else
-                    {
-                        this.Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
-                    }
+                    throw new InvalidOperationException("Invalid or expired API key. Please try again with another API key.");
                 }
-                catch (Exception ex)
+
+                if (!string.IsNullOrEmpty(Cache.ApiKey))
                 {
-                    throw new InvalidOperationException("Invalid or expired API key. Please try again with another API key.", ex);
+                    await _db.UpdateApiKeyAsync(_geminiApiKey);
+                }
+                else
+                {
+                    await _db.CreateOrUpdateApiKeyAsync(_geminiApiKey);
+                }
+
+                Cache.ApiKey = _geminiApiKey;
+
+                if (Cache.HasUserEverConnectedToDatabase)
+                {
+                    this.Frame.Navigate(typeof(ExistingDatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+                }
+                else
+                {
+                    this.Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
                 }
             }
             catch (Exception ex)

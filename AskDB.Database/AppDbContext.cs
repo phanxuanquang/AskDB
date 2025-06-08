@@ -74,6 +74,7 @@ namespace AskDB.Database
                 existingCredential.EnableTrustServerCertificate = model.EnableTrustServerCertificate;
                 existingCredential.EnableSsl = model.EnableSsl;
                 existingCredential.LastModifiedTime = DateTime.Now;
+                existingCredential.LastAccessTime = DateTime.Now;
             }
 
             await SaveChangesAsync();
@@ -92,6 +93,7 @@ namespace AskDB.Database
             else
             {
                 existingCredential.Name = model.Name;
+                existingCredential.LastAccessTime = DateTime.Now;
             }
 
             await SaveChangesAsync();

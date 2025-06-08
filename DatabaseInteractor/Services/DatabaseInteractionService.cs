@@ -30,7 +30,7 @@ namespace DatabaseInteractor.Services
             if (command.Connection.State != ConnectionState.Open) await command.Connection.OpenAsync();
 
             var dataTable = new DataTable();
-            await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
+            await using var reader = await command.ExecuteReaderAsync();
             dataTable.Load(reader);
             return dataTable;
         }

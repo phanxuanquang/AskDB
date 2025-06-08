@@ -33,11 +33,6 @@ namespace DatabaseInteractor.Services
 
         public override async Task<DataTable> GetTableStructureDetailAsync(string? schema, string table)
         {
-            if (string.IsNullOrWhiteSpace(table) || string.IsNullOrEmpty(table))
-            {
-                throw new ArgumentException("Table name cannot be null or empty.", nameof(table));
-            }
-
             var query = @" 
                SELECT
                    c.name AS ColumnName,   
