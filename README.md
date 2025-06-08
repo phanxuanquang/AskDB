@@ -84,6 +84,15 @@ Before submitting a pull request, please ensure that your changes are well-docum
 
 Thank you for your contribution and for helping to make this project better! :tada:
 
+## 📄 License
+This project is protected by a **Strict Non-Commercial License**.  
+
+*   Forks and contributions are allowed.  
+*   Commercial use is strictly forbidden under any circumstances.  
+*   Clear attribution and a link to the original repo are mandatory for any redistribution.
+  
+For full terms, see [LICENSE](./LICENSE).
+
 ## :gift: Support Me
 
 <a href="https://i.imgur.com/9YpRPQs.jpeg" target="_blank">
