@@ -1,0 +1,76 @@
+Copyright (c) 2025 Quang
+
+All rights reserved.
+
+This software is made publicly available solely for non-commercial purposes, including personal education, non-commercial research, and open collaboration. By accessing, using, copying, or modifying this software, you agree to the following legally binding terms:
+
+---
+
+1. 🔒 NON-COMMERCIAL USE ONLY
+
+You may NOT use this software or any of its derivatives, in whole or in part, for any commercial purpose. This includes, but is not limited to:
+
+- Selling, licensing, sublicensing, or distributing for profit
+- Integrating into proprietary software or paid products
+- Using in commercial SaaS applications or platforms
+- Deploying in monetized websites, services, mobile apps, APIs
+- Leveraging in paid trainings, books, educational platforms, or consulting services
+- Use in generating revenue either directly or indirectly
+
+Any commercial use is **strictly prohibited without prior written permission** from the author.
+
+---
+
+2. ✅ ALLOWED USES
+
+You are permitted to:
+
+- Fork this repository for personal study or research
+- Contribute improvements through pull requests or issues
+- Use this software for open academic or educational purposes (non-commercial)
+- Modify and share this software **ONLY under these same license terms**
+
+---
+
+3. 📌 ATTRIBUTION AND SOURCE LINKING (MANDATORY)
+
+Any redistribution, reuse, or derivative work **must clearly include**:
+
+- Visible attribution to the original author: **"Quang"**
+- A clickable URL to the original GitHub repository
+- A note stating: “This work is based on the original project by Quang, available at [original GitHub URL].”
+
+Attribution must be visible in both **documentation** and **any public interface** of the redistributed work (if applicable).
+
+---
+
+4. 🚫 LICENSE INTEGRITY AND DERIVATIVE LICENSING
+
+You may **not**:
+
+- Remove or alter this license or copyright notice
+- Apply any other license to this software or its derivatives (e.g., MIT, GPL, Apache, etc.)
+- Re-license or rebrand the software under a different name without permission
+
+All forks and modifications must preserve this license in full.
+
+---
+
+5. ❌ PROHIBITED USE CASES
+
+This software may **NOT** be used in connection with:
+
+- Military, surveillance, or law enforcement technologies
+- Development or deployment of autonomous weapons systems
+- Human rights violations or unethical practices
+- Training, fine-tuning, or deploying AI models (LLMs, diffusion, or otherwise) without express permission
+
+The author reserves the right to deny usage or revoke permissions to any individual or organization found in violation of these principles.
+
+---
+
+6. ⚠️ NO WARRANTY AND LIABILITY
+
+This software is provided **“as is”**, without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, or non-infringement.
+
+In no event shall the author be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or its use.
