@@ -15,8 +15,8 @@ namespace AskDB.App.Pages
 {
     public sealed partial class ExistingDatabaseConnection : Page
     {
-        private ObservableCollection<ExistingDatabaseConnectionInfo> ExistingDatabaseConnectionInfors = [];
-        private ObservableCollection<ExistingConnectionStringInfor> ExistingConnectionStringInfors = [];
+        public ObservableCollection<ExistingDatabaseConnectionInfo> ExistingDatabaseConnectionInfors { get; set; } = [];
+        public ObservableCollection<ExistingConnectionStringInfor> ExistingConnectionStringInfors { get; set; } = [];
 
         private readonly AppDbContext _db;
 
@@ -37,45 +37,43 @@ namespace AskDB.App.Pages
             base.OnNavigatedTo(e);
 
             SetLoading(true);
+            ExistingDatabaseConnectionInfors.Clear();
+            ExistingConnectionStringInfors.Clear();
 
             var existingCredentials = await _db.GetDatabaseCredentialsAsync();
             var existingConnectionStrings = await _db.GetConnectionStringsAsync();
 
             if (existingCredentials.Count > 0)
             {
-                ExistingDatabaseConnectionInfors = new ObservableCollection<ExistingDatabaseConnectionInfo>(existingCredentials.Select(credential => new ExistingDatabaseConnectionInfo
+                foreach(var credential in existingCredentials)
                 {
-                    Id = credential.Id,
-                    Host = credential.Host,
-                    Database = credential.Database,
-                    DatabaseType = credential.DatabaseType,
-                    DatabaseTypeDisplayName = credential.DatabaseType.GetDescription(),
-                    LastAccess = credential.LastAccessTime,
-                    ConnectionString = credential.BuildConnectionString()
-                }));
-                ConnectionCredentialsPanel.Visibility = VisibilityHelper.SetVisible(true);
-            }
-            else
-            {
-                ConnectionCredentialsPanel.Visibility = VisibilityHelper.SetVisible(false);
+                    ExistingDatabaseConnectionInfors.Add(new ExistingDatabaseConnectionInfo
+                    {
+                        Id = credential.Id,
+                        Host = credential.Host,
+                        Database = credential.Database,
+                        DatabaseType = credential.DatabaseType,
+                        DatabaseTypeDisplayName = credential.DatabaseType.GetDescription(),
+                        LastAccess = credential.LastAccessTime,
+                        ConnectionString = credential.BuildConnectionString()
+                    });
+                }
             }
 
             if (existingConnectionStrings.Count > 0)
             {
-                ExistingConnectionStringInfors = new ObservableCollection<ExistingConnectionStringInfor>(existingConnectionStrings.Select(x => new ExistingConnectionStringInfor
+                foreach (var x in existingConnectionStrings)
                 {
-                    Id = x.Id,
-                    Name = x.Name,
-                    Value = x.Value,
-                    DatabaseType = x.DatabaseType,
-                    DatabaseTypeDisplayName = x.DatabaseType.GetDescription(),
-                    LastAccess = x.LastAccessTime
-                }));
-                ConnectionStringsPanel.Visibility = VisibilityHelper.SetVisible(true);
-            }
-            else
-            {
-                ConnectionStringsPanel.Visibility = VisibilityHelper.SetVisible(false);
+                    ExistingConnectionStringInfors.Add(new ExistingConnectionStringInfor
+                    {
+                        Id = x.Id,
+                        Name = x.Name,
+                        Value = x.Value,
+                        DatabaseType = x.DatabaseType,
+                        DatabaseTypeDisplayName = x.DatabaseType.GetDescription(),
+                        LastAccess = x.LastAccessTime
+                    });
+                }
             }
 
             SetLoading(false);
@@ -117,10 +115,6 @@ namespace AskDB.App.Pages
                 {
                     await _db.RemoveDatabaseCredentialAsync(data.Id);
                     ExistingDatabaseConnectionInfors.Remove(data);
-                    if (ExistingDatabaseConnectionInfors.Count == 0)
-                    {
-                        ConnectionCredentialsPanel.Visibility = VisibilityHelper.SetVisible(false);
-                    }
                 }
             }
             finally
@@ -158,10 +152,6 @@ namespace AskDB.App.Pages
                 {
                     await _db.RemoveConnectionStringAsync(data.Id);
                     ExistingConnectionStringInfors.Remove(data);
-                    if (ExistingConnectionStringInfors.Count == 0)
-                    {
-                        ConnectionStringsPanel.Visibility = VisibilityHelper.SetVisible(false);
-                    }
                 }
             }
             finally
