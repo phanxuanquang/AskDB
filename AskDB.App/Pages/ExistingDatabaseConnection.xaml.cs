@@ -9,7 +9,6 @@ using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.ObjectModel;
-using System.Linq;
 
 namespace AskDB.App.Pages
 {
@@ -45,7 +44,7 @@ namespace AskDB.App.Pages
 
             if (existingCredentials.Count > 0)
             {
-                foreach(var credential in existingCredentials)
+                foreach (var credential in existingCredentials)
                 {
                     ExistingDatabaseConnectionInfors.Add(new ExistingDatabaseConnectionInfo
                     {

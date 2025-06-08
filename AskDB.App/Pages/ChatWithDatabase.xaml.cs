@@ -7,6 +7,7 @@ using DatabaseInteractor.Services;
 using GeminiDotNET;
 using GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling;
 using GeminiDotNET.ApiModels.Enums;
+using GeminiDotNET.ApiModels.Response.Success;
 using GeminiDotNET.ApiModels.Response.Success.FunctionCalling;
 using GeminiDotNET.FunctionCallings.Attributes;
 using GeminiDotNET.Helpers;
@@ -309,7 +310,7 @@ Use this function to retrieve **critical, missing context** from the internet wh
                 return;
             }
 
-            SetLoading(true, "Loading Suggestions");
+            SetLoading(true, "Working");
 
             try
             {
@@ -449,6 +450,11 @@ This is the list of first {tableNames.Count} table names in the database: {strin
             }
 
             await HandleUserInputAsync(userInput);
+        }
+        private async void MarkdownTextBlock_LinkClicked(object sender, LinkClickedEventArgs e)
+        {
+            var uri = new Uri(e.Link);
+            await Launcher.LaunchUriAsync(uri);
         }
         #endregion
 
@@ -613,6 +619,24 @@ It **MUST** include at least:
 
                 var functionCalls = (modelResponse.FunctionCalls == null || modelResponse.FunctionCalls.Count == 0) ? [] : modelResponse.FunctionCalls;
 
+                if (string.IsNullOrEmpty(modelResponse.Content) && functionCalls.Count == 0)
+                {
+                    try
+                    {
+                        var failedResonse = JsonHelper.AsObject<ApiResponse>(_generator.ResponseAsRawString);
+                        var finishReason = failedResonse?.Candidates.FirstOrDefault()?.FinishReason;
+                        if (!string.IsNullOrEmpty(finishReason))
+                        {
+                            SetAgentMessage($"AskDB refused to answer! The reason code name is [**{finishReason.Replace('_', ' ')}**](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerateContentResponse#FinishReason).");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        SetAgentMessage($"Error while constructing the answer! {ex.Message}");
+                        SetAgentMessage($"```json\n{_generator.ResponseAsRawString}\n```");
+                    }
+                }
+
                 while (functionCalls.Count > 0)
                 {
                     await Task.Delay(2345);
@@ -729,18 +753,18 @@ It **MUST** include at least:
                         var keyword = FunctionCallingHelper.GetParameterValue<string>(function, "keyword");
                         if (string.IsNullOrEmpty(keyword))
                         {
-                            SetAgentMessage("Searching for all accessible tables...");
+                            SetAgentMessage("Let me retrieving all accessible tables.");
                         }
                         else
                         {
-                            SetAgentMessage($"Searching for tables using keyword `{keyword}`...");
+                            SetAgentMessage($"Let me search for tables using keyword `{keyword}`.");
                         }
                         var tableNames = await _databaseInteractor.SearchTablesByNameAsync(keyword);
 
                         if (tableNames.Count > 0)
                         {
                             var tableNamesInMarkdown = string.Join(", ", tableNames.Select(x => $"`{x}`"));
-                            SetAgentMessage($"{tableNames.Count} tables found:\n\n{tableNamesInMarkdown}");
+                            SetAgentMessage($"{tableNames.Count} tables found: {tableNamesInMarkdown}");
                             return FunctionCallingHelper.CreateResponse(name, tableNamesInMarkdown);
                         }
 
@@ -750,7 +774,6 @@ It **MUST** include at least:
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.GetUserPermissionsAsync):
                     {
-                        SetAgentMessage("Retrieving user permissions...");
                         var permissions = await _databaseInteractor.GetUserPermissionsAsync();
                         var permissionsInMarkdown = string.Join(", ", permissions.Select(x => $"`{x}`"));
                         SetAgentMessage($"{permissions.Count} permissions found:\n\n{permissionsInMarkdown}");
@@ -758,7 +781,7 @@ It **MUST** include at least:
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(RequestForActionPlanAsync):
                     {
-                        SetAgentMessage("Analyzing the situation and creating an action plan...");
+                        SetAgentMessage("Let me analyze the current situation and create an action plan.");
                         var actionPlan = await RequestForActionPlanAsync();
                         SetAgentMessage(actionPlan);
                         return FunctionCallingHelper.CreateResponse(name, actionPlan);

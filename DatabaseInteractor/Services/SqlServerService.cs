@@ -85,8 +85,6 @@ namespace DatabaseInteractor.Services
             var data = await ExecuteQueryAsync(command);
             var tableNames = data.ToListString();
 
-            CachedTableNames.UnionWith(tableNames);
-
             return tableNames;
         }
     }

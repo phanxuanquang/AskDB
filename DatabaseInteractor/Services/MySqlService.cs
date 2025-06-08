@@ -48,13 +48,12 @@ namespace DatabaseInteractor.Services
                     AND kcu.TABLE_NAME = tc.TABLE_NAME
                     AND kcu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
                 WHERE
-                    cols.TABLE_SCHEMA = IFNULL(@schema, DATABASE())
+                    cols.TABLE_SCHEMA = DATABASE()
                     AND cols.TABLE_NAME = @table
                 ORDER BY
                     cols.ORDINAL_POSITION;";
 
             await using var command = new MySqlCommand(query);
-            command.Parameters.AddWithValue("@schema", string.IsNullOrEmpty(schema) ? DBNull.Value : schema);
             command.Parameters.AddWithValue("@table", table);
 
             return await ExecuteQueryAsync(command);

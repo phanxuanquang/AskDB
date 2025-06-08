@@ -49,7 +49,8 @@
                                     TextWrapping="WrapWholeWords" 
                                     Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
                                     Background="Transparent" 
-                                    Text="{x:Bind Message}"/>
+                                    Text="{x:Bind Message}"
+                                    LinkClicked="MarkdownTextBlock_LinkClicked"/>
                             </StackPanel>
                             <StackPanel  
                                 Padding="16,12"
@@ -66,7 +67,8 @@
                                     QuoteBackground="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
                                     InlineCodeBackground="{ThemeResource SystemFillColorCautionBackgroundBrush}"
                                     CodeBackground="{ThemeResource SolidBackgroundFillColorBaseAltBrush}"
-                                    Text="{x:Bind Message}"/>
+                                    Text="{x:Bind Message}"
+                                    LinkClicked="MarkdownTextBlock_LinkClicked"/>
                                 <controls1:DataGrid 
                                     IsReadOnly="True" 
                                     CanUserReorderColumns="True" 

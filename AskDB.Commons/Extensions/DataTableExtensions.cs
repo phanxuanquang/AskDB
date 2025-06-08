@@ -18,7 +18,7 @@ namespace AskDB.Commons.Extensions
                     results.Add(value);
                 }
             }
-            return results;
+            return results.Distinct().ToList();
         }
 
         public static string? ToMarkdown(this DataTable dataTable)
