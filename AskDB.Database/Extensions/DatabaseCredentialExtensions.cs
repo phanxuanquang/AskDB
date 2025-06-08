@@ -25,7 +25,7 @@ namespace AskDB.Database.Extensions
                     sb.Append($"Database={databaseCredential.Database};");
                     if (string.IsNullOrEmpty(databaseCredential.Username) || string.IsNullOrEmpty(databaseCredential.Password))
                     {
-                        sb.Append("Integrated Security=True;");  // Use Windows Authentication if no credentials are provided
+                        sb.Append("Integrated Security=True;"); 
                     }
                     else
                     {

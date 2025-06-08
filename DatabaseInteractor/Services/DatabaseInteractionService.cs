@@ -327,7 +327,7 @@ If the user doesn’t specify a schema or the schema is unclear:
         {
             return string.IsNullOrEmpty(keyword)
                 ? [.. CachedTableNames]
-                : CachedTableNames.Where(name => name.Contains(keyword, StringComparison.OrdinalIgnoreCase)).ToList();
+                : [.. CachedTableNames.Where(name => name.Contains(keyword, StringComparison.OrdinalIgnoreCase))];
         }
     }
 }

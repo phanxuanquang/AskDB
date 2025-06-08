@@ -12,7 +12,7 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid x:Name="RootGrid" RequestedTheme="Dark">
+    <Grid x:Name="RootGrid" RequestedTheme="Light">
         <Grid.BackgroundTransition>
             <BrushTransition />
         </Grid.BackgroundTransition>
@@ -44,9 +44,9 @@
                 </AppBarButton.Icon>
             </AppBarButton>
             <CommandBar.SecondaryCommands>
-                <AppBarButton Label="Send your feedback">
+                <AppBarButton Label="Check for update" Click="CheckUpdateButton_Click">
                     <AppBarButton.Icon>
-                        <FontIcon Glyph="&#xED15;" />
+                        <FontIcon Glyph="&#xECC5;" />
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarButton Label="About the developer" Click="GithubProfileButton_Click">

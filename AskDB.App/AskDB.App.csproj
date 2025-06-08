@@ -82,6 +82,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4188" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250513003" />
+    <PackageReference Include="Octokit" Version="14.0.0" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 

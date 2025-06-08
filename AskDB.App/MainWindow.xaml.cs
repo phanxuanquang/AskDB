@@ -2,10 +2,15 @@
 using AskDB.App.Pages;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
+using Octokit;
 using System;
+using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using Windows.System;
+using Application = Microsoft.UI.Xaml.Application;
 
 namespace AskDB.App
 {
@@ -93,6 +98,41 @@ namespace AskDB.App
             else
             {
                 MainFrame.Navigate(typeof(DatabaseConnection), null, new DrillInNavigationTransitionInfo());
+            }
+        }
+
+        private async void CheckUpdateButton_Click(object sender, RoutedEventArgs e)
+        {
+            var client = new GitHubClient(new ProductHeaderValue(DateTime.Now.Ticks.ToString()));
+
+            var latestRelease = await client.Repository.Release.GetLatest("phanxuanquang", "AskDB");
+
+            var currentVersion = Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
+            if (latestRelease != null && currentVersion != latestRelease.Name)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine($"The latest version ({latestRelease.Name}) was released on {latestRelease.CreatedAt.ToString("MMMM dd, yyyy")}.");
+                sb.AppendLine();
+                sb.AppendLine("Please check the description of the latest version as below:");
+                sb.AppendLine(latestRelease.Body);
+                sb.AppendLine();
+                sb.AppendLine($"It is recommended to download and use the latest version for better experience.");
+
+                var noti = new ContentDialog
+                {
+                    XamlRoot = RootGrid.XamlRoot,
+                    Title = "New Version!",
+                    Content = sb.ToString().Trim(),
+                    PrimaryButtonText = "Download Now",
+                    CloseButtonText = "Skip",
+                    DefaultButton = ContentDialogButton.Primary
+                };
+
+                if (await noti.ShowAsync() == ContentDialogResult.Primary)
+                {
+                    await Launcher.LaunchUriAsync(new Uri(latestRelease.Assets[0].BrowserDownloadUrl));
+                    Application.Current.Exit();
+                }
             }
         }
     }
