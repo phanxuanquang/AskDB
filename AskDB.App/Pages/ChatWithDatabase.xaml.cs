@@ -483,7 +483,7 @@ This is the list of first {tableNames.Count} table names in the database: {strin
 
             var chatMessage = new ChatMessage
             {
-                Message = string.IsNullOrEmpty(message) ? "No response from AskDB" : message,
+                Message = string.IsNullOrEmpty(message) ? string.Empty : message,
                 IsFromUser = false,
                 IsFromAgent = true,
                 QueryResults = isDataTableEmpty ? [] : new ObservableCollection<object>(dataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray)),
