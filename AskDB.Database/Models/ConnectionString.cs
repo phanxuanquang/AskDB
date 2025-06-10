@@ -7,9 +7,9 @@ namespace AskDB.Database.Models
     {
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
-        public required string Name { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
         public DatabaseType DatabaseType { get; set; }
-        public required string Value { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
         public DateTime LastAccessTime { get; set; } = DateTime.Now;
     }
 }

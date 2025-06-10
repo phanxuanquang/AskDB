@@ -105,7 +105,7 @@ namespace AskDB.App
         private readonly AppDbContext _db;
 
         public event PropertyChangedEventHandler PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
@@ -128,43 +128,52 @@ namespace AskDB.App
         {
             SetLoading(true);
 
+            if (_useConnectionString)
+            {
+                if (string.IsNullOrWhiteSpace(ConnectionString.Name) || string.IsNullOrEmpty(ConnectionString.Name))
+                {
+                    await DialogHelper.ShowErrorAsync("Please enter a name for your connection string.");
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(ConnectionString.Value) || string.IsNullOrEmpty(ConnectionString.Value))
+                {
+                    await DialogHelper.ShowErrorAsync("Please enter the connection string.");
+                    return;
+                }
+            }
+            else
+            {
+                if (ConnectionCredential.DatabaseType == DatabaseType.SQLite && string.IsNullOrEmpty(SqliteFilePath))
+                {
+                    await DialogHelper.ShowErrorAsync("Please select a file.");
+                    return;
+                }
+            }
+
             try
             {
                 var connectionString = string.Empty;
 
                 if (_useConnectionString)
                 {
-                    if (string.IsNullOrWhiteSpace(ConnectionString.Name) || string.IsNullOrEmpty(ConnectionString.Name))
-                    {
-                        await DialogHelper.ShowErrorAsync("Please enter a name for your connection string.");
-                        return;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(ConnectionString.Value) || string.IsNullOrEmpty(ConnectionString.Value))
-                    {
-                        await DialogHelper.ShowErrorAsync("Please enter the connection string.");
-                        return;
-                    }
-
-                    connectionString = ConnectionString.Value?.Trim();
-                    var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, connectionString);
+                    connectionString = ConnectionString.Value;
+                    var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, ConnectionString.Value);
 
                     await databaseInteractor.EnsureDatabaseConnectionAsync();
                     await _db.SaveConnectionStringAsync(ConnectionString);
                 }
                 else
                 {
+                    connectionString = ConnectionCredential.DatabaseType == DatabaseType.SQLite
+                        ? $"Data Source={SqliteFilePath}"
+                        : ConnectionCredential.BuildConnectionString(5);
+
+                    var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, connectionString);
+                    await databaseInteractor.EnsureDatabaseConnectionAsync();
+
                     if (ConnectionCredential.DatabaseType == DatabaseType.SQLite)
                     {
-                        if (string.IsNullOrEmpty(SqliteFilePath))
-                        {
-                            throw new ArgumentException("Please select a file.", nameof(SqliteFilePath));
-                        }
-
-                        connectionString = $"Data Source={SqliteFilePath}";
-                        var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, connectionString);
-
-                        await databaseInteractor.EnsureDatabaseConnectionAsync();
                         await _db.SaveConnectionStringAsync(new ConnectionString
                         {
                             Name = Path.GetFileNameWithoutExtension(SqliteFilePath),
@@ -174,10 +183,6 @@ namespace AskDB.App
                     }
                     else
                     {
-                        connectionString = ConnectionCredential.BuildConnectionString(5);
-                        var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, connectionString);
-
-                        await databaseInteractor.EnsureDatabaseConnectionAsync();
                         await _db.SaveDatabaseCredentialAsync(ConnectionCredential);
                     }
                 }
@@ -189,7 +194,10 @@ namespace AskDB.App
                         ConnectionString = connectionString,
                         DatabaseType = ConnectionCredential.DatabaseType,
                     },
-                    new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+                    new SlideNavigationTransitionInfo()
+                    {
+                        Effect = SlideNavigationTransitionEffect.FromRight
+                    });
             }
             catch (Exception ex)
             {

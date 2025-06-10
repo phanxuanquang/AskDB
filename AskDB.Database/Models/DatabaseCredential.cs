@@ -7,11 +7,11 @@ namespace AskDB.Database.Models
     {
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
-        public required string Host { get; set; } = string.Empty;
+        public string Host { get; set; } = string.Empty;
         public int Port { get; set; }
-        public required string Database { get; set; } = string.Empty;
-        public required string Username { get; set; } = string.Empty;
-        public required string Password { get; set; } = string.Empty;
+        public string Database { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
         public DatabaseType DatabaseType { get; set; }
         public bool EnableSsl { get; set; }
         public bool EnableTrustServerCertificate { get; set; }

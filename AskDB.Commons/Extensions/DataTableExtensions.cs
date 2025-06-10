@@ -21,9 +21,9 @@ namespace AskDB.Commons.Extensions
             return results.Distinct().ToList();
         }
 
-        public static string? ToMarkdown(this DataTable dataTable)
+        public static string ToMarkdown(this DataTable dataTable)
         {
-            if (dataTable == null || dataTable.Rows.Count == 0) return null;
+            if (dataTable == null || dataTable.Rows.Count == 0) return string.Empty;
 
             var sb = new StringBuilder();
 

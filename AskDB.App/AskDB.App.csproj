@@ -28,6 +28,7 @@
     <PackageIcon>icon.png</PackageIcon>
     <PublishAot>False</PublishAot>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 	<Target Name="RemoveFoldersWithMuiFiles" AfterTargets="Build">
 		<ItemGroup>

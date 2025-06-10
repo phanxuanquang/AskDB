@@ -14,6 +14,8 @@ namespace DatabaseInteractor.Factories
         {
             if (string.IsNullOrEmpty(connectionString)) throw new ArgumentNullException(nameof(connectionString));
 
+            connectionString = connectionString.Trim();
+
             return dbType switch
             {
                 DatabaseType.SqlServer => new SqlConnection(connectionString),
@@ -27,6 +29,8 @@ namespace DatabaseInteractor.Factories
         public static DatabaseInteractionService CreateInteractionService(DatabaseType dbType, string connectionString)
         {
             if (string.IsNullOrEmpty(connectionString)) throw new ArgumentNullException(nameof(connectionString));
+
+            connectionString = connectionString.Trim();
 
             return dbType switch
             {

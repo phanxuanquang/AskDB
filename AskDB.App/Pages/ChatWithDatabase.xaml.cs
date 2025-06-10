@@ -649,15 +649,16 @@ It **MUST** include at least:
                     {
                         var failedResonse = JsonHelper.AsObject<ApiResponse>(_generator.ResponseAsRawString);
                         var finishReason = failedResonse?.Candidates.FirstOrDefault()?.FinishReason;
+                        _generator.ResponseAsRawString.CopyToClipboard();
+
                         if (!string.IsNullOrEmpty(finishReason))
                         {
-                            SetAgentMessage($"AskDB refused to answer! The reason code name is [**{finishReason.Replace('_', ' ')}**](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerateContentResponse#FinishReason).");
+                            throw new InvalidOperationException($"AskDB refused to answer! The reason code name is [{finishReason.Replace('_', ' ')}](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerateContentResponse#FinishReason).");
                         }
                     }
                     catch (Exception ex)
                     {
-                        SetAgentMessage($"Error while constructing the answer! {ex.Message}");
-                        SetAgentMessage($"```json\n{_generator.ResponseAsRawString}\n```");
+                        throw new InvalidOperationException($"Error while constructing the answer! {ex.Message}");
                     }
                 }
 
@@ -731,7 +732,7 @@ It **MUST** include at least:
             catch (Exception ex)
             {
                 ex.CopyToClipboard();
-                SetAgentMessage($"Error: {ex.Message}. {ex.InnerException?.Message}");
+                SetAgentMessage($"**Error:** {ex.Message}. {ex.InnerException?.Message}.\n\nThe reason detail has been copied to your clipboard.");
             }
             finally
             {
@@ -815,14 +816,14 @@ It **MUST** include at least:
                     {
                         var requirement = FunctionCallingHelper.GetParameterValue<string>(function, "requirement");
                         SetAgentMessage($"Let me perform an in-depth internet search following this description:\n\n{requirement}");
-                        var searchResult = await RequestForInternetSearchAsync(requirement);
+                        var searchResult = await RequestForInternetSearchAsync(requirement!);
                         SetAgentMessage(searchResult);
                         return FunctionCallingHelper.CreateResponse(name, searchResult);
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(ChangeTheConversationLanguage):
                     {
                         var language = FunctionCallingHelper.GetParameterValue<string>(function, "language");
-                        ChangeTheConversationLanguage(language);
+                        ChangeTheConversationLanguage(language!);
                         return FunctionCallingHelper.CreateResponse(name, $"From now on, AskDB **must use {language}** for the conversation (except for the tool calling).");
                     }
                 default: throw new NotImplementedException($"Function '{function.Name}' is not implemented.");
@@ -858,6 +859,12 @@ It **MUST** include at least:
                    .Build();
 
                 var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
+
+                if (string.IsNullOrEmpty(response.Content))
+                {
+                    return results;
+                }
+
                 var agentResponse = JsonHelper.AsObject<AgentResponse>(response.Content);
 
                 if (agentResponse?.UserResponseSuggestions != null && agentResponse.UserResponseSuggestions.Count > 0)
