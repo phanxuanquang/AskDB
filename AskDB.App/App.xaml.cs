@@ -18,14 +18,13 @@ namespace AskDB.App
 
         public App()
         {
-            this.InitializeComponent();
+            InitializeComponent();
             Host = CreateHostBuilder();
             LocalDb = Host.Services.GetService<AppDbContext>();
         }
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
-            Stopwatch.StartNew();
             Window = new MainWindow();
             Window.Activate();
             _ = InitializeAsync();

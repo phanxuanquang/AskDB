@@ -82,7 +82,7 @@ namespace AskDB.App.Pages
         {
             ExistingDatabaseConnectionInfors.Clear();
             ExistingConnectionStringInfors.Clear();
-            this.Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+            Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
         }
 
         private async void DatabaseCredentionItemsView_ItemInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
@@ -100,11 +100,16 @@ namespace AskDB.App.Pages
 
                 await databaseInteractor.EnsureDatabaseConnectionAsync();
 
-                this.Frame.Navigate(typeof(ChatWithDatabase), new DatabaseConnectionInfo
-                {
-                    ConnectionString = data.ConnectionString,
-                    DatabaseType = data.DatabaseType
-                }, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+                Frame.Navigate(typeof(ChatWithDatabase), 
+                    new DatabaseConnectionInfo
+                    {
+                        ConnectionString = data.ConnectionString,
+                        DatabaseType = data.DatabaseType
+                    }, 
+                    new SlideNavigationTransitionInfo() 
+                    { 
+                        Effect = SlideNavigationTransitionEffect.FromRight 
+                    });
             }
             catch (Exception ex)
             {

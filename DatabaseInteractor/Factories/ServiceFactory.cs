@@ -2,7 +2,7 @@
 using DatabaseInteractor.Services;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using Npgsql;
 using System.Data.Common;
 

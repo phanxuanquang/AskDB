@@ -1,6 +1,6 @@
 ﻿using AskDB.Commons.Enums;
 using AskDB.Commons.Extensions;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using System.Data;
 
 namespace DatabaseInteractor.Services

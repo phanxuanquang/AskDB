@@ -14,6 +14,9 @@ namespace AskDB.Commons.Enums
         [Description("MySQL"), DefaultPort(3306), DefaultHost("127.0.0.1")]
         MySQL,
 
+        [Description("MariaDB"), DefaultPort(3306), DefaultHost("127.0.0.1")]
+        MariaDB,
+
         [Description("SQLite"), DefaultPort(0), DefaultHost("")]
         SQLite
     }

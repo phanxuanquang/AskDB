@@ -113,7 +113,6 @@ namespace AskDB.App
         public DatabaseConnection()
         {
             _db = App.LocalDb;
-            UseWindowsAuthentication = false;
             InitializeComponent();
         }
 
