@@ -29,6 +29,9 @@
     <PublishAot>False</PublishAot>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PackageCertificateThumbprint>42424D35FA7B6BD46C665965C1ACB22EFAE4B710</PackageCertificateThumbprint>
+    <PackageCertificateKeyFile>AskDB.App_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
   </PropertyGroup>
 	<Target Name="RemoveFoldersWithMuiFiles" AfterTargets="Build">
 		<ItemGroup>
@@ -41,6 +44,56 @@
     <None Remove="DatabaseConnection.xaml" />
     <None Remove="GeminiConnection.xaml" />
     <None Remove="Images\icon.ico" />
+    <None Remove="Images\LargeTile.scale-100.png" />
+    <None Remove="Images\LargeTile.scale-125.png" />
+    <None Remove="Images\LargeTile.scale-150.png" />
+    <None Remove="Images\LargeTile.scale-200.png" />
+    <None Remove="Images\LargeTile.scale-400.png" />
+    <None Remove="Images\SmallTile.scale-100.png" />
+    <None Remove="Images\SmallTile.scale-125.png" />
+    <None Remove="Images\SmallTile.scale-150.png" />
+    <None Remove="Images\SmallTile.scale-200.png" />
+    <None Remove="Images\SmallTile.scale-400.png" />
+    <None Remove="Images\SplashScreen.scale-100.png" />
+    <None Remove="Images\SplashScreen.scale-125.png" />
+    <None Remove="Images\SplashScreen.scale-150.png" />
+    <None Remove="Images\SplashScreen.scale-200.png" />
+    <None Remove="Images\SplashScreen.scale-400.png" />
+    <None Remove="Images\Square150x150Logo.scale-100.png" />
+    <None Remove="Images\Square150x150Logo.scale-125.png" />
+    <None Remove="Images\Square150x150Logo.scale-150.png" />
+    <None Remove="Images\Square150x150Logo.scale-200.png" />
+    <None Remove="Images\Square150x150Logo.scale-400.png" />
+    <None Remove="Images\Square44x44Logo.altform-lightunplated_targetsize-16.png" />
+    <None Remove="Images\Square44x44Logo.altform-lightunplated_targetsize-24.png" />
+    <None Remove="Images\Square44x44Logo.altform-lightunplated_targetsize-256.png" />
+    <None Remove="Images\Square44x44Logo.altform-lightunplated_targetsize-32.png" />
+    <None Remove="Images\Square44x44Logo.altform-lightunplated_targetsize-48.png" />
+    <None Remove="Images\Square44x44Logo.altform-unplated_targetsize-16.png" />
+    <None Remove="Images\Square44x44Logo.altform-unplated_targetsize-24.png" />
+    <None Remove="Images\Square44x44Logo.altform-unplated_targetsize-256.png" />
+    <None Remove="Images\Square44x44Logo.altform-unplated_targetsize-32.png" />
+    <None Remove="Images\Square44x44Logo.altform-unplated_targetsize-48.png" />
+    <None Remove="Images\Square44x44Logo.scale-100.png" />
+    <None Remove="Images\Square44x44Logo.scale-125.png" />
+    <None Remove="Images\Square44x44Logo.scale-150.png" />
+    <None Remove="Images\Square44x44Logo.scale-200.png" />
+    <None Remove="Images\Square44x44Logo.scale-400.png" />
+    <None Remove="Images\Square44x44Logo.targetsize-16.png" />
+    <None Remove="Images\Square44x44Logo.targetsize-24.png" />
+    <None Remove="Images\Square44x44Logo.targetsize-256.png" />
+    <None Remove="Images\Square44x44Logo.targetsize-32.png" />
+    <None Remove="Images\Square44x44Logo.targetsize-48.png" />
+    <None Remove="Images\StoreLogo.scale-100.png" />
+    <None Remove="Images\StoreLogo.scale-125.png" />
+    <None Remove="Images\StoreLogo.scale-150.png" />
+    <None Remove="Images\StoreLogo.scale-200.png" />
+    <None Remove="Images\StoreLogo.scale-400.png" />
+    <None Remove="Images\Wide310x150Logo.scale-100.png" />
+    <None Remove="Images\Wide310x150Logo.scale-125.png" />
+    <None Remove="Images\Wide310x150Logo.scale-150.png" />
+    <None Remove="Images\Wide310x150Logo.scale-200.png" />
+    <None Remove="Images\Wide310x150Logo.scale-400.png" />
     <None Remove="LoadingControl.xaml" />
     <None Remove="MainPanel.xaml" />
     <None Remove="Pages\ChatWithDatabase.xaml" />
@@ -49,27 +102,159 @@
 
   <ItemGroup>
     <Content Include="Images\icon.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\icon.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\LockScreenLogo.scale-200.png">
+    <Content Include="Images\LargeTile.scale-100.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\LargeTile.scale-125.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\LargeTile.scale-150.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\LargeTile.scale-200.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\LargeTile.scale-400.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\SmallTile.scale-100.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\SmallTile.scale-125.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\SmallTile.scale-150.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\SmallTile.scale-200.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\SmallTile.scale-400.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\SplashScreen.scale-100.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\SplashScreen.scale-125.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\SplashScreen.scale-150.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\SplashScreen.scale-200.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Images\SplashScreen.scale-400.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square150x150Logo.scale-100.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square150x150Logo.scale-125.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square150x150Logo.scale-150.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Images\Square150x150Logo.scale-200.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square150x150Logo.scale-400.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.altform-lightunplated_targetsize-16.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.altform-lightunplated_targetsize-24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.altform-lightunplated_targetsize-256.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.altform-lightunplated_targetsize-32.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.altform-lightunplated_targetsize-48.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.altform-unplated_targetsize-16.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.altform-unplated_targetsize-24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.altform-unplated_targetsize-256.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.altform-unplated_targetsize-32.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.altform-unplated_targetsize-48.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.scale-100.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.scale-125.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.scale-150.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Square44x44Logo.scale-200.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Square44x44Logo.targetsize-24_altform-unplated.png">
+    <Content Include="Images\Square44x44Logo.scale-400.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.targetsize-16.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.targetsize-24.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.targetsize-256.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.targetsize-32.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Square44x44Logo.targetsize-48.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\StoreLogo.scale-100.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\StoreLogo.scale-125.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\StoreLogo.scale-150.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\StoreLogo.scale-200.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\StoreLogo.scale-400.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Wide310x150Logo.scale-100.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Wide310x150Logo.scale-125.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Wide310x150Logo.scale-150.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Wide310x150Logo.scale-200.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Wide310x150Logo.scale-400.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
