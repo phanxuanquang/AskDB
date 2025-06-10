@@ -78,8 +78,14 @@ namespace AskDB.App
             }
         }
 
-        private void UpdateApiKeyButton_Click(object sender, RoutedEventArgs e)
+        private async void UpdateApiKeyButton_Click(object sender, RoutedEventArgs e)
         {
+            if (string.IsNullOrEmpty(Cache.ApiKey))
+            {
+                await DialogHelper.ShowErrorAsync("Please enter your Gemini API key.");
+                return;
+            }
+
             if (MainFrame.SourcePageType != typeof(GeminiConnection))
             {
                 MainFrame.Navigate(typeof(GeminiConnection), null, new DrillInNavigationTransitionInfo());
@@ -94,7 +100,12 @@ namespace AskDB.App
                 return;
             }
 
-            if (Cache.HasUserEverConnectedToDatabase)
+            if (MainFrame.SourcePageType == typeof(ExistingDatabaseConnection))
+            {
+                return;
+            }
+
+            if (Cache.HasUserEverConnectedToDatabase || MainFrame.SourcePageType == typeof(ExistingDatabaseConnection))
             {
                 MainFrame.Navigate(typeof(ExistingDatabaseConnection), null, new DrillInNavigationTransitionInfo());
             }

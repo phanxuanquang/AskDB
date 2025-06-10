@@ -20,9 +20,9 @@
             Background="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}"
             CornerRadius="{StaticResource OverlayCornerRadius}"
             Padding="40">
-            <TextBlock Text="Connect to your database" Style="{StaticResource TitleTextBlockStyle}"  FontWeight="Bold"/>
+            <TextBlock Text="Setup a new database connection" Style="{StaticResource TitleTextBlockStyle}"  FontWeight="Bold"/>
             <RichTextBlock>
-                <Paragraph>AskDB needs to connect to your database to analyze its structure and execute database queries. Please fill the fields below to configure your database connection.</Paragraph>
+                <Paragraph>AskDB needs to connect to your database to understand its structure and execute database queries. Please fill the fields below to configure your database connection.</Paragraph>
             </RichTextBlock>
             <ComboBox Header="Database Type" SelectedIndex="0" HorizontalAlignment="Stretch" ItemsSource="{x:Bind DatabaseTypes}" SelectionChanged="DatabaseTypeComboBox_SelectionChanged"/>
             <Grid>

@@ -330,7 +330,7 @@ Use this function to retrieve **critical, missing context** from the internet wh
                 }
                 catch (Exception ex)
                 {
-                    throw new InvalidOperationException($"Cannot load system instruction for AskDB: {ex.Message}", ex.InnerException);
+                    throw new InvalidOperationException($"Cannot load system instruction for AskDB: {ex.Message}", ex);
                 }
 
                 var tableNames = new List<string>();
@@ -352,7 +352,7 @@ Use this function to retrieve **critical, missing context** from the internet wh
                 }
                 catch (Exception ex)
                 {
-                    throw new InvalidOperationException($"Cannot connect to your database: {ex.Message}", ex.InnerException);
+                    throw new InvalidOperationException($"Cannot connect to your database: {ex.Message}", ex);
                 }
 
                 try
@@ -377,7 +377,7 @@ This is the list of first {tableNames.Count} table names in the database: {strin
                 catch (Exception ex)
                 {
                     ex.CopyToClipboard();
-                    throw new InvalidOperationException($"Cannot load LLM engine for AskDB: {ex.Message}", ex.InnerException);
+                    throw new InvalidOperationException($"Cannot load LLM engine for AskDB: {ex.Message}", ex);
                 }
             }
             catch (Exception ex)
@@ -658,12 +658,12 @@ It **MUST** include at least:
 
                         if (!string.IsNullOrEmpty(finishReason))
                         {
-                            throw new InvalidOperationException($"AskDB refused to answer! The reason code name is [{finishReason.Replace('_', ' ')}](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerateContentResponse#FinishReason).");
+                            throw new InvalidOperationException($"AskDB refused to answer! The reason code name is [{finishReason.Replace('_', ' ')}](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerateContentResponse#FinishReason).", new InvalidOperationException(_generator.ResponseAsRawString));
                         }
                     }
                     catch (Exception ex)
                     {
-                        throw new InvalidOperationException($"Error while constructing the answer! {ex.Message}");
+                        throw new InvalidOperationException($"Error while constructing the answer! {ex.Message}", ex);
                     }
                 }
 

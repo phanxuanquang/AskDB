@@ -116,8 +116,6 @@
                         <ItemContainer >
                             <Grid 
                                 Padding="24" 
-                                VerticalAlignment="Stretch" 
-                                HorizontalAlignment="Stretch" 
                                 ToolTipService.ToolTip="{x:Bind UserResponseSuggestion, Mode=OneWay}" 
                                 Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
                                 CornerRadius="{StaticResource OverlayCornerRadius}">

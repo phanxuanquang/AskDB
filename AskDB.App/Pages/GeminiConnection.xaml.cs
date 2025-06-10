@@ -73,7 +73,7 @@ namespace AskDB.App
                 }
                 catch (Exception ex)
                 {
-                    throw new InvalidOperationException($"Cannot validate your API Key: {ex.Message}. The error detail has been copied to your clipboard.");
+                    throw new InvalidOperationException($"Cannot validate your API Key: {ex.Message}. The error detail has been copied to your clipboard.", ex);
                 }
 
                 if (!string.IsNullOrEmpty(Cache.ApiKey))

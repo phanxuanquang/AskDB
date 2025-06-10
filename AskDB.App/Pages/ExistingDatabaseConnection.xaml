@@ -32,31 +32,35 @@
                     <ItemsView.ItemTemplate>
                         <DataTemplate x:DataType="view_models:ExistingDatabaseConnectionInfo">
                             <ItemContainer>
-                                <Button Padding="12" ToolTipService.ToolTip="Connect">
-                                    <StackPanel MinWidth="250" MaxWidth="300" Spacing="8" >
-                                        <Grid Opacity="0.5" ColumnSpacing="8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" >
-                                                <FontIcon Glyph="&#xE774;" FontSize="12" VerticalAlignment="Center"/>
-                                                <TextBlock Text="{x:Bind Host}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                            <FontIcon Grid.Column="1" Glyph="&#xE8A7;" FontSize="12"/>
-                                        </Grid>
-                                        <TextBlock Text="{x:Bind Database}" Style="{StaticResource BodyStrongTextBlockStyle}" FontWeight="SemiBold"/>
-                                        <StackPanel Padding="8"/>
-                                        <StackPanel Spacing="6" Orientation="Horizontal">
-                                            <StackPanel CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}" Padding="8,6">
-                                                <TextBlock Text="{x:Bind DatabaseTypeDisplayName}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorSuccessBrush}"/>
-                                            </StackPanel>
-                                            <StackPanel CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource SystemFillColorCautionBackgroundBrush}" Padding="8,6">
-                                                <TextBlock Text="{x:Bind LastAccess}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
-                                            </StackPanel>
+                                <StackPanel 
+                                    Padding="12" 
+                                    MinWidth="250" 
+                                    MaxWidth="300" 
+                                    Spacing="12" 
+                                    Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
+                                    CornerRadius="{StaticResource OverlayCornerRadius}">
+                                    <Grid Opacity="0.5" ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" >
+                                            <FontIcon Glyph="&#xE774;" FontSize="12" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{x:Bind Host}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <FontIcon Grid.Column="1" Glyph="&#xE8A7;" FontSize="12"/>
+                                    </Grid>
+                                    <TextBlock Text="{x:Bind Database}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="WrapWholeWords" FontWeight="SemiBold"/>
+                                    <StackPanel Padding="8"/>
+                                    <StackPanel Spacing="6" Orientation="Horizontal">
+                                        <StackPanel CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}" Padding="8,6">
+                                            <TextBlock Text="{x:Bind DatabaseTypeDisplayName}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorSuccessBrush}"/>
+                                        </StackPanel>
+                                        <StackPanel CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource SystemFillColorCautionBackgroundBrush}" Padding="8,6">
+                                            <TextBlock Text="{x:Bind LastAccess}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
                                         </StackPanel>
                                     </StackPanel>
-                                </Button>
+                                </StackPanel>
                             </ItemContainer>
                         </DataTemplate>
                     </ItemsView.ItemTemplate>
@@ -71,27 +75,31 @@
                     <ItemsView.ItemTemplate>
                         <DataTemplate x:DataType="view_models:ExistingConnectionStringInfor">
                             <ItemContainer >
-                                <Button Padding="12" ToolTipService.ToolTip="Connect">
-                                    <StackPanel MinWidth="250" MaxWidth="300" Spacing="8" >
-                                        <Grid ColumnSpacing="8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" FontWeight="SemiBold"/>
-                                            <FontIcon Grid.Column="1" Glyph="&#xE8A7;" FontSize="12" Opacity="0.5" />
-                                        </Grid>
-                                        <StackPanel Padding="8"/>
-                                        <StackPanel Spacing="6" Orientation="Horizontal">
-                                            <StackPanel CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}" Padding="8,6">
-                                                <TextBlock Text="{x:Bind DatabaseTypeDisplayName}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorSuccessBrush}"/>
-                                            </StackPanel>
-                                            <StackPanel CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource SystemFillColorCautionBackgroundBrush}" Padding="8,6">
-                                                <TextBlock Text="{x:Bind LastAccess}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
-                                            </StackPanel>
+                                <StackPanel 
+                                    Padding="12" 
+                                    MinWidth="250" 
+                                    MaxWidth="300" 
+                                    Spacing="12" 
+                                    Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
+                                    CornerRadius="{StaticResource OverlayCornerRadius}">
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="WrapWholeWords" FontWeight="SemiBold"/>
+                                        <FontIcon Grid.Column="1" Glyph="&#xE8A7;" FontSize="12" Opacity="0.5" />
+                                    </Grid>
+                                    <StackPanel Padding="8"/>
+                                    <StackPanel Spacing="6" Orientation="Horizontal">
+                                        <StackPanel CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}" Padding="8,6">
+                                            <TextBlock Text="{x:Bind DatabaseTypeDisplayName}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorSuccessBrush}"/>
+                                        </StackPanel>
+                                        <StackPanel CornerRadius="{StaticResource ControlCornerRadius}" Background="{ThemeResource SystemFillColorCautionBackgroundBrush}" Padding="8,6">
+                                            <TextBlock Text="{x:Bind LastAccess}" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
                                         </StackPanel>
                                     </StackPanel>
-                                </Button>
+                                </StackPanel>
                             </ItemContainer>
                         </DataTemplate>
                     </ItemsView.ItemTemplate>
