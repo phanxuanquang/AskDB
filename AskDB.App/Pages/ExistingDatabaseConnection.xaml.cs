@@ -100,15 +100,15 @@ namespace AskDB.App.Pages
 
                 await databaseInteractor.EnsureDatabaseConnectionAsync();
 
-                Frame.Navigate(typeof(ChatWithDatabase), 
+                Frame.Navigate(typeof(ChatWithDatabase),
                     new DatabaseConnectionInfo
                     {
                         ConnectionString = data.ConnectionString,
                         DatabaseType = data.DatabaseType
-                    }, 
-                    new SlideNavigationTransitionInfo() 
-                    { 
-                        Effect = SlideNavigationTransitionEffect.FromRight 
+                    },
+                    new SlideNavigationTransitionInfo()
+                    {
+                        Effect = SlideNavigationTransitionEffect.FromRight
                     });
             }
             catch (Exception ex)

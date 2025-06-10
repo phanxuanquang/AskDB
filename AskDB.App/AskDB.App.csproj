@@ -29,7 +29,7 @@
     <PublishAot>False</PublishAot>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PackageCertificateThumbprint>42424D35FA7B6BD46C665965C1ACB22EFAE4B710</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>5BCBD7ECFC747E2A6D216C68EFEC6A927A2255CA</PackageCertificateThumbprint>
     <PackageCertificateKeyFile>AskDB.App_TemporaryKey.pfx</PackageCertificateKeyFile>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
   </PropertyGroup>

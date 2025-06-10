@@ -37,6 +37,7 @@ namespace AskDB.App.Pages
         private Generator _generator;
         private DatabaseInteractionService _databaseInteractor;
         private string _globalInstruction;
+        private string _actionPlanInstruction;
 
         public ChatWithDatabase()
         {
@@ -142,10 +143,8 @@ Use this function when you:
         {
             try
             {
-                var instruction = await FileHelper.ReadFileAsync("Instructions/Action Plan.md");
-
                 var actionPlanRequest = new ApiRequestBuilder()
-                    .WithSystemInstruction(instruction.Replace("{Database_Type}", _databaseInteractor.DatabaseType.ToString()))
+                    .WithSystemInstruction(_actionPlanInstruction.Replace("{Database_Type}", _databaseInteractor.DatabaseType.ToString()))
                     .DisableAllSafetySettings()
                     .WithTools(new ToolBuilder().AddFunctionDeclarations(FunctionDeclarationHelper.FunctionDeclarations))
                     .SetFunctionCallingMode(FunctionCallingMode.NONE)
@@ -316,22 +315,29 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
             try
             {
+                try
+                {
+                    _generator = new Generator(Cache.ApiKey).EnableChatHistory(150);
+
+                    var globalTask = InstructionHelper.GetGitHubRawFileContentAsync("Global");
+                    var actionPlanTask = InstructionHelper.GetGitHubRawFileContentAsync("Action Plan");
+
+                    await Task.WhenAll(globalTask, actionPlanTask);
+
+                    _globalInstruction = globalTask.Result;
+                    _actionPlanInstruction = actionPlanTask.Result;
+
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException($"Cannot load system instruction for AskDB: {ex.Message}", ex.InnerException);
+                }
+
                 var tableNames = new List<string>();
                 try
                 {
                     _databaseInteractor = ServiceFactory.CreateInteractionService(request.DatabaseType, request.ConnectionString);
                     tableNames = await _databaseInteractor.SearchTablesByNameAsync(string.Empty, 200);
-                }
-                catch (Exception ex)
-                {
-                    throw new InvalidOperationException($"Cannot connect to your database: {ex.Message}.\nThe error details have been copied to your clipboard.");
-                }
-
-                try
-                {
-                    _globalInstruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
-
-                    ChangeTheConversationLanguage("English");
 
                     if (tableNames.Count > 100)
                     {
@@ -341,16 +347,16 @@ Use this function to retrieve **critical, missing context** from the internet wh
                     {
                         _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", $"- The connected database has {tableNames.Count} tables and you should be careful while querying them. Please consider consulting with the documentation before proceeding.");
                     }
+
+                    ChangeTheConversationLanguage("English");
                 }
                 catch (Exception ex)
                 {
-                    throw new InvalidOperationException($"Cannot load system instruction for AskDB: {ex.Message}.\nThe error details have been copied to your clipboard.");
+                    throw new InvalidOperationException($"Cannot connect to your database: {ex.Message}", ex.InnerException);
                 }
 
                 try
                 {
-                    _generator = new Generator(Cache.ApiKey).EnableChatHistory(150);
-
                     InitFunctionCalling();
 
                     var suggestions = await GenerateAgentSuggestionsAsync($@"Based on the list of table names provided below, generate up to 10 helpful, consice, natural-sounding suggestions from the viewpoint of the user that a user might ask to start the conversation.
@@ -371,12 +377,12 @@ This is the list of first {tableNames.Count} table names in the database: {strin
                 catch (Exception ex)
                 {
                     ex.CopyToClipboard();
-                    throw new InvalidOperationException($"Cannot load LLM engine for AskDB: {ex.Message}.\nThe error details have been copied to your clipboard.");
+                    throw new InvalidOperationException($"Cannot load LLM engine for AskDB: {ex.Message}", ex.InnerException);
                 }
             }
             catch (Exception ex)
             {
-                await DialogHelper.ShowErrorAsync(ex.Message);
+                await DialogHelper.ShowErrorAsync($"{ex.Message}.\nThe error details have been copied to your clipboard.");
                 Frame.GoBack();
             }
             finally
@@ -553,7 +559,6 @@ It **MUST** include at least:
                 },
                 Required = ["language"]
             });
-
             FunctionDeclarationHelper.RegisterFunction(_databaseInteractor.ExecuteQueryAsync, new Parameters
             {
                 Properties = new
