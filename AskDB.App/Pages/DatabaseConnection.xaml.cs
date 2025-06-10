@@ -119,7 +119,7 @@ namespace AskDB.App
 
         private void SetLoading(bool isLoading)
         {
-            LoadingOverlay.SetLoading("Connecting...", isLoading);
+            LoadingOverlay.SetLoading("Connecting...", isLoading, 72);
             LoadingOverlay.Visibility = VisibilityHelper.SetVisible(isLoading);
             MainPanel.Visibility = VisibilityHelper.SetVisible(!isLoading);
         }
@@ -134,6 +134,18 @@ namespace AskDB.App
 
                 if (_useConnectionString)
                 {
+                    if (string.IsNullOrWhiteSpace(ConnectionString.Name) || string.IsNullOrEmpty(ConnectionString.Name))
+                    {
+                        await DialogHelper.ShowErrorAsync("Please enter a name for your connection string.");
+                        return;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(ConnectionString.Value) || string.IsNullOrEmpty(ConnectionString.Value))
+                    {
+                        await DialogHelper.ShowErrorAsync("Please enter the connection string.");
+                        return;
+                    }
+
                     connectionString = ConnectionString.Value?.Trim();
                     var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, connectionString);
 
@@ -142,14 +154,13 @@ namespace AskDB.App
                 }
                 else
                 {
-                    if (ConnectionCredential.DatabaseType == DatabaseType.SQLite && string.IsNullOrEmpty(SqliteFilePath))
-                    {
-                        await DialogHelper.ShowErrorAsync("Please select the SQLite database file.");
-                        return;
-                    }
-
                     if (ConnectionCredential.DatabaseType == DatabaseType.SQLite)
                     {
+                        if (string.IsNullOrEmpty(SqliteFilePath))
+                        {
+                            throw new ArgumentException("Please select a file.", nameof(SqliteFilePath));
+                        }
+
                         connectionString = $"Data Source={SqliteFilePath}";
                         var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, connectionString);
 
@@ -163,6 +174,16 @@ namespace AskDB.App
                     }
                     else
                     {
+                        if (string.IsNullOrWhiteSpace(ConnectionCredential.Host) || string.IsNullOrEmpty(ConnectionCredential.Host))
+                        {
+                            throw new ArgumentException("The server cannot be null or empty.", nameof(ConnectionCredential.Host));
+                        }
+
+                        if (string.IsNullOrWhiteSpace(ConnectionCredential.Database) || string.IsNullOrEmpty(ConnectionCredential.Database))
+                        {
+                            throw new ArgumentException("Database name must be specified.", nameof(ConnectionCredential.Database));
+                        }
+
                         connectionString = ConnectionCredential.BuildConnectionString(5);
                         var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, connectionString);
 

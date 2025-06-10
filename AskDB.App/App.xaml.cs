@@ -44,16 +44,27 @@ namespace AskDB.App
 
         private static async Task InitializeAsync()
         {
-            if (!File.Exists(AppDbContext.DbPath))
+            string dbPath = AppDbContext.DbPath;
+
+            if (!File.Exists(dbPath))
             {
+                var directoryPath = Path.GetDirectoryName(dbPath);
+
+                if (!string.IsNullOrEmpty(directoryPath))
+                {
+                    Directory.CreateDirectory(directoryPath);
+                }
+
                 await LocalDb.Database.EnsureCreatedAsync().ConfigureAwait(false);
             }
 
-            var apiKeyTask = LocalDb.GetApiKeyAsync();
-            var hasUserTask = LocalDb.IsDatabaseCredentialOrConnectionStringExistsAsync();
+            Task<string?> apiKeyTask = LocalDb.GetApiKeyAsync();
+            Task<bool> hasUserTask = LocalDb.IsDatabaseCredentialOrConnectionStringExistsAsync();
+
             await Task.WhenAll(apiKeyTask, hasUserTask).ConfigureAwait(false);
-            Cache.ApiKey = await apiKeyTask;
-            Cache.HasUserEverConnectedToDatabase = await hasUserTask;
+
+            Cache.ApiKey = apiKeyTask.Result;
+            Cache.HasUserEverConnectedToDatabase = hasUserTask.Result;
         }
     }
 }

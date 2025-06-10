@@ -27,8 +27,8 @@ namespace AskDB.App.Pages
 
         private void SetLoading(bool isLoading)
         {
-            LoadingOverlay.SetLoading("Connecting", isLoading);
             MainPanel.Visibility = VisibilityHelper.SetVisible(!isLoading);
+            LoadingOverlay.SetLoading("Connecting", isLoading, 72);
         }
 
         protected override async void OnNavigatedTo(NavigationEventArgs e)

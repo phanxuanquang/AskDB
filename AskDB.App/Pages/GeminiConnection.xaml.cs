@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 using System;
+using Windows.ApplicationModel.DataTransfer;
 using Page = Microsoft.UI.Xaml.Controls.Page;
 
 namespace AskDB.App
@@ -59,11 +60,26 @@ namespace AskDB.App
                     throw new InvalidOperationException("You are already connected to Gemini with this API key.");
                 }
 
-                var isApiKeyValid = await Validator.IsValidApiKeyAsync(Cache.ApiKey);
+                var generator = new Generator(_geminiApiKey);
 
-                if (!isApiKeyValid)
+                try
                 {
-                    throw new InvalidOperationException("Invalid or expired API key. Please try again with another API key.");
+                    var request = new ApiRequestBuilder()
+                        .WithPrompt("Print out `Hello world`")
+                        .DisableAllSafetySettings()
+                        .WithDefaultGenerationConfig(0.2f, 400)
+                        .Build();
+
+                    await generator.GenerateContentAsync(request);
+                }
+                catch (Exception ex)
+                {
+                    var dataPackage = new DataPackage();
+                    dataPackage.SetText($"Error: {ex.Message}. {ex.InnerException?.Message}\n\n{generator.ResponseAsRawString}");
+                    Clipboard.SetContent(dataPackage);
+                    Clipboard.Flush();
+
+                    throw new InvalidOperationException($"Cannot validate your API Key: {ex.Message}. The error detail has been copied to your clipboard.");
                 }
 
                 if (!string.IsNullOrEmpty(Cache.ApiKey))

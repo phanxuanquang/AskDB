@@ -7,6 +7,16 @@ namespace AskDB.Database.Extensions
     {
         public static ConnectionString Encrypt(this ConnectionString connectionString)
         {
+            if (string.IsNullOrWhiteSpace(connectionString.Value) || string.IsNullOrEmpty(connectionString.Value))
+            {
+                throw new ArgumentException("Connection string value cannot be null or empty.", nameof(connectionString.Value));
+            }
+
+            if (string.IsNullOrWhiteSpace(connectionString.Name) || string.IsNullOrEmpty(connectionString.Name))
+            {
+                throw new ArgumentException("Connection string name cannot be null or empty.", nameof(connectionString.Name));
+            }
+
             return new ConnectionString
             {
                 Value = connectionString.Value.Trim().AesEncrypt(),
