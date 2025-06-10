@@ -20,9 +20,10 @@
     </Page.Resources>
 
     <Grid>
-        <Grid RowSpacing="6" x:Name="MessageSpace" Padding="12">
+        <Grid RowSpacing="6" x:Name="MessageSpace">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
@@ -66,7 +67,7 @@
                                     QuotePadding="6"
                                     QuoteBackground="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
                                     InlineCodeBackground="{ThemeResource SystemFillColorCautionBackgroundBrush}"
-                                    CodeBackground="{ThemeResource SolidBackgroundFillColorBaseAltBrush}"
+                                    ParagraphLineHeight="24"
                                     Text="{x:Bind Message}"
                                     LinkClicked="MarkdownTextBlock_LinkClicked"/>
                                 <controls1:DataGrid 
@@ -121,12 +122,17 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBox MaxHeight="100" VerticalAlignment="Stretch" PlaceholderText="Enter your question here" AcceptsReturn="True" x:Name="QueryBox" KeyUp="QueryBox_KeyUp"/>
-                <Button Grid.Column="1" Click="SendButton_Click" VerticalAlignment="Bottom" Style="{ThemeResource AccentButtonStyle}">
-                    <FontIcon Glyph="&#xF4A5;" />
+                <Button Grid.Column="1" Click="SendButton_Click" ToolTipService.ToolTip="Send your message" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Style="{ThemeResource AccentButtonStyle}">
+                    <FontIcon Glyph="&#xF4A5;" FontSize="17"/>
+                </Button>
+                <Button Grid.Column="2" Click="ResetButton_Click" ToolTipService.ToolTip="Reset the conversation" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" >
+                    <FontIcon Glyph="&#xE777;" FontSize="17"/>
                 </Button>
             </Grid>
+            <TextBlock Grid.Row="3" Text="AskDB can make mistakes sometimes. Double-checking is highly reccommended." Opacity="0.8" TextAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}"/>
         </Grid>
         <Grid x:Name="LoadingOverlay" Opacity="1" Background="{ThemeResource SystemFillColorAttentionBackgroundBrush}" CornerRadius="{StaticResource OverlayCornerRadius}" >
             <Grid.OpacityTransition>

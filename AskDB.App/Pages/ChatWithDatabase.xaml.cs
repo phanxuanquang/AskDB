@@ -32,7 +32,7 @@ namespace AskDB.App.Pages
     public sealed partial class ChatWithDatabase : Page
     {
         private readonly ObservableCollection<ChatMessage> Messages = [];
-        private ObservableCollection<AgentSuggestion> AgentSuggestions = [];
+        private readonly ObservableCollection<AgentSuggestion> AgentSuggestions = [];
 
         private Generator _generator;
         private DatabaseInteractionService _databaseInteractor;
@@ -337,7 +337,7 @@ Use this function to retrieve **critical, missing context** from the internet wh
                         .WithSystemInstruction(_globalInstruction)
                         .DisableAllSafetySettings()
                         .WithDefaultGenerationConfig()
-                        .WithPrompt($"In order to start the conversation, please introduce about yourself, such as who you are, what you can do, what you can help me, etc; and 3 best practices for me to help you to do the task effectively.")
+                        .WithPrompt("In order to start the conversation, please introduce to me about yourself, such as who you are, what you can do, what you can help me, or anything else; and at least 3 best practices for me to help you to do the task effectively. Take me as your friend or your teammate, avoid to use formal-like tone while talking to me; just use a natural, friendly tone with daily-life word when talking to me, like you are talking with your friends in the real life.")
                         .Build();
 
                     var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
@@ -351,8 +351,8 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
                     if (tableNames.Count > 0)
                     {
-                        await LoadAgentSuggestionsAsync($@"Based on the list of table names provided below, generate 5 helpful, consice, natural-sounding suggestions from the viewpoint of the user that a user might ask to start the conversation.
-The suggestions should be phrased as questions or commands in natural language, assuming the user is not technical but wants to understand and explore the data for analysis purpose or predictional purpose.
+                        await LoadAgentSuggestionsAsync($@"Based on the list of table names provided below, suggest me with 5 concise and insteresting ideas from my viewpoint that I might ask to start the conversation.
+The suggested ideas should be phrased as questions or commands in natural language, assuming I am not technical but wants to understand and explore the data for analysis purpose or predictional purpose.
 Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table structure, etc.
 Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, consice, specific, user-friendly, and **MUST NOT** be relavant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
 
@@ -661,7 +661,7 @@ It **MUST** include at least:
                             }
                             catch (Exception ex)
                             {
-                                var output = $"Error in function **{function.Name}**:\n\n```plaintext\n{ex.Message}. {ex.InnerException?.Message}\n```";
+                                var output = $"Error in function **{function.Name}**:\n\n```console\n{ex.Message}. {ex.InnerException?.Message}\n```";
 
                                 functionResponses.Add(new FunctionResponse
                                 {
@@ -725,27 +725,49 @@ It **MUST** include at least:
                     {
                         var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
                         SetAgentMessage($"Let me execute this query to check the data:\n\n```sql\n{sqlQuery}\n```");
-                        var dataTable = await _databaseInteractor.ExecuteQueryAsync(sqlQuery);
-                        if (dataTable != null && dataTable.Rows.Count > 1)
+                        try
                         {
-                            SetAgentMessage(null, dataTable);
+                            var dataTable = await _databaseInteractor.ExecuteQueryAsync(sqlQuery);
+                            if (dataTable != null && dataTable.Rows.Count > 1)
+                            {
+                                SetAgentMessage(null, dataTable);
+                            }
+                            return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
                         }
-                        return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
+                        catch (Exception ex)
+                        {
+                            return FunctionCallingHelper.CreateResponse(name, $"Error while executing your {_databaseInteractor.DatabaseType.GetDescription()} query.\n\n```console\n{ex.Message}\n```\n\nTry to break-down your SQL query and make sure that you understand it clearly before executing!");
+                        }
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.ExecuteNonQueryAsync):
                     {
                         var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
                         SetAgentMessage($"Let me execute the command:\n\n```sql\n{sqlQuery}\n```");
-                        await _databaseInteractor.ExecuteNonQueryAsync(sqlQuery);
-                        return FunctionCallingHelper.CreateResponse(name, $"Command executed successfully.\n\n```sql\n{sqlQuery}\n```");
+                        try
+                        {
+                            await _databaseInteractor.ExecuteNonQueryAsync(sqlQuery);
+                            return FunctionCallingHelper.CreateResponse(name, $"Command executed successfully.\n\n```sql\n{sqlQuery}\n```");
+                        }
+                        catch (Exception ex)
+                        {
+                            return FunctionCallingHelper.CreateResponse(name, $"Error while executing your {_databaseInteractor.DatabaseType.GetDescription()} command.\n\n```console\n{ex.Message}\n```\n\nTry to break-down your SQL command and make sure that you understand it clearly before executing!");
+                        }
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.GetTableStructureDetailAsync):
                     {
                         var schema = FunctionCallingHelper.GetParameterValue<string>(function, "schema");
                         var table = FunctionCallingHelper.GetParameterValue<string>(function, "table");
                         SetAgentMessage($"Let me check the schema information for the table `{schema}.{table}`");
-                        var dataTable = await _databaseInteractor.GetTableStructureDetailAsync(schema, table);
-                        return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
+
+                        try
+                        {
+                            var dataTable = await _databaseInteractor.GetTableStructureDetailAsync(schema, table);
+                            return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
+                        }
+                        catch(Exception ex)
+                        {
+                            return FunctionCallingHelper.CreateResponse(name, $"The table does not exist or error while retrieving the table structure.\n\n```console\n{ex.Message}\n```\n\nPlease try searching for the table first by using the `{FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.SearchTablesByNameAsync)} function`.");
+                        }
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.SearchTablesByNameAsync):
                     {
@@ -766,7 +788,7 @@ It **MUST** include at least:
                             return FunctionCallingHelper.CreateResponse(name, tableNamesInMarkdown);
                         }
 
-                        return FunctionCallingHelper.CreateResponse(name, "No tables found. Try another approach!");
+                        return FunctionCallingHelper.CreateResponse(name, "No tables found. Please try another approach!");
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.GetUserPermissionsAsync):
                     {
@@ -906,6 +928,44 @@ It **MUST** include at least:
             {
                 ex.CopyToClipboard();
                 await ShowInforBarAsync($"Cannot load suggestions: {ex.Message}", false);
+            }
+        }
+
+        private async void ResetButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (Messages.Count == 0)
+            {
+                await DialogHelper.ShowErrorAsync("You have not sent any message to AskDB");
+            }
+
+            var result = await DialogHelper.ShowDialogWithOptions("Reset the conversation", "This action will clear our conversation. Are you sure to proceed?", "Yes");
+            if(result == ContentDialogResult.Primary)
+            {
+                _generator = new Generator(Cache.ApiKey).EnableChatHistory(200);
+                Messages.Clear();
+                AgentSuggestions.Clear();
+
+                try
+                {
+                    SetLoading(true);
+                    var requestForAgentSuggestions = new ApiRequestBuilder()
+                        .WithSystemInstruction(_globalInstruction)
+                        .DisableAllSafetySettings()
+                        .WithDefaultGenerationConfig()
+                        .WithPrompt("In order to start the conversation, please introduce to me about yourself, such as who you are, what you can do, what you can help me, or anything else; and at least 3 best practices for me to help you to do the task effectively. Take me as your friend or your teammate, avoid to use formal-like tone while talking to me; just use a natural, friendly tone with daily-life word when talking to me, like you are talking with your friends in the real life.")
+                        .Build();
+
+                    var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
+
+                    if (!string.IsNullOrEmpty(response.Content))
+                    {
+                        SetAgentMessage(response.Content);
+                    }
+                }
+                finally
+                {
+                    SetLoading(false);
+                }
             }
         }
     }
