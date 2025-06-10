@@ -24,12 +24,13 @@ AskDB is designed to be your go-to tool for interacting with databases, whether 
 
 ## **Supported Databases**
 
-AskDB supports 4 most common database providers as listed below, so you can work with the systems you already use. It connects to your databases securely and helps you get the most out of your data without needing to be a database expert.
+AskDB supports 5 popular database providers as listed below, so you can work with the systems you already use. It connects to your databases securely and helps you get the most out of your data without needing to be a database expert.
 
 *   Microsoft SQL Server
 *   MySQL
 *   PostgreSQL
 *   SQLite
+*   MariaDB
 
 No matter how complex your database is and how many tables it has, AskDB can help you understand and manage it easily.
 
