@@ -11,6 +11,11 @@ Introducing **AskDB**, an AI agent that lets you interact with your databases in
 
 AskDB is designed to be your go-to tool for interacting with databases, whether you're a business analyst, data scientist, manager, or just someone who needs to work with data. It makes data tasks easier and safer, so you can focus on what matters most.
 
+For further details, please refer to the showcasing video below!
+
+[![Showcase Video](https://github.com/user-attachments/assets/3c09cd09-0c95-47a4-8082-875d51971856)](https://www.youtube.com/watch?v=GeAdZXIc2y0)
+
+
 ## **Who benefits from AskDB**
 
 *   **Business Analysts & Strategists:** Get answers faster. Ask complex questions and get insights without needing to be a database expert. This means quicker, smarter decisions.
@@ -45,13 +50,15 @@ In addition, AskDB provides you with dynamic, context-aware suggestions for foll
 
 Just provide AskDB with a data-related objective or task, and it will independently devise and execute a multi-step plan to achieve it. This includes understanding complex requests, clarifying your requirements, breaking them down, and managing the workflow through to completion.
 
-Faced with operational errors, query failures, or unexpected data, AskDB Agent doesn't simply stop but initiating a diagnostic process, hypothesizes causes, develops a corrective action plan (which may involve altering queries, re-checking schemas, or seeking clarification), and attempts to self-correct to fulfill the user's intent.
+Faced with operational errors, query failures, or unexpected data, AskDB doesn't simply stop but initiating a diagnostic process, hypothesizes causes, develops a corrective action plan, and attempts to self-correct to fulfill your requests.
 
 ![image](https://github.com/user-attachments/assets/a263d401-9e1b-4418-aa6f-da7b4f1261ae)
 
 AskDB doesn't just give you data; it helps you see what's important, and suggest actionable insights.
  
-AskDB can autonomously investigate your database to identify key tables and relationships. It then moves beyond mere data presentation to actively analyze results, identify significant patterns, and offer explanations, often proposing further analytical paths. AskDB can also access Google Search engine to research for up-to-date information, best practices, debugging tips, error resolutions, or other relevant information that can help you continue on the current task more accurately and effectively.
+AskDB can autonomously investigate your database to identify key tables and relationships. It then moves beyond mere data presentation to actively analyze results, identify significant patterns, and offer explanations, often proposing further analytical paths. 
+
+AskDB can also access Google Search engine to research for up-to-date information, best practices, debugging tips, error resolutions, or other relevant information that can help you continue on the current task more accurately and effectively.
 
 ![Video_2025-06-08_220401 mp4_snapshot_02 47 804](https://github.com/user-attachments/assets/27070960-6682-4acc-87d4-a75110ccb602)
 
