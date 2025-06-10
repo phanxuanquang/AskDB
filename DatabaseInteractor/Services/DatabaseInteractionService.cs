@@ -13,14 +13,12 @@ namespace DatabaseInteractor.Services
         public DatabaseType DatabaseType { get; protected set; }
         public string ConnectionString { get; } = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
 
-        protected DbConnection GetConnection() => ServiceFactory.CreateConnection(DatabaseType, connectionString);
+        protected DbConnection GetConnection() => ServiceFactory.CreateConnection(DatabaseType, ConnectionString);
         public async Task EnsureDatabaseConnectionAsync()
         {
-            using var connection = GetConnection();
+            await using var connection = GetConnection();
             await connection.OpenAsync();
-            await connection.CloseAsync();
         }
-        public abstract Task<int> GetTableCountAsync();
 
         protected async Task<DataTable> ExecuteQueryAsync(DbCommand command)
         {
@@ -47,8 +45,6 @@ This includes:
 * Exploring data patterns
 * Building a mental model of the database structure and contents
 * Supporting intelligent recommendations or follow-up tool usage
-
-> “If your goal is to *observe* or *explore* the database — this is the tool.”
 
 ---
 
@@ -93,8 +89,7 @@ Use this tool proactively to:
 
 #### **Debugging & Investigation**
 
-* Check whether a previous action had any effect:
-  `SELECT * FROM Users WHERE Status = 'Deactivated'`
+* Check whether a previous action had any effect
 * Confirm the presence or absence of problematic records
 * Investigate abnormal trends or suspicious data (e.g., spikes in logs, nulls, outliers)
 
@@ -105,21 +100,6 @@ Use as part of a multi-step logic chain:
 * Fetch data from one table to join or compare with another
 * Test a subquery separately before using it in a larger `generate_query`
 * Preview intermediate results for building nested queries
-
----
-
-### **When NOT to Use**
-
-Do **not** use this function for any query that:
-
-* Modifies data or schema (INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, TRUNCATE)
-* Produces side effects (e.g., SELECT INTO, execution of procedures that mutate state)
-* Relies on transactional effects or triggers unless you're certain they’re read-only
-
-In such cases, escalate to:
-
-* `generate_update_query`, `generate_insert_query` for data changes
-* `request_for_action_plan` for ambiguous or high-risk paths
 
 ---
 
@@ -148,16 +128,15 @@ In such cases, escalate to:
 Use this function **EXCLUSIVELY** for executing SQL commands or SQL scripts that modify the database data or schema.
 
 This includes, but is not limited to:
+- CREATE statements: To create new database objects (e.g., tables, views, indexes).
 - INSERT statements: To add new records to a table.
 - UPDATE statements: To modify existing records in a table.
 - DELETE statements: To remove records from a table.
-- CREATE statements: To create new database objects (e.g., tables, views, indexes).
 - ALTER statements: To modify the structure of existing database objects.
 - DROP statements: To remove database objects.
 - TRUNCATE TABLE statements: To remove all rows from a table (faster than DELETE without WHERE, but less recoverable and doesn't fire triggers).
 
-**CRITICAL SAFETY NOTES:** 
-- Always ensure any data modification (INSERT, UPDATE, DELETE) or destructive (DROP, TRUNCATE) operations executed via this function have been explicitly planned and confirmed by the user according to the Core Problem-Solving & Confidence Protocol.
+**CRITICAL NOTES:** 
 - Prefer to use `get_table_structure` function to check and understand the structure of the relevant tables before executing if you are unsure about the query or its impact.
 - Prefer to use `execute_query` function to check the data of the impacted tables before executing if you are unsure about the query or its impact.
 - **DO NOT** use this function for SELECT statements or other read-only queries that are expected to return data")]
@@ -249,7 +228,7 @@ This function is **CRITICAL** in the following use cases:
 
 ### **Best practices:**
 
-* Always call this function if:
+* Prefer to call this function when:
 
   * The user **does not specify a table name** clearly.
   * The user **misspells** or **partially writes** a table name.

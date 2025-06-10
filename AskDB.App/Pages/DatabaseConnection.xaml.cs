@@ -174,16 +174,6 @@ namespace AskDB.App
                     }
                     else
                     {
-                        if (string.IsNullOrWhiteSpace(ConnectionCredential.Host) || string.IsNullOrEmpty(ConnectionCredential.Host))
-                        {
-                            throw new ArgumentException("The server cannot be null or empty.", nameof(ConnectionCredential.Host));
-                        }
-
-                        if (string.IsNullOrWhiteSpace(ConnectionCredential.Database) || string.IsNullOrEmpty(ConnectionCredential.Database))
-                        {
-                            throw new ArgumentException("Database name must be specified.", nameof(ConnectionCredential.Database));
-                        }
-
                         connectionString = ConnectionCredential.BuildConnectionString(5);
                         var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, connectionString);
 
@@ -203,7 +193,8 @@ namespace AskDB.App
             }
             catch (Exception ex)
             {
-                await DialogHelper.ShowErrorAsync(ex.Message);
+                ex.CopyToClipboard();
+                await DialogHelper.ShowErrorAsync($"{ex.Message}.\nThe error details have been copied to your clipboard.");
             }
             finally
             {

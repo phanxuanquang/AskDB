@@ -311,43 +311,67 @@ Use this function to retrieve **critical, missing context** from the internet wh
             }
 
             SetLoading(true, "Working");
+            IntialAgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(false);
+            IntialAgentSuggestions.Clear();
 
             try
             {
-                IntialAgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(false);
-                IntialAgentSuggestions.Clear();
-                _databaseInteractor = ServiceFactory.CreateInteractionService(request.DatabaseType, request.ConnectionString);
-                _globalInstruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
-
-                ChangeTheConversationLanguage("English");
-
-                var tableNames = await _databaseInteractor.SearchTablesByNameAsync(string.Empty, 200);
-                if (tableNames.Count > 100)
+                var tableNames = new List<string>();
+                try
                 {
-                    _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", "- **Note on Known Large Tables:** All tables are pre-identified as being extremely large. Any query against them MUST be treated as High-Risk and requires extra caution.");
+                    _databaseInteractor = ServiceFactory.CreateInteractionService(request.DatabaseType, request.ConnectionString);
+                    tableNames = await _databaseInteractor.SearchTablesByNameAsync(string.Empty, 200);
                 }
-                else
+                catch (Exception ex)
                 {
-                    _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", $"- The connected database has {tableNames.Count} tables and you should be careful while querying them. Please consider consulting with the documentation before proceeding.");
+                    throw new InvalidOperationException($"Cannot connect to your database: {ex.Message}.\nThe error details have been copied to your clipboard.");
                 }
 
-                _generator = new Generator(Cache.ApiKey).EnableChatHistory(150);
+                try
+                {
+                    _globalInstruction = await FileHelper.ReadFileAsync("Instructions/Global.md");
 
-                InitFunctionCalling();
+                    ChangeTheConversationLanguage("English");
 
-                var suggestions = await GenerateAgentSuggestionsAsync($@"Based on the list of table names provided below, generate up to 10 helpful, consice, natural-sounding suggestions from the viewpoint of the user that a user might ask to start the conversation.
+                    if (tableNames.Count > 100)
+                    {
+                        _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", "- **Note on Known Large Tables:** All tables are pre-identified as being extremely large. Any query against them MUST be treated as High-Risk and requires extra caution.");
+                    }
+                    else
+                    {
+                        _globalInstruction = _globalInstruction.Replace("{Note_For_Table_Count}", $"- The connected database has {tableNames.Count} tables and you should be careful while querying them. Please consider consulting with the documentation before proceeding.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException($"Cannot load system instruction for AskDB: {ex.Message}.\nThe error details have been copied to your clipboard.");
+                }
+
+                try
+                {
+                    _generator = new Generator(Cache.ApiKey).EnableChatHistory(150);
+
+                    InitFunctionCalling();
+
+                    var suggestions = await GenerateAgentSuggestionsAsync($@"Based on the list of table names provided below, generate up to 10 helpful, consice, natural-sounding suggestions from the viewpoint of the user that a user might ask to start the conversation.
 The suggestions should be phrased as questions or commands in natural language, assuming the user is not technical but wants to understand and explore the data for analysis purpose or predictional purpose.
 Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table structure, etc.
 Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, consice, specific, user-friendly, and **MUST NOT** be relavant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
 
 This is the list of first {tableNames.Count} table names in the database: {string.Join(", ", tableNames)}");
-                if (suggestions.Count > 0)
-                {
-                    foreach (var suggestion in suggestions)
+                    if (suggestions.Count > 0)
                     {
-                        IntialAgentSuggestions.Add(suggestion);
+                        foreach (var suggestion in suggestions)
+                        {
+                            IntialAgentSuggestions.Add(suggestion);
+                        }
+                        IntialAgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(true);
                     }
-                    IntialAgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(true);
+                }
+                catch (Exception ex)
+                {
+                    ex.CopyToClipboard();
+                    throw new InvalidOperationException($"Cannot load LLM engine for AskDB: {ex.Message}.\nThe error details have been copied to your clipboard.");
                 }
             }
             catch (Exception ex)
@@ -706,6 +730,7 @@ It **MUST** include at least:
             }
             catch (Exception ex)
             {
+                ex.CopyToClipboard();
                 SetAgentMessage($"Error: {ex.Message}. {ex.InnerException?.Message}");
             }
             finally
@@ -845,6 +870,7 @@ It **MUST** include at least:
             }
             catch (Exception ex)
             {
+                ex.CopyToClipboard();
                 await ShowInforBarAsync($"Cannot load suggestions: {ex.Message}", false);
             }
 

@@ -19,6 +19,7 @@ namespace AskDB.Database.Extensions
 
             return new ConnectionString
             {
+                Id = connectionString.Id,
                 Value = connectionString.Value.Trim().AesEncrypt(),
                 Name = connectionString.Name.Trim().AesEncrypt(),
                 DatabaseType = connectionString.DatabaseType,
@@ -30,6 +31,7 @@ namespace AskDB.Database.Extensions
         {
             return new ConnectionString
             {
+                Id = connectionString.Id,
                 Value = connectionString.Value.Trim().AesDecrypt(),
                 Name = connectionString.Name.Trim().AesDecrypt(),
                 DatabaseType = connectionString.DatabaseType,

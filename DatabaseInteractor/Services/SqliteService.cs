@@ -12,15 +12,6 @@ namespace DatabaseInteractor.Services
             DatabaseType = DatabaseType.SQLite;
         }
 
-        public override async Task<int> GetTableCountAsync()
-        {
-            var query = "SELECT COUNT(*) FROM sqlite_master WHERE type='table';";
-            await using var connection = new SqliteConnection(ConnectionString);
-            await using var command = new SqliteCommand(query, connection);
-            await connection.OpenAsync();
-            return Convert.ToInt32(await command.ExecuteScalarAsync());
-        }
-
         public override async Task<DataTable> GetTableStructureDetailAsync(string? schema, string table)
         {
             if (string.IsNullOrWhiteSpace(table) || string.IsNullOrEmpty(table))
@@ -31,12 +22,12 @@ namespace DatabaseInteractor.Services
             return await ExecuteQueryAsync(query);
         }
 
-        public override async Task<List<string>> GetUserPermissionsAsync()
+        public override Task<List<string>> GetUserPermissionsAsync()
         {
             return
-            [
+            Task.FromResult<List<string>>([
                 "SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER", "INDEX", "TRIGGER"
-            ];
+            ]);
         }
 
         public override async Task<List<string>> SearchTablesByNameAsync(string? keyword, int maxResult = 20000)

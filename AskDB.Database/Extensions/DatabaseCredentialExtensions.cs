@@ -9,6 +9,16 @@ namespace AskDB.Database.Extensions
     {
         public static string BuildConnectionString(this DatabaseCredential databaseCredential, int timeOutInSeconds = 15)
         {
+            if (string.IsNullOrWhiteSpace(databaseCredential.Host) || string.IsNullOrEmpty(databaseCredential.Host))
+            {
+                throw new ArgumentNullException("The server cannot be null or empty.", nameof(databaseCredential.Host));
+            }
+
+            if (string.IsNullOrWhiteSpace(databaseCredential.Database) || string.IsNullOrEmpty(databaseCredential.Database))
+            {
+                throw new ArgumentNullException("Database name must be specified.", nameof(databaseCredential.Database));
+            }
+
             var sb = new StringBuilder();
             switch (databaseCredential.DatabaseType)
             {
@@ -71,6 +81,7 @@ namespace AskDB.Database.Extensions
         {
             return new DatabaseCredential
             {
+                Id = databaseCredential.Id,
                 Host = databaseCredential.Host.AesEncrypt(),
                 Port = databaseCredential.Port,
                 DatabaseType = databaseCredential.DatabaseType,
@@ -88,6 +99,7 @@ namespace AskDB.Database.Extensions
         {
             return new DatabaseCredential
             {
+                Id = databaseCredential.Id,
                 Host = databaseCredential.Host.AesDecrypt(),
                 Port = databaseCredential.Port,
                 DatabaseType = databaseCredential.DatabaseType,

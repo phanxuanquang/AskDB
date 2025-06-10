@@ -6,7 +6,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 using System;
-using Windows.ApplicationModel.DataTransfer;
 using Page = Microsoft.UI.Xaml.Controls.Page;
 
 namespace AskDB.App
@@ -74,11 +73,6 @@ namespace AskDB.App
                 }
                 catch (Exception ex)
                 {
-                    var dataPackage = new DataPackage();
-                    dataPackage.SetText($"Error: {ex.Message}. {ex.InnerException?.Message}\n\n{generator.ResponseAsRawString}");
-                    Clipboard.SetContent(dataPackage);
-                    Clipboard.Flush();
-
                     throw new InvalidOperationException($"Cannot validate your API Key: {ex.Message}. The error detail has been copied to your clipboard.");
                 }
 
@@ -104,6 +98,7 @@ namespace AskDB.App
             }
             catch (Exception ex)
             {
+                ex.CopyToClipboard();
                 SetError(ex.Message);
             }
             finally

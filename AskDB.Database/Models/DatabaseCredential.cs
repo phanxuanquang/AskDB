@@ -6,12 +6,12 @@ namespace AskDB.Database.Models
     public class DatabaseCredential
     {
         [Key]
-        public Guid Id { get; protected set; } = Guid.NewGuid();
-        public string Host { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
+        public required string Host { get; set; } = string.Empty;
         public int Port { get; set; }
-        public string Database { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
+        public required string Database { get; set; } = string.Empty;
+        public required string Username { get; set; } = string.Empty;
+        public required string Password { get; set; } = string.Empty;
         public DatabaseType DatabaseType { get; set; }
         public bool EnableSsl { get; set; }
         public bool EnableTrustServerCertificate { get; set; }

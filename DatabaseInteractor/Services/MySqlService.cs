@@ -12,15 +12,6 @@ namespace DatabaseInteractor.Services
             DatabaseType = DatabaseType.MySQL;
         }
 
-        public override async Task<int> GetTableCountAsync()
-        {
-            var query = "SELECT COUNT(*) FROM information_schema.tables table_schema = DATABASE() AND WHERE table_type = 'BASE TABLE'";
-            using var connection = new MySqlConnection(ConnectionString);
-            using var command = new MySqlCommand(query, connection);
-            await connection.OpenAsync();
-            return Convert.ToInt32(await command.ExecuteScalarAsync());
-        }
-
         public override async Task<DataTable> GetTableStructureDetailAsync(string? schema, string table)
         {
             if (string.IsNullOrWhiteSpace(table) || string.IsNullOrEmpty(table))

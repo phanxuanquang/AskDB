@@ -6,10 +6,10 @@ namespace AskDB.Database.Models
     public class ConnectionString
     {
         [Key]
-        public Guid Id { get; protected set; } = Guid.NewGuid();
-        public string Name { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
+        public required string Name { get; set; } = string.Empty;
         public DatabaseType DatabaseType { get; set; }
-        public string Value { get; set; }
+        public required string Value { get; set; } = string.Empty;
         public DateTime LastAccessTime { get; set; } = DateTime.Now;
     }
 }

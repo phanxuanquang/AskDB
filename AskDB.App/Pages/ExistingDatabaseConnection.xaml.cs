@@ -108,6 +108,7 @@ namespace AskDB.App.Pages
             }
             catch (Exception ex)
             {
+                ex.CopyToClipboard();
                 var result = await DialogHelper.ShowDialogWithOptions("Error", ex.Message, "Remove permanently");
 
                 if (result == ContentDialogResult.Primary)

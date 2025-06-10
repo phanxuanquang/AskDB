@@ -19,18 +19,6 @@ namespace DatabaseInteractor.Services
             DatabaseType = DatabaseType.SqlServer;
         }
 
-        public override async Task<int> GetTableCountAsync()
-        {
-            var query = @$"SELECT COUNT(*) FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND TABLE_SCHEMA NOT IN ({string.Join(',', $"'{_systemSchemas}'")})";
-
-            await using var command = new SqlCommand(query);
-            await using var connection = new SqlConnection(ConnectionString);
-            command.Connection = connection;
-            await connection.OpenAsync();
-
-            return Convert.ToInt32(await command.ExecuteScalarAsync());
-        }
-
         public override async Task<DataTable> GetTableStructureDetailAsync(string? schema, string table)
         {
             var query = @" 
