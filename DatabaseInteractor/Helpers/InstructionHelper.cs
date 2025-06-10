@@ -1,12 +1,11 @@
-﻿using System;
-using System.Net.Http;
-using System.Threading.Tasks;
+﻿using AskDB.Commons.Enums;
+using AskDB.Commons.Extensions;
 
-namespace AskDB.App.Helpers
+namespace DatabaseInteractor.Helpers
 {
     public static class InstructionHelper
     {
-        public static async Task<string> GetGitHubRawFileContentAsync(string instructionFileName)
+        public static async Task<string> GetGitHubRawFileContentAsync(string instructionFileName, DatabaseType databaseType, string language)
         {
             var url = $"https://raw.githubusercontent.com/phanxuanquang/AskDB/refs/heads/master/DatabaseInteractor/Instructions/{instructionFileName}.md";
 
@@ -15,7 +14,12 @@ namespace AskDB.App.Helpers
 
             try
             {
-                return await client.GetStringAsync(url);
+                var content = await client.GetStringAsync(url);
+
+                return content
+                    .Replace("{Language}", language)
+                    .Replace("{DateTime_Now}", DateTime.Now.ToLongDateString())
+                    .Replace("{Database_Type}", databaseType.GetDescription());
             }
             catch (HttpRequestException ex)
             {

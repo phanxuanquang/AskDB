@@ -301,9 +301,9 @@ If the user doesn’t specify a schema or the schema is unclear:
 * If multiple candidates are returned or ambiguity remains, **prompt the user to clarify** which table/schema they meant before calling this function.")]
         public abstract Task<DataTable> GetTableStructureDetailAsync(string? schema, string table);
 
-        protected List<string> SearchTablesFromCachedTableNames(string? keyword)
+        protected List<string> SearchTablesFromCachedTableNames(string keyword)
         {
-            var searcher = new SimilaritySearchHelper(CachedAllTableNames, 3);
+            var searcher = new SimilaritySearchHelper(CachedAllTableNames, 5);
             var levenshteinResults = searcher.LevenshteinSearch(keyword);
             var jaroResults = searcher.JaroWinklerSearch(keyword);
             var ngramResults = searcher.NgramSearch(keyword);
@@ -313,7 +313,7 @@ If the user doesn’t specify a schema or the schema is unclear:
             results.UnionWith(jaroResults);
             results.UnionWith(ngramResults);
 
-            return [.. results.OrderBy(r => r)];
+            return [.. results];
         }
     }
 }

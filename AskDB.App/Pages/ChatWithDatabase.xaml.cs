@@ -3,6 +3,7 @@ using AskDB.App.View_Models;
 using AskDB.Commons.Extensions;
 using CommunityToolkit.WinUI.UI.Controls;
 using DatabaseInteractor.Factories;
+using DatabaseInteractor.Helpers;
 using DatabaseInteractor.Services;
 using GeminiDotNET;
 using GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling;
@@ -48,10 +49,7 @@ namespace AskDB.App.Pages
         [FunctionDeclaration("change_the_conversation_language", "Change the conversation language for the agent. This will update the global instruction to reflect the new language setting.")]
         private void ChangeTheConversationLanguage(string language)
         {
-            _globalInstruction = _globalInstruction
-                .Replace("{Language}", language)
-                .Replace("{DateTime_Now}", DateTime.Now.ToString("HH:mm:ss, mm.MM.yyyy"))
-                .Replace("{Database_Type}", _databaseInteractor.DatabaseType.GetDescription());
+            _globalInstruction = _globalInstruction.Replace("{Language}", language);
         }
 
         [FunctionDeclaration("request_for_action_plan", @"Request an action plan based on the current situation.
@@ -320,8 +318,8 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
                 try
                 {
-                    var globalTask = InstructionHelper.GetGitHubRawFileContentAsync("Global");
-                    var actionPlanTask = InstructionHelper.GetGitHubRawFileContentAsync("Action Plan");
+                    var globalTask = InstructionHelper.GetGitHubRawFileContentAsync("Global", _databaseInteractor.DatabaseType, "English");
+                    var actionPlanTask = InstructionHelper.GetGitHubRawFileContentAsync("Action Plan", _databaseInteractor.DatabaseType, "English");
 
                     await Task.WhenAll(globalTask, actionPlanTask);
 
