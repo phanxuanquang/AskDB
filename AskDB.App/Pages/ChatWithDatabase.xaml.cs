@@ -32,7 +32,6 @@ namespace AskDB.App.Pages
     public sealed partial class ChatWithDatabase : Page
     {
         private readonly ObservableCollection<ChatMessage> Messages = [];
-        private ObservableCollection<AgentSuggestion> IntialAgentSuggestions = [];
         private ObservableCollection<AgentSuggestion> AgentSuggestions = [];
 
         private Generator _generator;
@@ -308,8 +307,6 @@ Use this function to retrieve **critical, missing context** from the internet wh
             }
 
             SetLoading(true, "Working");
-            IntialAgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(false);
-            IntialAgentSuggestions.Clear();
 
             try
             {
@@ -336,22 +333,30 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
                 try
                 {
+                    var requestForAgentSuggestions = new ApiRequestBuilder()
+                        .WithSystemInstruction(_globalInstruction)
+                        .DisableAllSafetySettings()
+                        .WithDefaultGenerationConfig()
+                        .WithPrompt($"In order to start the conversation, please introduce about yourself, such as who you are, what you can do, what you can help me, etc; and 3 best practices for me to help you to do the task effectively.")
+                        .Build();
+
+                    var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
+
                     var tableNames = await LoadTableNamesAsync();
+
+                    if (!string.IsNullOrEmpty(response.Content))
+                    {
+                        SetAgentMessage(response.Content);
+                    }
 
                     if (tableNames.Count > 0)
                     {
-                        var suggestions = await GenerateAgentSuggestionsAsync($@"Based on the list of table names provided below, generate up to 10 helpful, consice, natural-sounding suggestions from the viewpoint of the user that a user might ask to start the conversation.
+                        await LoadAgentSuggestionsAsync($@"Based on the list of table names provided below, generate 5 helpful, consice, natural-sounding suggestions from the viewpoint of the user that a user might ask to start the conversation.
 The suggestions should be phrased as questions or commands in natural language, assuming the user is not technical but wants to understand and explore the data for analysis purpose or predictional purpose.
 Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table structure, etc.
 Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, consice, specific, user-friendly, and **MUST NOT** be relavant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
 
 This is the list of first {tableNames.Count} table names in the database: {string.Join(", ", $"`{tableNames}`")}");
-
-                        foreach (var suggestion in suggestions)
-                        {
-                            IntialAgentSuggestions.Add(suggestion);
-                        }
-                        IntialAgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(true);
                     }
                 }
                 catch (Exception ex)
@@ -603,12 +608,8 @@ It **MUST** include at least:
                 SetLoading(true, "Working");
                 SetUserMessage(userInput);
 
-                IntialAgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(false);
-                IntialAgentSuggestions.Clear();
-
                 AgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(false);
                 AgentSuggestions.Clear();
-
 
                 var functionDeclarations = FunctionDeclarationHelper.FunctionDeclarations;
 
@@ -630,20 +631,13 @@ It **MUST** include at least:
 
                 if (string.IsNullOrEmpty(modelResponse.Content) && functionCalls.Count == 0)
                 {
-                    try
-                    {
-                        var failedResonse = JsonHelper.AsObject<ApiResponse>(_generator.ResponseAsRawString);
-                        var finishReason = failedResonse?.Candidates.FirstOrDefault()?.FinishReason;
-                        _generator.ResponseAsRawString.CopyToClipboard();
+                    var failedResonse = JsonHelper.AsObject<ApiResponse>(_generator.ResponseAsRawString);
+                    var finishReason = failedResonse?.Candidates.FirstOrDefault()?.FinishReason;
+                    _generator.ResponseAsRawString.CopyToClipboard();
 
-                        if (!string.IsNullOrEmpty(finishReason))
-                        {
-                            throw new InvalidOperationException($"AskDB refused to answer! The reason code name is [{finishReason.Replace('_', ' ')}](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerateContentResponse#FinishReason).", new InvalidOperationException(_generator.ResponseAsRawString));
-                        }
-                    }
-                    catch (Exception ex)
+                    if (!string.IsNullOrEmpty(finishReason))
                     {
-                        throw new InvalidOperationException($"Error while constructing the answer! {ex.Message}", ex);
+                        throw new InvalidOperationException($"AskDB refused to answer! The reason code name is [{finishReason.Replace('_', ' ')}](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerateContentResponse#FinishReason).", new InvalidOperationException(_generator.ResponseAsRawString));
                     }
                 }
 
@@ -711,14 +705,7 @@ It **MUST** include at least:
                     }
                 }
 
-                var suggestions = await GenerateAgentSuggestionsAsync("Based on the current context and the action history, please provide up to 5 **short** and **concise** suggestions as the next step in the viewpoint of the user, for the user to use as the quick reply to AskDB.");
-
-                foreach (var suggestion in suggestions)
-                {
-                    AgentSuggestions.Add(suggestion);
-                }
-
-                AgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(true);
+                await LoadAgentSuggestionsAsync("Based on the current context and the action history, please provide up to 5 **short** and **concise** suggestions as the next step in the viewpoint of the user, for the user to use as the quick reply to AskDB.");
             }
             catch (Exception ex)
             {
@@ -750,7 +737,6 @@ It **MUST** include at least:
                         var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
                         SetAgentMessage($"Let me execute the command:\n\n```sql\n{sqlQuery}\n```");
                         await _databaseInteractor.ExecuteNonQueryAsync(sqlQuery);
-                        SetAgentMessage("Command executed successfully.");
                         return FunctionCallingHelper.CreateResponse(name, $"Command executed successfully.\n\n```sql\n{sqlQuery}\n```");
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.GetTableStructureDetailAsync):
@@ -759,10 +745,6 @@ It **MUST** include at least:
                         var table = FunctionCallingHelper.GetParameterValue<string>(function, "table");
                         SetAgentMessage($"Let me check the schema information for the table `{schema}.{table}`");
                         var dataTable = await _databaseInteractor.GetTableStructureDetailAsync(schema, table);
-                        if (dataTable != null && dataTable.Rows.Count > 1)
-                        {
-                            SetAgentMessage(null, dataTable);
-                        }
                         return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.SearchTablesByNameAsync):
@@ -781,19 +763,15 @@ It **MUST** include at least:
                         if (tableNames.Count > 0)
                         {
                             var tableNamesInMarkdown = string.Join(", ", tableNames.Select(x => $"`{x}`"));
-                            SetAgentMessage($"{tableNames.Count} tables found: {tableNamesInMarkdown}");
                             return FunctionCallingHelper.CreateResponse(name, tableNamesInMarkdown);
                         }
 
-                        SetAgentMessage("I found no tables.");
                         return FunctionCallingHelper.CreateResponse(name, "No tables found. Try another approach!");
-
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.GetUserPermissionsAsync):
                     {
                         var permissions = await _databaseInteractor.GetUserPermissionsAsync();
                         var permissionsInMarkdown = string.Join(", ", permissions.Select(x => $"`{x}`"));
-                        SetAgentMessage($"{permissions.Count} permissions found:\n\n{permissionsInMarkdown}");
                         return FunctionCallingHelper.CreateResponse(name, permissionsInMarkdown);
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(RequestForActionPlanAsync):
@@ -819,60 +797,6 @@ It **MUST** include at least:
                     }
                 default: throw new NotImplementedException($"Function '{function.Name}' is not implemented.");
             }
-        }
-
-        private async Task<List<AgentSuggestion>> GenerateAgentSuggestionsAsync(string prompt)
-        {
-            var results = new List<AgentSuggestion>();
-            try
-            {
-                var requestForAgentSuggestions = new ApiRequestBuilder()
-                   .WithSystemInstruction(_globalInstruction)
-                   .DisableAllSafetySettings()
-                   .WithDefaultGenerationConfig()
-                   .WithResponseSchema(new
-                   {
-                       type = "object",
-                       properties = new
-                       {
-                           UserResponseSuggestions = new
-                           {
-                               type = "array",
-                               items = new
-                               {
-                                   type = "string"
-                               }
-                           }
-                       },
-                       required = new[] { "UserResponseSuggestions" }
-                   })
-                   .WithPrompt(prompt)
-                   .Build();
-
-                var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
-
-                if (string.IsNullOrEmpty(response.Content))
-                {
-                    return results;
-                }
-
-                var agentResponse = JsonHelper.AsObject<AgentResponse>(response.Content);
-
-                if (agentResponse?.UserResponseSuggestions != null && agentResponse.UserResponseSuggestions.Count > 0)
-                {
-                    results.AddRange(agentResponse.UserResponseSuggestions.Select(suggestion => new AgentSuggestion
-                    {
-                        UserResponseSuggestion = suggestion
-                    }));
-                }
-            }
-            catch (Exception ex)
-            {
-                ex.CopyToClipboard();
-                await ShowInforBarAsync($"Cannot load suggestions: {ex.Message}", false);
-            }
-
-            return results;
         }
 
         private async void CopyButton_Click(object sender, RoutedEventArgs e)
@@ -923,6 +847,66 @@ It **MUST** include at least:
             }
 
             return [];
+        }
+
+        private async Task LoadAgentSuggestionsAsync(string prompt)
+        {
+            if (AgentSuggestions.Count > 0) AgentSuggestions.Clear();
+
+            try
+            {
+                var requestForAgentSuggestions = new ApiRequestBuilder()
+                   .WithSystemInstruction(_globalInstruction)
+                   .DisableAllSafetySettings()
+                   .WithDefaultGenerationConfig()
+                   .WithResponseSchema(new
+                   {
+                       type = "object",
+                       properties = new
+                       {
+                           UserResponseSuggestions = new
+                           {
+                               type = "array",
+                               items = new
+                               {
+                                   type = "string"
+                               }
+                           }
+                       },
+                       required = new[] { "UserResponseSuggestions" }
+                   })
+                   .WithPrompt(prompt)
+                   .Build();
+
+                var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
+
+                if (string.IsNullOrEmpty(response.Content))
+                {
+                    return;
+                }
+
+                var agentResponse = JsonHelper.AsObject<AgentResponse>(response.Content);
+
+                if (agentResponse?.UserResponseSuggestions != null && agentResponse.UserResponseSuggestions.Count > 0)
+                {
+                    var suggestions = agentResponse.UserResponseSuggestions.Select(suggestion => new AgentSuggestion
+                    {
+                        UserResponseSuggestion = suggestion
+                    });
+
+                    foreach (var suggestion in suggestions)
+                    {
+                        AgentSuggestions.Add(suggestion);
+                    }
+
+                    AgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(true);
+                }
+            }
+            catch (Exception ex)
+            {
+                ex.CopyToClipboard();
+                await ShowInforBarAsync($"Cannot load suggestions: {ex.Message}", false);
+            }
         }
     }
 }

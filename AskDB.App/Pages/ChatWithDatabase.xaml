@@ -99,33 +99,6 @@
             <InfoBar Grid.Row="0" x:Name="MessageInfoBar" Title="Copied" IsOpen="False" Severity="Success" HorizontalAlignment="Right" VerticalAlignment="Top" IsClosable="False"/>
 
             <ItemsView 
-                x:Name="IntialAgentSuggestionsItemView"
-                Grid.Row="0" 
-                Padding="12,0" 
-                SelectionMode="None" 
-                ItemsSource="{x:Bind IntialAgentSuggestions, Mode=OneWay}" 
-                MaxWidth="1280" 
-                IsItemInvokedEnabled="True" 
-                VerticalAlignment="Center"
-                ItemInvoked="SuggestionItemView_ItemInvoked">
-                <ItemsView.Layout>
-                    <UniformGridLayout MinColumnSpacing="16" MinRowSpacing="16" ItemsJustification="Center" MaximumRowsOrColumns="5"/>
-                </ItemsView.Layout>
-                <ItemsView.ItemTemplate>
-                    <DataTemplate x:DataType="view_models:AgentSuggestion">
-                        <ItemContainer >
-                            <Grid 
-                                Padding="24" 
-                                ToolTipService.ToolTip="{x:Bind UserResponseSuggestion, Mode=OneWay}" 
-                                Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
-                                CornerRadius="{StaticResource OverlayCornerRadius}">
-                                <TextBlock Text="{x:Bind UserResponseSuggestion, Mode=OneWay}" TextWrapping="WrapWholeWords" HorizontalAlignment="Center"/>
-                            </Grid>
-                        </ItemContainer>
-                    </DataTemplate>
-                </ItemsView.ItemTemplate>
-            </ItemsView>
-            <ItemsView 
                 x:Name="AgentSuggestionsItemView"
                 Grid.Row="1" 
                 SelectionMode="None" 
