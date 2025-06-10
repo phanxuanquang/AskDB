@@ -60,10 +60,22 @@ namespace DatabaseInteractor.Services
             return data.ToListString();
         }
 
-        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword, int maxResult = 20000)
+        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword, int? maxResult = 20000)
         {
+            if (CachedAllTableNames.Count != 0)
+            {
+                if (string.IsNullOrEmpty(keyword))
+                {
+                    return [.. CachedAllTableNames];
+                }
+                else
+                {
+                    return SearchTablesFromCachedTableNames(keyword);
+                }
+            }
+
             var query = @$"
-                SELECT TOP {maxResult} '[' + table_schema + '].[' + table_name + ']' as TableFullName
+                SELECT {(maxResult.HasValue ? $"TOP {maxResult}" : string.Empty)} '[' + table_schema + '].[' + table_name + ']' as TableFullName
                 FROM information_schema.tables 
                 WHERE table_type = 'BASE TABLE' AND TABLE_SCHEMA NOT IN ({string.Join(',', $"'{_systemSchemas}'")}) AND table_name LIKE @keyword;";
 
@@ -71,9 +83,7 @@ namespace DatabaseInteractor.Services
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
 
             var data = await ExecuteQueryAsync(command);
-            var tableNames = data.ToListString();
-
-            return tableNames;
+            return data.ToListString();
         }
     }
 }

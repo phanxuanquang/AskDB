@@ -75,8 +75,20 @@ namespace DatabaseInteractor.Services
             return data.ToListString();
         }
 
-        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword, int maxResult = 20000)
+        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword, int? maxResult = 20000)
         {
+            if (CachedAllTableNames.Count != 0)
+            {
+                if (string.IsNullOrEmpty(keyword))
+                {
+                    return [.. CachedAllTableNames];
+                }
+                else
+                {
+                    return SearchTablesFromCachedTableNames(keyword);
+                }
+            }
+
             var query = @$"
                 SELECT 
                     quote_ident(table_schema) || '.' || quote_ident(table_name) AS full_table_name
@@ -88,7 +100,7 @@ namespace DatabaseInteractor.Services
                     AND table_name ILIKE @keyword
                 ORDER BY 
                     table_schema, table_name
-                LIMIT {maxResult};";
+                {(maxResult.HasValue ? $"LIMIT {maxResult}" : string.Empty)}";
 
             await using var command = new NpgsqlCommand(query);
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");

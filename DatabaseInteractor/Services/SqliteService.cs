@@ -30,9 +30,21 @@ namespace DatabaseInteractor.Services
             ]);
         }
 
-        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword, int maxResult = 20000)
+        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword, int? maxResult = 20000)
         {
-            await using var command = new SqliteCommand($"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE @keyword LIMIT {maxResult}");
+            if (CachedAllTableNames.Count != 0)
+            {
+                if (string.IsNullOrEmpty(keyword))
+                {
+                    return [.. CachedAllTableNames];
+                }
+                else
+                {
+                    return SearchTablesFromCachedTableNames(keyword);
+                }
+            }
+
+            await using var command = new SqliteCommand($"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE @keyword {(maxResult.HasValue ? $"LIMIT {maxResult}" : string.Empty)}");
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
 
             var data = await ExecuteQueryAsync(command);

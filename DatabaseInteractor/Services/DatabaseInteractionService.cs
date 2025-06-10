@@ -1,5 +1,6 @@
 ﻿using AskDB.Commons.Enums;
 using DatabaseInteractor.Factories;
+using DatabaseInteractor.Helpers;
 using GeminiDotNET.FunctionCallings.Attributes;
 using System.Data;
 using System.Data.Common;
@@ -8,7 +9,7 @@ namespace DatabaseInteractor.Services
 {
     public abstract class DatabaseInteractionService(string connectionString)
     {
-        public static HashSet<string> CachedTableNames { get; protected set; } = [];
+        public HashSet<string> CachedAllTableNames { get; set; } = [];
 
         public DatabaseType DatabaseType { get; protected set; }
         public string ConnectionString { get; } = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
@@ -171,16 +172,14 @@ This information can be crucial for:
 - Informing the user about their current capabilities within the database if they inquire or if it's relevant to a problem.")]
         public abstract Task<List<string>> GetUserPermissionsAsync();
 
-        [FunctionDeclaration("search_tables_by_name", @"Search for tables in the current database by name.
-Returns a list of table names along with their associated schema names (if any).
-
-You can provide a **keyword** (partial or full table name) to filter the results. If the keyword is an **empty string**, the function will return **all available tables** in the current database.
+        [FunctionDeclaration("search_tables_by_name", @"Search for tables that may be relevant to the provided keyword by using approximate string matching algorithms (including Levenshtein Distance, Jaro-Winkler Similarity, and N-gram).
+If the keyword is an **empty string**, it will return **all available tables** in the current database, otherwise it will return a list of table names (that have the highest similarity with the entered keyword), along with their associated schema names (if applicable).
 
 ---
 
 ### **Returned information includes:**
 
-* Table name (exact match or partial match depending on keyword).
+* Table name (has highest similarity with the entered keyword).
 * Table's associated schema name (if applicable).
 
 ---
@@ -234,7 +233,7 @@ This function is **CRITICAL** in the following use cases:
   * The user **misspells** or **partially writes** a table name.
   * You are about to call `get_table_structure` or generate SQL for a table, but schema/table name **ambiguity exists**.
 * If this function returns **multiple matches**, prompt the user to select or confirm the correct table before continuing.")]
-        public abstract Task<List<string>> SearchTablesByNameAsync(string? keyword, int maxResult = 20000);
+        public abstract Task<List<string>> SearchTablesByNameAsync(string? keyword, int? maxResult = 20000);
 
         [FunctionDeclaration("get_table_structure", @"Retrieve detailed schema-level metadata of a specific database table, including column names, data types, nullability, constraints, foreign keys, and references.
 
@@ -302,11 +301,19 @@ If the user doesn’t specify a schema or the schema is unclear:
 * If multiple candidates are returned or ambiguity remains, **prompt the user to clarify** which table/schema they meant before calling this function.")]
         public abstract Task<DataTable> GetTableStructureDetailAsync(string? schema, string table);
 
-        protected static List<string> FindCachedTableNames(string? keyword)
+        protected List<string> SearchTablesFromCachedTableNames(string? keyword)
         {
-            return string.IsNullOrEmpty(keyword)
-                ? [.. CachedTableNames]
-                : [.. CachedTableNames.Where(name => name.Contains(keyword, StringComparison.OrdinalIgnoreCase))];
+            var searcher = new SimilaritySearchHelper(CachedAllTableNames, 3);
+            var levenshteinResults = searcher.LevenshteinSearch(keyword);
+            var jaroResults = searcher.JaroWinklerSearch(keyword);
+            var ngramResults = searcher.NgramSearch(keyword);
+
+            var results = new HashSet<string>();
+            results.UnionWith(levenshteinResults);
+            results.UnionWith(jaroResults);
+            results.UnionWith(ngramResults);
+
+            return [.. results.OrderBy(r => r)];
         }
     }
 }

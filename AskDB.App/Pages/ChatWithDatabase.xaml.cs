@@ -338,23 +338,27 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
                 try
                 {
-                    var tableNames = await _databaseInteractor.SearchTablesByNameAsync(string.Empty, 200);
-                    var suggestions = await GenerateAgentSuggestionsAsync($@"Based on the list of table names provided below, generate up to 10 helpful, consice, natural-sounding suggestions from the viewpoint of the user that a user might ask to start the conversation.
+                    var tableNames = await LoadTableNamesAsync();
+
+                    if (tableNames.Count > 0)
+                    {
+                        var suggestions = await GenerateAgentSuggestionsAsync($@"Based on the list of table names provided below, generate up to 10 helpful, consice, natural-sounding suggestions from the viewpoint of the user that a user might ask to start the conversation.
 The suggestions should be phrased as questions or commands in natural language, assuming the user is not technical but wants to understand and explore the data for analysis purpose or predictional purpose.
 Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table structure, etc.
 Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, consice, specific, user-friendly, and **MUST NOT** be relavant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
 
 This is the list of first {tableNames.Count} table names in the database: {string.Join(", ", $"`{tableNames}`")}");
 
-                    foreach (var suggestion in suggestions)
-                    {
-                        IntialAgentSuggestions.Add(suggestion);
+                        foreach (var suggestion in suggestions)
+                        {
+                            IntialAgentSuggestions.Add(suggestion);
+                        }
+                        IntialAgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(true);
                     }
-                    IntialAgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(true);
                 }
                 catch (Exception ex)
                 {
-                    throw new InvalidOperationException($"Cannot load LLM engine for AskDB: {ex.Message}", ex);
+                    throw new InvalidOperationException($"Cannot load table names. {ex.Message}", ex);
                 }
             }
             catch (Exception ex)
@@ -897,6 +901,30 @@ It **MUST** include at least:
             MessageInfoBar.Severity = isSuccess ? InfoBarSeverity.Success : InfoBarSeverity.Error;
             await Task.Delay(750);
             MessageInfoBar.IsOpen = false;
+        }
+
+        private async Task<List<string>> LoadTableNamesAsync()
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Request to read your table names",
+                Content = "AskDB would like permission to read the list of table names in your database. This helps AskDB to better understand your data structure and provide more accurate, helpful actions during your requests.\n\nYour data stays safe, only table names are read.",
+                PrimaryButtonText = "Allow",
+                SecondaryButtonText = "Skip",
+                XamlRoot = App.Window.Content.XamlRoot,
+                DefaultButton = ContentDialogButton.Primary
+            };
+
+            var result = await dialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+            {
+                var tableNames = await _databaseInteractor.SearchTablesByNameAsync(string.Empty, null);
+                _databaseInteractor.CachedAllTableNames.UnionWith(tableNames);
+                return tableNames;
+            }
+
+            return [];
         }
     }
 }

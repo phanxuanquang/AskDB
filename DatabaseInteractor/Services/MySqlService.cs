@@ -57,9 +57,21 @@ namespace DatabaseInteractor.Services
             return data.ToListString();
         }
 
-        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword, int maxResult = 20000)
+        public override async Task<List<string>> SearchTablesByNameAsync(string? keyword, int? maxResult = 20000)
         {
-            var query = $@"SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE' AND table_name LIKE CONCAT('%', @keyword, '%') LIMIT {maxResult};";
+            if (CachedAllTableNames.Count != 0)
+            {
+                if (string.IsNullOrEmpty(keyword))
+                {
+                    return [.. CachedAllTableNames];
+                }
+                else
+                {
+                    return SearchTablesFromCachedTableNames(keyword);
+                }
+            }
+
+            var query = $"SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE' AND table_name LIKE CONCAT('%', @keyword, '%') {(maxResult.HasValue ? $"LIMIT {maxResult}" : string.Empty)}";
 
             using var command = new MySqlCommand(query);
             command.Parameters.AddWithValue("@keyword", keyword);
