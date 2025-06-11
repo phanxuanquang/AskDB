@@ -18,7 +18,7 @@ namespace DatabaseInteractor.Services
             {
                 throw new ArgumentException("Table name cannot be null or empty.", nameof(table));
             }
-            var query = $"PRAGMA table_info({table})";
+            var query = $"PRAGMA table_info(\"{table}\")";
             return await ExecuteQueryAsync(query);
         }
 

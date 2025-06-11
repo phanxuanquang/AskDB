@@ -315,8 +315,8 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
                 try
                 {
-                    var globalTask = InstructionHelper.GetGitHubRawFileContentAsync("Global", _databaseInteractor.DatabaseType, "English");
-                    var actionPlanTask = InstructionHelper.GetGitHubRawFileContentAsync("Action Plan", _databaseInteractor.DatabaseType, "English");
+                    var globalTask = OnlineContentHelper.GetSytemInstructionContentAsync("Global", _databaseInteractor.DatabaseType, "English");
+                    var actionPlanTask = OnlineContentHelper.GetSytemInstructionContentAsync("Action Plan", _databaseInteractor.DatabaseType, "English");
 
                     await Task.WhenAll(globalTask, actionPlanTask);
 
@@ -764,7 +764,7 @@ It **MUST** include at least:
                             var dataTable = await _databaseInteractor.GetTableStructureDetailAsync(schema, table);
                             return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
                         }
-                        catch(Exception ex)
+                        catch (Exception ex)
                         {
                             return FunctionCallingHelper.CreateResponse(name, $"The table does not exist or error while retrieving the table structure.\n\n```console\n{ex.Message}\n```\n\nPlease try searching for the table first by using the `{FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.SearchTablesByNameAsync)} function`.");
                         }
@@ -939,7 +939,7 @@ It **MUST** include at least:
             }
 
             var result = await DialogHelper.ShowDialogWithOptions("Reset the conversation", "This action will clear our conversation. Are you sure to proceed?", "Yes");
-            if(result == ContentDialogResult.Primary)
+            if (result == ContentDialogResult.Primary)
             {
                 _generator = new Generator(Cache.ApiKey).EnableChatHistory(200);
                 Messages.Clear();

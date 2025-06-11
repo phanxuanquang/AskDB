@@ -10,6 +10,8 @@ namespace DatabaseInteractor.Services
     public abstract class DatabaseInteractionService(string connectionString)
     {
         public HashSet<string> CachedAllTableNames { get; set; } = [];
+        protected string SearchTablesByNameQueryTemplate { get; set; }
+        protected string GetTableStructureDetailQueryTemplate { get; set; }
 
         public DatabaseType DatabaseType { get; protected set; }
         public string ConnectionString { get; } = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
@@ -315,5 +317,16 @@ If the user doesn’t specify a schema or the schema is unclear:
 
             return [.. results];
         }
+
+        public async Task InitQueryTemplatesAsync()
+        {
+            var searchTablesTask = OnlineContentHelper.GeSqlContentAsync(DatabaseType, nameof(SearchTablesByNameAsync));
+            var getTableStructureTask = OnlineContentHelper.GeSqlContentAsync(DatabaseType, nameof(GetTableStructureDetailAsync));
+
+            await Task.WhenAll(searchTablesTask, getTableStructureTask);
+
+            SearchTablesByNameQueryTemplate = searchTablesTask.Result;
+            GetTableStructureDetailQueryTemplate = getTableStructureTask.Result;
+        }    
     }
 }
