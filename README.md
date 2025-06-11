@@ -1,6 +1,6 @@
 # © 2024 Phan Xuan Quang / AskDB
 
-![SplashScreen scale-200](https://i.imgur.com/kO68bFg.png)
+[![SplashScreen scale-200](https://i.imgur.com/kO68bFg.png)](https://apps.microsoft.com/detail/9p1mcx47432z)
 
 *   What if you're a person who need to do ad-hoc data queries but are not technical enough to write SQL queries?
 *   What if you could simply ask your database questions in plain language and get instant answers?
