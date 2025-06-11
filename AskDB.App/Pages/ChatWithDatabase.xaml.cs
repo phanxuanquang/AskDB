@@ -751,7 +751,7 @@ It **MUST** include at least:
                         catch (Exception ex)
                         {
                             SetAgentMessage($"Error while executing your query.\n\n```console\n{ex.Message}\n```");
-                            return FunctionCallingHelper.CreateResponse(name, $"Error while executing your {_databaseInteractor.DatabaseType.GetDescription()} query.\n\n```console\n{ex.Message}\n```\n\nMake sure that you understand the SQL query clearly before executing it!");
+                            return FunctionCallingHelper.CreateResponse(name, $"Error while executing your {_databaseInteractor.DatabaseType.GetDescription()} query.\n\n```console\n{ex.Message}\n```\n\nMake sure that you understand the SQL query clearly before executing it! If the SQL query is too complex, try to break it down first, follow the *KISS (Keep It Simple, Stupid)* principles");
                         }
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.ExecuteNonQueryAsync):
@@ -766,7 +766,7 @@ It **MUST** include at least:
                         catch (Exception ex)
                         {
                             SetAgentMessage($"Error while executing your SQL command.\n\n```console\n{ex.Message}\n```");
-                            return FunctionCallingHelper.CreateResponse(name, $"Error while executing your {_databaseInteractor.DatabaseType.GetDescription()} command.\n\n```console\n{ex.Message}\n```\n\nMeke sure that you understand the SQL command clearly before executing it!");
+                            return FunctionCallingHelper.CreateResponse(name, $"Error while executing your {_databaseInteractor.DatabaseType.GetDescription()} command.\n\n```console\n{ex.Message}\n```\n\nMake sure that you understand the SQL command clearly before executing it! If the SQL command is too complex, try to break it down first, follow the *KISS (Keep It Simple, Stupid)* principles.");
                         }
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.GetTableStructureDetailAsync):
