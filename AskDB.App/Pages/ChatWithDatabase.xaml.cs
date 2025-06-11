@@ -638,14 +638,16 @@ It **MUST** include at least:
 
                     if (!string.IsNullOrEmpty(finishReason))
                     {
-                        throw new InvalidOperationException($"AskDB refused to answer! The reason code name is [{finishReason.Replace('_', ' ')}](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerateContentResponse#FinishReason).", new InvalidOperationException(_generator.ResponseAsRawString));
+                        SetAgentMessage($"AskDB refused to answer! The reason code name is [{finishReason.Replace('_', ' ')}](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerateContentResponse#FinishReason).");
                     }
                 }
 
-                while (functionCalls.Count > 0)
+                var loopAttempt = 0;
+                while (functionCalls.Count > 0 && loopAttempt <= 10)
                 {
+                    loopAttempt++;
                     await Task.Delay(2345);
-
+                    
                     try
                     {
                         var functionResponses = new List<FunctionResponse>();
@@ -706,13 +708,20 @@ It **MUST** include at least:
                     }
                 }
 
-                await LoadAgentSuggestionsAsync("Based on the current context and the action history, please provide up to 5 **short** and **concise** suggestions as the next step in the viewpoint of the user, for the user to use as the quick reply to AskDB.");
+                if (loopAttempt < 10)
+                {
+                    await LoadAgentSuggestionsAsync("Based on the current context, please provide up to 5 **short** and **concise** suggestions as the next step in my viewpoint, for me to use as the quick reply in order to continue the task.");
+                }
+                else
+                {
+                    await LoadAgentSuggestionsAsync("You have tried with 10 actions but cannot satisfy the task, please provide up to 5 **short** and **concise** suggestions as the next step in my viewpoint, for me to use as the quick reply in order to continue the task.");
+                }
             }
             catch (Exception ex)
             {
                 ex.CopyToClipboard();
                 SetAgentMessage($"**Error:** {ex.Message}. {ex.InnerException?.Message}.\n\nThe reason detail has been copied to your clipboard.");
-            }
+            }                                                                                                                                                                                        
             finally
             {
                 SetLoading(false);
@@ -742,7 +751,7 @@ It **MUST** include at least:
                         catch (Exception ex)
                         {
                             SetAgentMessage($"Error while executing your query.\n\n```console\n{ex.Message}\n```");
-                            return FunctionCallingHelper.CreateResponse(name, $"Error while executing your {_databaseInteractor.DatabaseType.GetDescription()} query.\n\n```console\n{ex.Message}\n```\n\nTry to break-down your SQL query and make sure that you understand it clearly before executing!");
+                            return FunctionCallingHelper.CreateResponse(name, $"Error while executing your {_databaseInteractor.DatabaseType.GetDescription()} query.\n\n```console\n{ex.Message}\n```\n\nMake sure that you understand the SQL query clearly before executing it!");
                         }
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.ExecuteNonQueryAsync):
@@ -757,7 +766,7 @@ It **MUST** include at least:
                         catch (Exception ex)
                         {
                             SetAgentMessage($"Error while executing your SQL command.\n\n```console\n{ex.Message}\n```");
-                            return FunctionCallingHelper.CreateResponse(name, $"Error while executing your {_databaseInteractor.DatabaseType.GetDescription()} command.\n\n```console\n{ex.Message}\n```\n\nTry to break-down your SQL command and make sure that you understand it clearly before executing!");
+                            return FunctionCallingHelper.CreateResponse(name, $"Error while executing your {_databaseInteractor.DatabaseType.GetDescription()} command.\n\n```console\n{ex.Message}\n```\n\nMeke sure that you understand the SQL command clearly before executing it!");
                         }
                     }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.GetTableStructureDetailAsync):
@@ -769,8 +778,16 @@ It **MUST** include at least:
                         try
                         {
                             var dataTable = await _databaseInteractor.GetTableStructureDetailAsync(schema, table);
-                            SetAgentMessage(null, dataTable);
-                            return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
+
+                            if (dataTable != null && dataTable.Rows.Count > 1)
+                            {
+                                SetAgentMessage(null, dataTable);
+                                return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
+                            }
+                            else
+                            {
+                                return FunctionCallingHelper.CreateResponse(name, "Invalid table or table not found.");
+                            }
                         }
                         catch (Exception ex)
                         {

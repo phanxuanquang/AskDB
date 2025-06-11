@@ -20,7 +20,7 @@
     </Page.Resources>
 
     <Grid>
-        <Grid RowSpacing="6" x:Name="MessageSpace">
+        <Grid RowSpacing="6" x:Name="MessageSpace" Padding="12">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
