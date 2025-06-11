@@ -148,7 +148,7 @@ Use this function when you:
                     .WithPrompt("I have some blocking points here and need you to make an action plan to overcome. Now think deeply step-by-step about the current situation, then provide a clear and detailed action plan.")
                     .Build();
 
-                var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, Cache.ReasoningModelAlias);
+                var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, ModelVersion.Gemini_20_Flash);
 
                 return actionPlanResponse.Content;
             }
@@ -317,8 +317,9 @@ Use this function to retrieve **critical, missing context** from the internet wh
                 {
                     var globalTask = OnlineContentHelper.GetSytemInstructionContentAsync("Global", _databaseInteractor.DatabaseType, "English");
                     var actionPlanTask = OnlineContentHelper.GetSytemInstructionContentAsync("Action Plan", _databaseInteractor.DatabaseType, "English");
+                    var initQueryTemplatesTask = _databaseInteractor.InitQueryTemplatesAsync();
 
-                    await Task.WhenAll(globalTask, actionPlanTask);
+                    await Task.WhenAll(globalTask, actionPlanTask, initQueryTemplatesTask);
 
                     _globalInstruction = globalTask.Result;
                     _actionPlanInstruction = actionPlanTask.Result;
@@ -576,7 +577,7 @@ It **MUST** include at least:
                     keyword = new
                     {
                         type = "string",
-                        description = "A keyword to filter the table names. For example, `user` might return `Users`, `UserAccounts`. If an empty string is provided, all accessible table names with their associated schema are returned. The search is typically case-insensitive and looks for the keyword within the table names."
+                        description = "A keyword to filter the table names. If an empty string is provided, all accessible table names with their associated schema are returned."
                     }
                 },
                 Required = ["keyword"]
@@ -588,15 +589,15 @@ It **MUST** include at least:
                     schema = new
                     {
                         type = "string",
-                        description = "The name of the schema containing the table. This is often case-sensitive depending on the database. If not explicitly provided by the user or clear from context, attempt to use the database's default schema (e.g., 'dbo' for SQL Server, 'public' for PostgreSQL). If still uncertain, clarify with the user or use 'SearchSchemasByNameAsync' to find possible schemas."
+                        description = "The name of the schema containing the table. This is often case-sensitive depending on the database. **Be noted** that schema parameter is *only* supported for SQL Server and PostgreSQL database, otherwise, leave it empty or null value. In addition, if the schema name is not explicitly provided by the user or clear from context, just ignore it. "
                     },
                     table = new
                     {
                         type = "string",
-                        description = "The name of the table for which to retrieve detailed schema information. This is often case-sensitive depending on the database."
+                        description = "The exact name of the table for which to retrieve detailed schema information. This is often case-sensitive depending on the database."
                     }
                 },
-                Required = ["schema", "table"]
+                Required = ["table"]
             });
         }
         #endregion
@@ -731,8 +732,12 @@ It **MUST** include at least:
                             if (dataTable != null && dataTable.Rows.Count > 1)
                             {
                                 SetAgentMessage(null, dataTable);
+                                return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
                             }
-                            return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
+                            else
+                            {
+                                return FunctionCallingHelper.CreateResponse(name, "No data found for the query.");
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -762,6 +767,7 @@ It **MUST** include at least:
                         try
                         {
                             var dataTable = await _databaseInteractor.GetTableStructureDetailAsync(schema, table);
+                            SetAgentMessage(null, dataTable);
                             return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
                         }
                         catch (Exception ex)

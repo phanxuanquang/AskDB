@@ -8,14 +8,10 @@ namespace DatabaseInteractor.Helpers
         private const string UrlPrefix = "https://raw.githubusercontent.com/phanxuanquang/AskDB/refs/heads/master/DatabaseInteractor";
         public static async Task<string> GetSytemInstructionContentAsync(string instructionFileName, DatabaseType databaseType, string language)
         {
-            var url = $"{UrlPrefix}/Instructions/{instructionFileName}.md";
-
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0");
-
             try
             {
-                var content = await client.GetStringAsync(url);
+                var url = $"{UrlPrefix}/Instructions/{instructionFileName}.md";
+                var content = await GetContentFromUrlAsync(url);
 
                 return content
                     .Replace("{Language}", language)
@@ -30,19 +26,23 @@ namespace DatabaseInteractor.Helpers
 
         public static async Task<string> GeSqlContentAsync(DatabaseType databaseType, string methodName)
         {
-            var url = $"{UrlPrefix}/SQL Queries/{methodName}/{databaseType.GetDescription}.sql";
-
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0");
-
             try
             {
-                return await client.GetStringAsync(url);
+                var database = databaseType.GetDescription();
+                var url = $"{UrlPrefix}/SQL Queries/{methodName}/{database}.sql";
+                return await GetContentFromUrlAsync(url);
             }
             catch (HttpRequestException ex)
             {
                 throw new InvalidOperationException("Failed to fetch content from GitHub.", ex);
             }
+        }
+
+        private static async Task<string> GetContentFromUrlAsync(string url)
+        {
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0");
+            return await client.GetStringAsync(new Uri(url));
         }
     }
 }

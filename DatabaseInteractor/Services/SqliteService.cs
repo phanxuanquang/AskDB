@@ -18,7 +18,7 @@ namespace DatabaseInteractor.Services
             {
                 throw new ArgumentException("Table name cannot be null or empty.", nameof(table));
             }
-            var query = $"PRAGMA table_info(\"{table}\")";
+            var query = GetTableStructureDetailQueryTemplate.Replace("{TableName}", table);
             return await ExecuteQueryAsync(query);
         }
 
@@ -44,7 +44,9 @@ namespace DatabaseInteractor.Services
                 }
             }
 
-            await using var command = new SqliteCommand($"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE @keyword {(maxResult.HasValue ? $"LIMIT {maxResult}" : string.Empty)}");
+            var query = SearchTablesByNameQueryTemplate.Replace("{MaxResultParam}", maxResult.HasValue ? $"LIMIT {maxResult.Value}" : string.Empty);
+
+            await using var command = new SqliteCommand(query);
             command.Parameters.AddWithValue("@keyword", $"%{keyword}%");
 
             var data = await ExecuteQueryAsync(command);
