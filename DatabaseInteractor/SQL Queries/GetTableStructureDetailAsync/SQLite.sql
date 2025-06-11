@@ -2,7 +2,6 @@ SELECT
   name as ColumnName, 
   type as DataType, 
   pk as IsPrimaryKey,
-  `notnull` as IsNullable, 
-  dflt_value as DefaultValue
+  `notnull` as IsNullable
 FROM 
   pragma_table_info('{TableName}');
