@@ -149,5 +149,10 @@ namespace AskDB.App
                 }
             }
         }
+
+        private void SendFeedbackButton_Click(object sender, RoutedEventArgs e)
+        {
+            LicenseHelper.SendFeedbackAsyn();
+        }
     }
 }

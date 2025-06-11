@@ -44,9 +44,9 @@
                 </AppBarButton.Icon>
             </AppBarButton>
             <CommandBar.SecondaryCommands>
-                <AppBarButton Label="Check for update" Click="CheckUpdateButton_Click">
+                <AppBarButton Label="Send your feedback" Click="SendFeedbackButton_Click">
                     <AppBarButton.Icon>
-                        <FontIcon Glyph="&#xECC5;" />
+                        <FontIcon Glyph="&#xED15;" />
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarButton Label="About the developer" Click="GithubProfileButton_Click">
