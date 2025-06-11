@@ -741,6 +741,7 @@ It **MUST** include at least:
                         }
                         catch (Exception ex)
                         {
+                            SetAgentMessage($"Error while executing your query.\n\n```console\n{ex.Message}\n```");
                             return FunctionCallingHelper.CreateResponse(name, $"Error while executing your {_databaseInteractor.DatabaseType.GetDescription()} query.\n\n```console\n{ex.Message}\n```\n\nTry to break-down your SQL query and make sure that you understand it clearly before executing!");
                         }
                     }
@@ -755,6 +756,7 @@ It **MUST** include at least:
                         }
                         catch (Exception ex)
                         {
+                            SetAgentMessage($"Error while executing your SQL command.\n\n```console\n{ex.Message}\n```");
                             return FunctionCallingHelper.CreateResponse(name, $"Error while executing your {_databaseInteractor.DatabaseType.GetDescription()} command.\n\n```console\n{ex.Message}\n```\n\nTry to break-down your SQL command and make sure that you understand it clearly before executing!");
                         }
                     }
@@ -772,6 +774,8 @@ It **MUST** include at least:
                         }
                         catch (Exception ex)
                         {
+                            ex.CopyToClipboard();
+                            SetAgentMessage($"Error while getting table structure.\n\n```console\n{ex.Message}\n```");
                             return FunctionCallingHelper.CreateResponse(name, $"The table does not exist or error while retrieving the table structure.\n\n```console\n{ex.Message}\n```\n\nPlease try searching for the table first by using the `{FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.SearchTablesByNameAsync)} function`.");
                         }
                     }
