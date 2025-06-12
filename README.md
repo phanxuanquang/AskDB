@@ -71,7 +71,10 @@ Advanced safety protocols, including a **Confirmation Gauntlet** for critical op
 ---
 
 ## :blue_book: Installation
+### Official Version
+- [Microsoft Store](https://apps.microsoft.com/store/detail/9P1MCX47432Z?cid=DevShareMCLPCS)
 
+### Portable Version
 - Step 1: Download and extract the **AskDB.zip** from [**THIS**](https://github.com/phanxuanquang/AskDB/releases/latest) release.
 - Step 2: Run the **AskDB.exe** file (skip the **Unknown Published** warning from Windows if any).
 - Step 3: Follow the instruction to get started.
@@ -84,7 +87,9 @@ Your data's security is the top priority:
 *   **You control your credentials.** All credentials are stored securely in encrypted files on your local machine while ensure no other third-party services can decrypt them.
 *   **Clear and controlled actions.** You're always informed, and critical operations need your approval.
 
-AskDB utilizes the Google Gemini as the core AI engine. The user should read and understand the [Gemini API Additional Terms of Service](https://ai.google.dev/gemini-api/terms) before using AskDB.
+Currently, AskDB utilizes the Google Gemini as the core AI engine. The user should read and understand the [Gemini API Additional Terms of Service](https://ai.google.dev/gemini-api/terms) before using AskDB.
+
+---
 
 ## :open_hands: Contribution
 I welcome contributions and encourage you to help this project better and better. If you encounter any issues or have suggestions for improvements, please open an issue in the [Issues](https://github.com/phanxuanquang/AskDB/issues) section of the repository.
@@ -101,14 +106,10 @@ This project is protected by a **Strict Non-Commercial License**.
   
 For full terms, see [LICENSE](./LICENSE).
 
-## :gift: Support Me
+---
 
-<a href="https://i.imgur.com/9YpRPQs.jpeg" target="_blank">
-  <img src="https://i.imgur.com/IUK9CFo.png" height=72 alt="Vietcombank" />
-</a>
-<a href="https://me.momo.vn/phanxuanquang" target="_blank">
-  <img src="https://i.imgur.com/0r18xHl.png" height=72 alt="Momo" />
-</a>
-<a href="https://i.imgur.com/00NqiL8.jpeg" target="_blank">
-  <img src="https://i.imgur.com/PSCoduQ.png" height=72 alt="ZaloPay" />
-</a>
+## Future Improvements
+*   Ultilize semantic searching instead of fuzzy searching for the table names searching functioon.
+*   Support local models → Phi-4 family
+*   The features for application setting and connection credential management.
+
