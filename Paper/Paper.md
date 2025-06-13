@@ -8,22 +8,6 @@ The primary contributions of this work include:
 2. Novel methodologies for schema-aware prompting and an orchestrated, resourceful agentic framework for database interaction, incorporating features like auto-debugging and internet-augmented problem-solving.
 3. A comprehensive evaluation demonstrating AskDB's proficiency across both complex analytical query generation and practical database administration scenarios. This research paves the way for more intuitive, efficient, and democratized access to, and management of, relational database systems.
 
-> ##### `Specific Text-to-SQL Benchmark`
-> *Example: "the Spider benchmark and a custom dataset of complex analytical queries tailored for financial data analysis (FinanceBench)" or "the BIRD benchmark focusing on execution with diverse SQL constructs."*
-> 
-> ##### `Specific Set of DBA Scenarios/Tasks`
-> *Example: "a curated suite of 20 common PostgreSQL administration tasks covering areas like performance diagnostics (e.g., index suggestion, slow query analysis), user and security management (e.g., role creation, permission auditing), and backup/recovery procedure generation" or "simulated database failure scenarios to evaluate recovery assistance."*
-> 
-> ##### `Key Quantitative Result for Text-to-SQL`       
-> *Example: "85% execution accuracy on complex queries within FinanceBench, outperforming the GPT-4 baseline by 10 percentage points" or "a 90% exact match accuracy on the Spider development set."*
-> 
-> ##### `Key Quantitative Result for Admin Tasks`
-> *Example: "successfully automates 90% of the defined administrative tasks with 95% correctness in generated scripts/commands, reducing estimated manual effort by an average of 30 minutes per task compared to manual execution" or "identified critical security misconfigurations in 5 out of 5 test scenarios."*
-
-Okay, I will now rewrite the Introduction section, replacing the generic placeholders with the more specific (though still illustrative) BibTeX key placeholders we just generated.
-
-Remember, the goal here is to show how the text would look with these integrated. For your actual paper, you'd ensure each citation perfectly supports the statement.
-
 ---
 
 ## 2. Introduction
