@@ -46,15 +46,9 @@ We only use locally stored data for the following purposes:
 Our applicationintegrates **Google Gemini API**, a third-party service provided by Google, to process certain AI-powered functionalities.  
 
 When you interact with **Google Gemini API**, the following applies:  
-- Your input (text) is sent to **Google servers** for processing.  
-- The applicationdoes **not** store any of this data after processing.  
+- Your input (text) is sent to **Google servers** for natural language processing purpose.
+- The application does **not** store any of this data after processing.  
 - Google may **process and review your input** in accordance with the [Gemini API Additional Terms of Service](https://ai.google.dev/gemini-api/terms).  
-
-⚠️ **Warning:** 
-
-- **Do not submit sensitive or confidential information**.  
-- Google may use your data for **model improvement and analysis**.  
-- If you do not want Google to process your data, **do not use this application**.  
 
 ---
 
