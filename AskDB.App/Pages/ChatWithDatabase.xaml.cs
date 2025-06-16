@@ -779,7 +779,7 @@ It **MUST** include at least:
                         {
                             var dataTable = await _databaseInteractor.GetTableStructureDetailAsync(schema, table);
 
-                            if (dataTable != null && dataTable.Rows.Count > 1)
+                            if (dataTable != null && dataTable.Rows.Count > 0)
                             {
                                 SetAgentMessage(null, dataTable);
                                 return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
