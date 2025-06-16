@@ -306,9 +306,9 @@ If the user doesn’t specify a schema or the schema is unclear:
         protected List<string> SearchTablesFromCachedTableNames(string keyword)
         {
             var searcher = new SimilaritySearchHelper(CachedAllTableNames, 5);
-            var levenshteinResults = searcher.LevenshteinSearch(keyword);
-            var jaroResults = searcher.JaroWinklerSearch(keyword);
-            var ngramResults = searcher.NgramSearch(keyword);
+            var levenshteinResults = searcher.LevenshteinSearch(keyword, 0.8);
+            var jaroResults = searcher.JaroWinklerSearch(keyword, 0.8);
+            var ngramResults = searcher.NgramSearch(keyword, 2, 0.8);
 
             var results = new HashSet<string>();
             results.UnionWith(levenshteinResults);

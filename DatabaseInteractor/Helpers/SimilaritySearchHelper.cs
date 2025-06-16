@@ -32,7 +32,7 @@
             _topN = topN;
         }
 
-        public List<string> LevenshteinSearch(string keyword)
+        public List<string> LevenshteinSearch(string keyword, double threshold = 0.0)
         {
             string normalizedKeyword = NormalizeString(keyword);
 
@@ -41,18 +41,19 @@
                 .AsOrdered()
                 .Select(pc =>
                 {
-                    int distance = LevenshteinDistanceOptimized(normalizedKeyword, pc.Normalized);
+                    int distance = LevenshteinDistance(normalizedKeyword, pc.Normalized);
                     int maxLen = Math.Max(normalizedKeyword.Length, pc.Normalized.Length);
                     double score = (maxLen == 0) ? 1.0 : (1.0 - (double)distance / maxLen);
                     return new { Candidate = pc.Original, Score = score };
                 })
+                .Where(x => x.Score >= threshold)
                 .OrderByDescending(x => x.Score)
                 .Take(_topN)
                 .Select(x => x.Candidate)
                 .ToList();
         }
 
-        private static int LevenshteinDistanceOptimized(string s, string t)
+        private static int LevenshteinDistance(string s, string t)
         {
             if (string.IsNullOrEmpty(s)) return string.IsNullOrEmpty(t) ? 0 : t.Length;
             if (string.IsNullOrEmpty(t)) return s.Length;
@@ -89,7 +90,7 @@
             return v1[sLen];
         }
 
-        public List<string> JaroWinklerSearch(string keyword)
+        public List<string> JaroWinklerSearch(string keyword, double threshold = 0.0)
         {
             string normalizedKeyword = NormalizeString(keyword);
 
@@ -101,6 +102,7 @@
                     Candidate = pc.Original,
                     Score = JaroWinklerSimilarity(normalizedKeyword, pc.Normalized)
                 })
+                .Where(x => x.Score >= threshold)
                 .OrderByDescending(x => x.Score)
                 .Take(_topN)
                 .Select(x => x.Candidate)
@@ -162,7 +164,7 @@
             return jaro + (0.1 * prefix * (1.0 - jaro));
         }
 
-        public List<string> NgramSearch(string keyword, int n = 2)
+        public List<string> NgramSearch(string keyword, int n = 2, double threshold = 0.0)
         {
             if (n <= 0)
                 throw new ArgumentOutOfRangeException(nameof(n), "n must be positive for N-gram similarity.");
@@ -182,6 +184,7 @@
                         Score = CalculateNgramSimilarity(keywordNgrams, candidateNgrams)
                     };
                 })
+                .Where(x => x.Score >= threshold)
                 .OrderByDescending(x => x.Score)
                 .Take(_topN)
                 .Select(x => x.Candidate)

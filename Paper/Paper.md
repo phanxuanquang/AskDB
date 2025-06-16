@@ -243,52 +243,56 @@ This iterative process supports sophisticated behaviors like multi-step task dec
 ### 4.6. Handling Data Interaction Tasks
 
 ```mermaid
-flowchart TD
-    A["User Request (Data Interaction)"] --> B{"NLU: Classify Risk"};
-    B -- "Low-Risk" --> C["Generate SQL"];
-    B -- "High-Risk (e.g., vague, large table, SELECT *)" --> D{"High-Risk Path"};
+flowchart LR
+    A["User Request (Data Interaction)"] --> B{NLU: Classify Risk};
 
-    D --> D1["Seek Clarification from User"];
-    D1 --> D2["Perform Safe Pre-flight Checks (e.g., COUNT(*))"];
-    D2 --> D3["Formulate Action Plan"];
-    D3 --> D4{"User Confirmation for Action Plan"};
-    D4 -- "Confirmed" --> C;
-    D4 -- "Not Confirmed" --> E["End/Refine Request"];
+    B -- "High-Risk" --> D1["High-Risk Protocol: Clarify, Pre-flight, Action Plan"];
+    D1 --> D2{User Confirms Plan?};
+    D2 -- "No" --> Z["End/Refine Request"];
 
-    C --> F{"SELECT * Query?"};
-    F -- "Yes" --> G{"SELECT * Interception Playbook"};
-    G --> G1["Offer to list columns / Suggest alternatives"];
-    G1 --> C;
-    F -- "No" --> H;
-    
-    H{"Targets Potential PII Columns? (e.g., email, ssn)"};
-    H -- "Yes" --> I{"PII Shield Playbook"};
-    I --> I1["Warn User of Privacy Risks"];
-    I1 --> I2{"Require Explicit Informed Consent"};
-    I2 -- "Consent Given" --> J["Validate & Execute SQL"];
-    I2 -- "Consent Denied" --> E;
-    H -- "No" --> J;
+    subgraph sg_SQL_Processing [SQL Processing & Playbooks Stage]
+        direction TB
+        S1["Generate Initial SQL"] --> S2{SELECT * Query?};
+        S2 -- "Yes" --> S3["SELECT * Interception: Offer alternatives / Get Go-ahead"];
+        S3 --> S4{Targets PII Columns?}; 
+        S2 -- "No" --> S4;
+        S4 -- "Yes" --> S5["PII Shield: Warn & Seek Consent"];
 
-    J --> K{"SQL Execution"};
-    K -- "Success" --> L["Response Generation (Analyst Mindset)"];
-    K -- "Error (Observation)" --> M{"LLM: Debug SQL (ReAct Loop)"};
-    M --> J;
+        %% Outputs from this subgraph connect to Z (End/Refine) or E (Execute SQL)
+    end
+
+    B -- "Low-Risk" --> S1;
+    D2 -- "Yes" --> S1;
+
+    %% From PII Shield
+    S5 -- "Consent Denied" --> Z;
+    %% From PII Check (No PII)
+    S4 -- "No" --> E["Execute SQL"];
+    %% From PII Shield (Consent Given)
+    S5 -- "Consent Given" --> E;
+
+    E --> K{Execution Successful?};
+    K -- "Yes" --> L["Response Generation (Analyst Mindset)"];
+    K -- "No (Error)" --> M["LLM: Debug SQL (ReAct Loop)"];
+    M --> E;
     L --> N["Present Results/Summary to User"];
 
-    style A fill:#f9f,stroke:#333,stroke-width:2px
+    %% Styles for rounded corners on non-diamond nodes
+    style A fill:#f9f,stroke:#333,stroke-width:2px,rx:10px,ry:10px
     style B fill:#ccf,stroke:#333,stroke-width:2px
-    style C fill:#cfc,stroke:#333,stroke-width:2px
-    style D fill:#fcc,stroke:#333,stroke-width:2px
-    style E fill:#f99,stroke:#333,stroke-width:2px
-    style F fill:#eef,stroke:#333,stroke-width:1px
-    style G fill:#fec,stroke:#333,stroke-width:1px
-    style H fill:#eef,stroke:#333,stroke-width:1px
-    style I fill:#fec,stroke:#333,stroke-width:1px
-    style J fill:#cff,stroke:#333,stroke-width:2px
-    style K fill:#def,stroke:#333,stroke-width:2px
-    style L fill:#9f9,stroke:#333,stroke-width:2px
-    style M fill:#f9c,stroke:#333,stroke-width:1px
-    style N fill:#9c9,stroke:#333,stroke-width:2px
+    style D1 fill:#fcc,stroke:#333,stroke-width:2px,rx:10px,ry:10px
+    style D2 fill:#fcc,stroke:#333,stroke-width:2px
+    style S1 fill:#cfc,stroke:#333,stroke-width:2px,rx:10px,ry:10px
+    style S2 fill:#eef,stroke:#333,stroke-width:1px
+    style S3 fill:#fec,stroke:#333,stroke-width:1px,rx:10px,ry:10px
+    style S4 fill:#eef,stroke:#333,stroke-width:1px
+    style S5 fill:#fec,stroke:#333,stroke-width:1px,rx:10px,ry:10px
+    style E fill:#cff,stroke:#333,stroke-width:2px,rx:10px,ry:10px
+    style K fill:#def,stroke:#333,stroke-width:1px
+    style L fill:#9f9,stroke:#333,stroke-width:2px,rx:10px,ry:10px
+    style M fill:#f9c,stroke:#333,stroke-width:1px,rx:10px,ry:10px
+    style N fill:#9c9,stroke:#333,stroke-width:2px,rx:10px,ry:10px
+    style Z fill:#f99,stroke:#333,stroke-width:2px,rx:10px,ry:10px
 ```
 > *How AskDB handles data interaction tasks, including risk classification, high-risk path management, PII shielding, and SQL execution with error handling.*
 

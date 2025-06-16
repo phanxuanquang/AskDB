@@ -334,30 +334,30 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
                 try
                 {
+                    var tableNames = await LoadTableNamesAsync();
+
+                    if (tableNames.Count > 0)
+                    {
+                        await LoadAgentSuggestionsAsync($@"Based on the list of table names provided below, suggest me with 5 concise and interesting ideas from my viewpoint that I might ask to start the conversation.
+The suggested ideas should be phrased as questions or commands in natural language, assuming I am not technical but want to understand and explore the data for analysis purpose or predictional purpose.
+Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table structure, etc.
+Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, concise, specific, user-friendly, and **MUST NOT** be relevant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
+
+This is the list of table names in the database: {string.Join(", ", tableNames.Select(x => $"`{x}`"))}");
+                    }
+
                     var requestForAgentSuggestions = new ApiRequestBuilder()
-                        .WithSystemInstruction(_globalInstruction)
-                        .DisableAllSafetySettings()
-                        .WithDefaultGenerationConfig()
-                        .WithPrompt("In order to start the conversation, please introduce to me about yourself, such as who you are, what you can do, what you can help me, or anything else; and at least 3 best practices for me to help you to do the task effectively. Take me as your friend or your teammate, avoid to use formal-like tone while talking to me; just use a natural, friendly tone with daily-life word when talking to me, like you are talking with your friends in the real life.")
-                        .Build();
+                       .WithSystemInstruction(_globalInstruction)
+                       .DisableAllSafetySettings()
+                       .WithDefaultGenerationConfig(1.5F, 350)
+                       .WithPrompt("In order to start the conversation, please introduce to me about yourself, such as who you are, what you can do, what you can help me, or anything else that you think it may be relavant to my database and be useful to me; and some good practices for me to help you to do the task effectively. Take me as your friend or your teammate, avoid to use formal-like tone while talking to me; just use a natural, friendly tone with daily-life word when talking to me, like you are talking with your friends in the real life.")
+                       .Build();
 
                     var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
-
-                    var tableNames = await LoadTableNamesAsync();
 
                     if (!string.IsNullOrEmpty(response.Content))
                     {
                         SetAgentMessage(response.Content);
-                    }
-
-                    if (tableNames.Count > 0)
-                    {
-                        await LoadAgentSuggestionsAsync($@"Based on the list of table names provided below, suggest me with 5 concise and insteresting ideas from my viewpoint that I might ask to start the conversation.
-The suggested ideas should be phrased as questions or commands in natural language, assuming I am not technical but wants to understand and explore the data for analysis purpose or predictional purpose.
-Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table structure, etc.
-Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, consice, specific, user-friendly, and **MUST NOT** be relavant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
-
-This is the list of first {tableNames.Count} table names in the database: {string.Join(", ", $"`{tableNames}`")}");
                     }
                 }
                 catch (Exception ex)
@@ -812,6 +812,7 @@ It **MUST** include at least:
                         if (tableNames.Count > 0)
                         {
                             var tableNamesInMarkdown = string.Join(", ", tableNames.Select(x => $"`{x}`"));
+                            SetAgentMessage($"I found these tables: {tableNamesInMarkdown}");
                             return FunctionCallingHelper.CreateResponse(name, tableNamesInMarkdown);
                         }
 
@@ -892,6 +893,7 @@ It **MUST** include at least:
             {
                 var tableNames = await _databaseInteractor.SearchTablesByNameAsync(string.Empty, null);
                 _databaseInteractor.CachedAllTableNames.UnionWith(tableNames);
+
                 return tableNames;
             }
 
@@ -907,7 +909,7 @@ It **MUST** include at least:
                 var requestForAgentSuggestions = new ApiRequestBuilder()
                    .WithSystemInstruction(_globalInstruction)
                    .DisableAllSafetySettings()
-                   .WithDefaultGenerationConfig()
+                   .WithDefaultGenerationConfig(0.7F, 250)
                    .WithResponseSchema(new
                    {
                        type = "object",
