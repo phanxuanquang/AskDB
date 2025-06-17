@@ -395,3 +395,66 @@ Adhering to its **Prime Directive on CLARITY**, AskDB addresses ambiguity:
 *   **Final Response Generation:** Once clarity is achieved, the LLM generates a response that directly addresses the user's refined request.
 *   **User Empowerment:** This approach not only enhances the accuracy of the agent's responses but also empowers users by involving them in the clarification process, ensuring their needs are met effectively.
 *   **AskDB's Role:** As an expert-level agent, AskDB guides users through complex queries and administrative tasks, ensuring they understand the context and implications of their requests. It can also explain the rationale behind its clarifications, enhancing user trust and engagement.
+
+---
+
+## 5. Methodology
+
+This section details the core methodologies and specific algorithms that power the AskDB agent, building upon the architectural overview provided in Section 4. We focus on the novel techniques for LLM interaction, the implementation of AskDB's specialized tools, and the operational processes that ensure its safety and effectiveness.
+
+### 5.1. Core Algorithmic and Process Implementations
+
+While AskDB leverages a general ReAct framework, its effectiveness stems from specialized methodological implementations for key database-centric challenges.
+
+#### 5.1.1. Semantic Schema Search for Table Discovery
+
+To address the challenge of schema exploration in large databases, AskDB implements a semantic search capability within its `search_tables_by_name` tool. The methodology is as follows:
+1.  **Offline Embedding:** Upon session initiation and schema loading, the names of all tables in the database are embedded using the `all-MiniLM-L6-v2` sentence-transformer model. We chose this model for its excellent balance of speed and performance on short text like table names.
+2.  **Runtime Querying:** During a ReAct cycle, if the LLM determines it needs to find relevant tables based on a user's keyword (e.g., user asks about "customer transactions"), it calls the `search_tables_by_name` tool with the keyword(s).
+3.  **Similarity Search:** The tool embeds the incoming keyword(s) and then performs a cosine similarity search against the pre-computed in-memory table name embeddings. An in-memory search was selected for its simplicity and sufficient performance for schemas with up to several thousand tables, avoiding the overhead of an external vector database.
+4.  **Candidate Retrieval:** The tool returns a ranked list of the top-N table names with the highest similarity scores, providing the LLM with a concise and semantically relevant set of schema elements to focus on.
+
+#### 5.1.2. LLM-Driven PII Shield Protocol
+
+AskDB's "PII Shield" is implemented as a methodology based on **instructed LLM reasoning**, rather than a hardcoded filter. The term "PII Shield" within the system instructions triggers a specific behavior playbook. This design choice was made for its flexibility; the LLM, leveraging its world knowledge, can identify nuanced PII (e.g., `mother_maiden_name`, `user_bio`) that a static keyword list might miss. When the LLM encounters a column it identifies as potentially containing PII, its instructions mandate that it must halt, warn the user of privacy risks, and obtain explicit, informed consent before generating a query that would retrieve or display that data.
+
+#### 5.1.3. Iterative SQL Auto-Debugging Loop
+
+When a generated SQL query results in a database error, AskDB initiates an iterative auto-debugging loop within its ReAct framework.
+1.  **Contextual Re-prompting:** A new prompt is constructed for the LLM that includes the full original user query, the complete action history leading up to the failure, the exact SQL that failed, and the detailed error message returned by the database.
+2.  **Corrective Reasoning:** The LLM is then prompted to analyze this context and generate a corrected SQL query as its next action.
+This loop continues without a predefined limit on correction attempts, allowing for persistent problem-solving until the query succeeds or the LLM determines it cannot resolve the issue and must escalate to the user.
+
+### 5.2. Prompt Engineering and Context Management Strategies
+
+#### 5.2.1. Dynamic Prompt Construction
+
+It is important to note that while AskDB employs a zero-shot *learning* approach, relying on detailed instructions rather than in-context examples, it does not perform zero-shot *execution* for any non-trivial task. All high-risk actions are subject to the verification and confirmation steps outlined in the Core Safety Protocol.
+
+*   **Schema Representation:** Schema information is presented in a well-formatted markdown table. This table includes a dedicated "Constraint" column, which explicitly states primary key, foreign key (`FOREIGN KEY (col) REFERENCES other_table(other_col)`), and other constraints. This structured representation is vital for helping the LLM generate correct `JOIN` conditions.
+*   **Schema Scoping:** By default, the schema information included in the prompt is solely the output of the semantic search tool, ensuring the LLM only sees the most pertinent tables for the current task.
+
+#### 5.2.2. Conversational Context Management
+
+To maintain context in multi-turn conversations, AskDB employs a sliding window strategy. In each turn, it sends up to the **200 latest messages** (a configurable number) from the conversation history—the chain of thoughts, actions, and observations—to the LLM. This ensures that the prompt remains focused on the most recent and relevant parts of the interaction, maintaining efficiency while providing sufficient context.
+
+### 5.3. Tool Development and Integration
+
+The methodology for the `request_for_internet_search` tool abstracts the complexity of web searching. The LLM formulates a high-level request, including a description of the information it is searching for and the expected outcome. The tool then executes the underlying search, processes the raw results, performs summarization, and returns a clean analysis as the "observation" to the ReAct loop.
+
+### 5.4. Data Handling and Security Methodology
+
+#### 5.4.1. Privacy-Centric Data Collection for Evaluation
+
+While the production-intent design of AskDB forgoes persistent logging for user privacy, a specific, privacy-preserving data collection method was used for the development and evaluation presented in this paper. For each test case, the following data points were collected:
+1.  The user's initial, verbatim request.
+2.  The agent's final output or proposed solution.
+3.  The total number of conversational turns (messages) from request to fulfillment.
+
+This data enables an end-to-end evaluation of task success and conversational efficiency while intentionally omitting the intermediate agent trajectory (thoughts, tool calls, and interim results) to align with the system's privacy-first design principle.
+
+### 5.5. Development and Iteration Process
+
+The development of AskDB followed an iterative, evaluation-driven process where system instructions were continuously refined based on observed agent behavior. The value of this methodology is best illustrated by a concrete example:
+
+Initially, the agent would attempt to directly answer ambiguous administrative requests, which could lead to incorrect assumptions. For instance, a request to "clean up old logs" was interpreted with a hardcoded 30-day cutoff. To fix this, we refined the Core Safety Protocol to classify *any* request containing ambiguous temporal or qualitative terms like 'old' or 'recent' as "High-Risk." This change forces the agent to halt and ask the user for a specific date range or clarifying criteria, thereby significantly improving both the safety and accuracy of its operations. This iterative refinement of operational protocols was central to encoding robust safety and usability heuristics directly into the agent's core behavior.
