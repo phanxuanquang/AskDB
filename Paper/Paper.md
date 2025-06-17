@@ -463,52 +463,7 @@ To maintain context in multi-turn conversations, AskDB employs a sliding window 
 
 The methodology for the `request_for_internet_search` tool abstracts the complexity of web searching. The LLM formulates a high-level request, including a description of the information it is searching for and the expected outcome. The tool then executes the underlying search, processes the raw results, performs summarization, and returns a clean analysis as the "observation" to the ReAct loop.
 
-### 5.4. Data Handling and Security Methodology
-
-#### 5.4.1. Privacy-Centric Data Collection for Evaluation
-
-```mermaid
-graph LR
-    subgraph AskDB Interaction Session
-        A[User's Initial Request] --> B(Agent-User Conversation<br>Multiple turns);
-        B --> C[Agent's Final Output];
-    end
-
-    subgraph Data Collection for Evaluation
-        D(Log Collector);
-    end
-
-    A -- "1. Log verbatim" --> D;
-    C -- "2. Log verbatim" --> D;
-    B -- "3. Count total messages" --> D;
-
-    subgraph "Excluded from Logs (for Privacy)"
-        E[Intermediate LLM Thoughts];
-        F[Tool Calls & Outputs];
-        G[Raw Query Results];
-    end
-
-    B -.->|Information NOT Logged| E;
-    B -.->|Information NOT Logged| F;
-    B -.->|Information NOT Logged| G;
-    
-    style A fill:#e6f3ff,stroke:#0066cc
-    style C fill:#e6f3ff,stroke:#0066cc
-    style D fill:#e6ffe6,stroke:#009900,stroke-width:2px
-    style B fill:#fff
-    style E fill:#ffe6e6,stroke:#cc0000
-    style F fill:#ffe6e6,stroke:#cc0000
-    style G fill:#ffe6e6,stroke:#cc0000
-```
-
-While the production-intent design of AskDB forgoes persistent logging for user privacy, a specific, privacy-preserving data collection method was used for the development and evaluation presented in this paper. For each test case, the following data points were collected:
-1.  The user's initial, verbatim request.
-2.  The agent's final output or proposed solution.
-3.  The total number of conversational turns (messages) from request to fulfillment.
-
-This data enables an end-to-end evaluation of task success and conversational efficiency while intentionally omitting the intermediate agent trajectory (thoughts, tool calls, and interim results) to align with the system's privacy-first design principle.
-
-### 5.5. Development and Iteration Process
+### 5.4. Development and Iteration Process
 
 The development of AskDB followed an iterative, evaluation-driven process where system instructions were continuously refined based on observed agent behavior. The value of this methodology is best illustrated by a concrete example:
 
