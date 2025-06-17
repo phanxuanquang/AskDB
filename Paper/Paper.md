@@ -420,6 +420,27 @@ AskDB's "PII Shield" is implemented as a methodology based on **instructed LLM r
 
 #### 5.1.3. Iterative SQL Auto-Debugging Loop
 
+```mermaid
+graph LR
+    A[Start: LLM generates initial SQL query] --> B{Execute SQL};
+    B -- Success --> C[End: Present Results to User];
+    B -- Failure --> D[Capture Database Error Message];
+    
+    D --> E{Construct Corrective Prompt};
+    E -- Contains: <br>1. Original User Query<br>2. Action History<br>3. Failed SQL<br>4. Error Message --> F[LLM Reasoner];
+    
+    F --> G[LLM generates new, corrected SQL query];
+    G --> B;
+
+    style A fill:#e6f3ff,stroke:#0066cc
+    style B fill:#fff2e6,stroke:#ff8c1a,stroke-width:2px
+    style C fill:#e6ffe6,stroke:#009900
+    style D fill:#ffe6e6,stroke:#cc0000
+    style E fill:#f2f2f2,stroke:#666
+    style F fill:#e6f3ff,stroke:#0066cc,stroke-width:2px
+    style G fill:#e6f3ff,stroke:#0066cc
+```
+
 When a generated SQL query results in a database error, AskDB initiates an iterative auto-debugging loop within its ReAct framework.
 1.  **Contextual Re-prompting:** A new prompt is constructed for the LLM that includes the full original user query, the complete action history leading up to the failure, the exact SQL that failed, and the detailed error message returned by the database.
 2.  **Corrective Reasoning:** The LLM is then prompted to analyze this context and generate a corrected SQL query as its next action.
@@ -445,6 +466,40 @@ The methodology for the `request_for_internet_search` tool abstracts the complex
 ### 5.4. Data Handling and Security Methodology
 
 #### 5.4.1. Privacy-Centric Data Collection for Evaluation
+
+```mermaid
+graph LR
+    subgraph AskDB Interaction Session
+        A[User's Initial Request] --> B(Agent-User Conversation<br>Multiple turns);
+        B --> C[Agent's Final Output];
+    end
+
+    subgraph Data Collection for Evaluation
+        D(Log Collector);
+    end
+
+    A -- "1. Log verbatim" --> D;
+    C -- "2. Log verbatim" --> D;
+    B -- "3. Count total messages" --> D;
+
+    subgraph "Excluded from Logs (for Privacy)"
+        E[Intermediate LLM Thoughts];
+        F[Tool Calls & Outputs];
+        G[Raw Query Results];
+    end
+
+    B -.->|Information NOT Logged| E;
+    B -.->|Information NOT Logged| F;
+    B -.->|Information NOT Logged| G;
+    
+    style A fill:#e6f3ff,stroke:#0066cc
+    style C fill:#e6f3ff,stroke:#0066cc
+    style D fill:#e6ffe6,stroke:#009900,stroke-width:2px
+    style B fill:#fff
+    style E fill:#ffe6e6,stroke:#cc0000
+    style F fill:#ffe6e6,stroke:#cc0000
+    style G fill:#ffe6e6,stroke:#cc0000
+```
 
 While the production-intent design of AskDB forgoes persistent logging for user privacy, a specific, privacy-preserving data collection method was used for the development and evaluation presented in this paper. For each test case, the following data points were collected:
 1.  The user's initial, verbatim request.
