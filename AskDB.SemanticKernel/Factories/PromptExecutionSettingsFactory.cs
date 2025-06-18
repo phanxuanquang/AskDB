@@ -17,8 +17,14 @@ namespace AskDB.SemanticKernel.Factories
 #pragma warning disable SKEXP0070
             promptExecutionSettings = serviceProvider switch
             {
-                AiServiceProvider.OpenAI => new OpenAIPromptExecutionSettings(),
-                AiServiceProvider.Gemini => new GeminiPromptExecutionSettings(),
+                AiServiceProvider.OpenAI => new OpenAIPromptExecutionSettings
+                {
+                    ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+                },
+                AiServiceProvider.Gemini => new GeminiPromptExecutionSettings
+                {
+                    ToolCallBehavior = GeminiToolCallBehavior.EnableKernelFunctions,
+                },
                 AiServiceProvider.AzureOpenAI => new AzureOpenAIPromptExecutionSettings(),
                 AiServiceProvider.ONNX => new OnnxRuntimeGenAIPromptExecutionSettings(),
                 AiServiceProvider.Ollama => new OllamaPromptExecutionSettings(),

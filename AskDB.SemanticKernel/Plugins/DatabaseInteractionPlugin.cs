@@ -2,7 +2,6 @@
 using DatabaseInteractor.Services;
 using Microsoft.SemanticKernel;
 using System.ComponentModel;
-using System.Data;
 
 namespace AskDB.SemanticKernel.Plugins
 {
@@ -264,9 +263,11 @@ If the user doesn’t specify a schema or the schema is unclear:
 
 * Use the `search_tables_by_name` function first to identify available tables and their corresponding schemas.
 * If multiple candidates are returned or ambiguity remains, **prompt the user to clarify** which table/schema they meant before calling this function.")]
-        public async Task<DataTable> GetTableStructureDetailAsync(string? schema, string table)
+        public async Task<string> GetTableStructureDetailAsync(string? schema, string table)
         {
-            return await databaseInteractionService.GetTableStructureDetailAsync(schema, table);
+            var data = await databaseInteractionService.GetTableStructureDetailAsync(schema, table);
+
+            return data.ToMarkdown();
         }
     }
 }

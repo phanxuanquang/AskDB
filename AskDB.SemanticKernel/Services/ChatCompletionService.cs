@@ -1,5 +1,4 @@
-﻿using AskDB.SemanticKernel.Enums;
-using AskDB.SemanticKernel.Factories;
+﻿using AskDB.SemanticKernel.Factories;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
@@ -9,18 +8,25 @@ namespace AskDB.SemanticKernel.Services
     {
         private readonly Kernel _kernel;
         private readonly IChatCompletionService _chatCompletionService;
-        private readonly AiServiceProvider _serviceProvider;
         private readonly int _maxMessageCount;
+        private readonly PromptExecutionSettings _promptExecutionSettings = new()
+        {
+            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
+        };
 
         private ChatHistory _chatHistory;
 
         public ChatCompletionService(KernelFactory kernelFactory, int maxMessageCount = 200)
         {
             _kernel = kernelFactory.Build();
-            _serviceProvider = kernelFactory.ServiceProvider;
             _chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
             _chatHistory = [];
             _maxMessageCount = maxMessageCount;
+        }
+
+        public void AddFunctionCallingResponse(FunctionResultContent functionResultContent)
+        {
+            _chatHistory.Add(functionResultContent.ToChatMessage());
         }
 
         public ChatCompletionService WithSystemInstruction(string systemInstruction)
@@ -61,14 +67,15 @@ namespace AskDB.SemanticKernel.Services
                     _chatHistory = [.. reducedMessages];
                 }
             }
-#pragma warning disable SKEXP0070
 
-            var chatCompletion = await _chatCompletionService.GetChatMessageContentsAsync(
+            var chatCompletion = await _chatCompletionService.GetChatMessageContentAsync(
                 _chatHistory,
-                executionSettings: _serviceProvider.CreatePromptExecutionSettings(),
+                executionSettings: _promptExecutionSettings,
                 kernel: _kernel);
 
-            return chatCompletion[0];
+            _chatHistory.Add(chatCompletion);
+
+            return chatCompletion;
         }
     }
 }

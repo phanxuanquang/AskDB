@@ -13,9 +13,9 @@ namespace AskDB.SemanticKernel.Factories
             _kernelBuilder = Kernel.CreateBuilder();
         }
 
-        public KernelFactory WithPlugin<T>()
+        public KernelFactory WithPlugin(object plugin)
         {
-            _kernelBuilder.Plugins.AddFromType<T>();
+            _kernelBuilder.Plugins.AddFromObject(plugin);
             return this;
         }
 

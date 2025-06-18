@@ -282,7 +282,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AskDB.Database\AskDB.Database.csproj" />
-    <ProjectReference Include="..\DatabaseInteractor\DatabaseInteractor.csproj" />
+    <ProjectReference Include="..\AskDB.SemanticKernel\AskDB.SemanticKernel.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Images\icon.png">

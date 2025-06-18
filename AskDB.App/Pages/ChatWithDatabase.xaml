@@ -37,7 +37,7 @@
                     </ItemsPanelTemplate>
                 </ListView.ItemsPanel>
                 <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="view_models:ChatMessage">
+                    <DataTemplate x:DataType="view_models:ChatContent">
                         <Grid Margin="0,8">
                             <StackPanel 
                                 HorizontalAlignment="Right" 

@@ -1,7 +1,6 @@
 ﻿using AskDB.Commons.Enums;
 using DatabaseInteractor.Factories;
 using DatabaseInteractor.Helpers;
-using GeminiDotNET.FunctionCallings.Attributes;
 using System.Data;
 using System.Data.Common;
 

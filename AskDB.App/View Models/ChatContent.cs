@@ -3,7 +3,7 @@ using System.Data;
 
 namespace AskDB.App.View_Models
 {
-    public class ChatMessage
+    public class ChatContent
     {
         public string Message { get; set; }
         public bool IsFromUser { get; set; }

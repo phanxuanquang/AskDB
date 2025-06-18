@@ -1,6 +1,9 @@
 ﻿using AskDB.App.Helpers;
 using AskDB.App.View_Models;
 using AskDB.Commons.Extensions;
+using AskDB.SemanticKernel.Factories;
+using AskDB.SemanticKernel.Plugins;
+using AskDB.SemanticKernel.Services;
 using CommunityToolkit.WinUI.UI.Controls;
 using DatabaseInteractor.Factories;
 using DatabaseInteractor.Helpers;
@@ -8,10 +11,10 @@ using DatabaseInteractor.Services;
 using GeminiDotNET;
 using GeminiDotNET.ApiModels.ApiRequest.Configurations.Tools.FunctionCalling;
 using GeminiDotNET.ApiModels.Enums;
-using GeminiDotNET.ApiModels.Response.Success;
 using GeminiDotNET.ApiModels.Response.Success.FunctionCalling;
 using GeminiDotNET.FunctionCallings.Attributes;
 using GeminiDotNET.Helpers;
+using Microsoft.SemanticKernel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
@@ -31,13 +34,16 @@ namespace AskDB.App.Pages
 {
     public sealed partial class ChatWithDatabase : Page
     {
-        private readonly ObservableCollection<ChatMessage> Messages = [];
+        private readonly ObservableCollection<ChatContent> Messages = [];
         private readonly ObservableCollection<AgentSuggestion> AgentSuggestions = [];
 
         private Generator _generator;
         private DatabaseInteractionService _databaseInteractor;
         private string _globalInstruction;
         private string _actionPlanInstruction;
+
+        private KernelFactory _kernelFactory;
+        private ChatCompletionService _chatCompletionService;
 
         public ChatWithDatabase()
         {
@@ -308,61 +314,41 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
             SetLoading(true, "Working");
 
+
             try
             {
                 _databaseInteractor = request.DatabaseType.CreateDatabaseInteractionService(request.ConnectionString);
-                _generator = new Generator(Cache.ApiKey).EnableChatHistory(150);
 
-                try
+                var globalTask = OnlineContentHelper.GetSytemInstructionContentAsync("Global", _databaseInteractor.DatabaseType, "English");
+                var actionPlanTask = OnlineContentHelper.GetSytemInstructionContentAsync("Action Plan", _databaseInteractor.DatabaseType, "English");
+                var initQueryTemplatesTask = _databaseInteractor.InitQueryTemplatesAsync();
+
+                await Task.WhenAll(globalTask, actionPlanTask, initQueryTemplatesTask);
+
+                _globalInstruction = globalTask.Result;
+                _actionPlanInstruction = actionPlanTask.Result;
+
+                ChangeTheConversationLanguage("English");
+
+                _kernelFactory = new KernelFactory().UseGoogleGeminiProvider(Cache.ApiKey, "gemini-2.0-flash");
+
+                _chatCompletionService = new ChatCompletionService(_kernelFactory.WithPlugin(new DatabaseInteractionPlugin(_databaseInteractor)))
+                    .WithSystemInstruction(_globalInstruction);
+
+                var chatCompletionService = new ChatCompletionService(_kernelFactory).WithSystemInstruction(_globalInstruction);
+
+                var tableNames = await LoadTableNamesAsync();
+
+                var modelResponse = await chatCompletionService.SendMessageAsync($@"Based on the list of table names provided below, suggest me with 5 concise and interesting ideas from my viewpoint that I might ask to start the conversation.
+                The suggested ideas should be phrased as questions or commands in natural language, assuming I am not technical but want to understand and explore the data for analysis purpose or predictional purpose.
+                Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table structure, etc.
+                Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, concise, specific, user-friendly, and **MUST NOT** be relevant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
+
+                This is the list of table names in the database: {string.Join(", ", tableNames.Select(x => $"`{x}`"))}");
+
+                if (!string.IsNullOrEmpty(modelResponse.Content))
                 {
-                    var globalTask = OnlineContentHelper.GetSytemInstructionContentAsync("Global", _databaseInteractor.DatabaseType, "English");
-                    var actionPlanTask = OnlineContentHelper.GetSytemInstructionContentAsync("Action Plan", _databaseInteractor.DatabaseType, "English");
-                    var initQueryTemplatesTask = _databaseInteractor.InitQueryTemplatesAsync();
-
-                    await Task.WhenAll(globalTask, actionPlanTask, initQueryTemplatesTask);
-
-                    _globalInstruction = globalTask.Result;
-                    _actionPlanInstruction = actionPlanTask.Result;
-
-                    ChangeTheConversationLanguage("English");
-                    InitFunctionCalling();
-                }
-                catch (Exception ex)
-                {
-                    throw new InvalidOperationException($"Cannot load system instructions: {ex.Message}", ex);
-                }
-
-                try
-                {
-                    var tableNames = await LoadTableNamesAsync();
-
-                    if (tableNames.Count > 0)
-                    {
-                        await LoadAgentSuggestionsAsync($@"Based on the list of table names provided below, suggest me with 5 concise and interesting ideas from my viewpoint that I might ask to start the conversation.
-The suggested ideas should be phrased as questions or commands in natural language, assuming I am not technical but want to understand and explore the data for analysis purpose or predictional purpose.
-Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table structure, etc.
-Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, concise, specific, user-friendly, and **MUST NOT** be relevant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
-
-This is the list of table names in the database: {string.Join(", ", tableNames.Select(x => $"`{x}`"))}");
-                    }
-
-                    var requestForAgentSuggestions = new ApiRequestBuilder()
-                       .WithSystemInstruction(_globalInstruction)
-                       .DisableAllSafetySettings()
-                       .WithDefaultGenerationConfig(1.5F, 350)
-                       .WithPrompt("In order to start the conversation, please introduce to me about yourself, such as who you are, what you can do, what you can help me, or anything else that you think it may be relavant to my database and be useful to me; and some good practices for me to help you to do the task effectively. Take me as your friend or your teammate, avoid to use formal-like tone while talking to me; just use a natural, friendly tone with daily-life word when talking to me, like you are talking with your friends in the real life.")
-                       .Build();
-
-                    var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
-
-                    if (!string.IsNullOrEmpty(response.Content))
-                    {
-                        SetAgentMessage(response.Content);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    throw new InvalidOperationException($"Cannot load table names. {ex.Message}", ex);
+                    SetAgentMessage(modelResponse.Content);
                 }
             }
             catch (Exception ex)
@@ -380,7 +366,7 @@ This is the list of table names in the database: {string.Join(", ", tableNames.S
         {
             try
             {
-                DataTable? dataTable = ((sender as Button)?.DataContext as ChatMessage)?.Data;
+                DataTable? dataTable = ((sender as Button)?.DataContext as ChatContent)?.Data;
 
                 if (dataTable == null || dataTable.Rows.Count == 0)
                 {
@@ -435,7 +421,7 @@ This is the list of table names in the database: {string.Join(", ", tableNames.S
         {
             var dataGrid = sender as DataGrid;
 
-            if (dataGrid == null || dataGrid?.DataContext is not ChatMessage context || (context.Data == null || context.Data.Rows.Count == 0))
+            if (dataGrid == null || dataGrid?.DataContext is not ChatContent context || (context.Data == null || context.Data.Rows.Count == 0))
             {
                 return;
             }
@@ -483,21 +469,21 @@ This is the list of table names in the database: {string.Join(", ", tableNames.S
         }
         private void SetUserMessage(string message)
         {
-            var chatMessage = new ChatMessage
+            var ChatContent = new ChatContent
             {
                 Message = message,
                 IsFromUser = true,
                 IsFromAgent = false,
             };
 
-            Messages.Add(chatMessage);
+            Messages.Add(ChatContent);
         }
 
         private void SetAgentMessage(string? message, DataTable? dataTable = null)
         {
             var isDataTableEmpty = dataTable == null || dataTable.Rows.Count == 0;
 
-            var chatMessage = new ChatMessage
+            var ChatContent = new ChatContent
             {
                 Message = string.IsNullOrEmpty(message) ? string.Empty : message,
                 IsFromUser = false,
@@ -506,99 +492,7 @@ This is the list of table names in the database: {string.Join(", ", tableNames.S
                 Data = isDataTableEmpty ? null : dataTable
             };
 
-            Messages.Add(chatMessage);
-        }
-
-        private void InitFunctionCalling()
-        {
-            FunctionDeclarationHelper.RegisterFunction(RequestForActionPlanAsync);
-            FunctionDeclarationHelper.RegisterFunction(RequestForInternetSearchAsync, new Parameters
-            {
-                Properties = new
-                {
-                    requirement = new
-                    {
-                        type = "string",
-                        description = @"A highly specific and detailed natural language requirement for the internet search in markdown format. 
-It **MUST** include at least: 
-
-1. A brief summarization of the current user request or problem. 
-2. The specific information you are trying to find (documentation, examples, troubleshooting steps, etc.). 
-3. How this information will help you address the user's database-related task.
-4. Any specific sources or types of information you want to prioritize (e.g., official documentation, community forums, etc.).
-5. Any other relevant context that can help refine the search results.
-6. The search query should be clear and concise, avoiding vague terms or overly broad requests.   
-7. Any specific formats you prefer for the results (e.g., list, table, etc.)."
-                    }
-                },
-                Required = ["requirement"]
-            });
-            FunctionDeclarationHelper.RegisterFunction(ChangeTheConversationLanguage, new Parameters
-            {
-                Properties = new
-                {
-                    language = new
-                    {
-                        type = "string",
-                        description = "The language to change the conversation to. This should be a valid language name (e.g., 'English', 'Spanish', 'French')."
-                    }
-                },
-                Required = ["language"]
-            });
-            FunctionDeclarationHelper.RegisterFunction(_databaseInteractor.ExecuteQueryAsync, new Parameters
-            {
-                Properties = new
-                {
-                    sqlQuery = new
-                    {
-                        type = "string",
-                        description = "The SQL query to execute. It should be a valid SQL command that returns data, such as a `SELECT` statement."
-                    }
-                },
-                Required = ["sqlQuery"]
-            });
-            FunctionDeclarationHelper.RegisterFunction(_databaseInteractor.ExecuteNonQueryAsync, new Parameters
-            {
-                Properties = new
-                {
-                    sqlQuery = new
-                    {
-                        type = "string",
-                        description = "The complete, syntactically correct SQL command or SQL scripts (e.g., INSERT, UPDATE, DELETE, CREATE, ALTER) to be executed. Ensure the query is specific to the user-confirmed action plan."
-                    }
-                },
-                Required = ["sqlQuery"]
-            });
-            FunctionDeclarationHelper.RegisterFunction(_databaseInteractor.GetUserPermissionsAsync);
-            FunctionDeclarationHelper.RegisterFunction(_databaseInteractor.SearchTablesByNameAsync, new Parameters
-            {
-                Properties = new
-                {
-                    keyword = new
-                    {
-                        type = "string",
-                        description = "A keyword to filter the table names. If an empty string is provided, all accessible table names with their associated schema are returned."
-                    }
-                },
-                Required = ["keyword"]
-            });
-            FunctionDeclarationHelper.RegisterFunction(_databaseInteractor.GetTableStructureDetailAsync, new Parameters
-            {
-                Properties = new
-                {
-                    schema = new
-                    {
-                        type = "string",
-                        description = "The name of the schema containing the table. This is often case-sensitive depending on the database. **Be noted** that schema parameter is *only* supported for SQL Server and PostgreSQL database, otherwise, leave it empty or null value. In addition, if the schema name is not explicitly provided by the user or clear from context, just ignore it. "
-                    },
-                    table = new
-                    {
-                        type = "string",
-                        description = "The exact name of the table for which to retrieve detailed schema information. This is often case-sensitive depending on the database."
-                    }
-                },
-                Required = ["table"]
-            });
+            Messages.Add(ChatContent);
         }
         #endregion
 
@@ -612,110 +506,36 @@ It **MUST** include at least:
                 AgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(false);
                 AgentSuggestions.Clear();
 
-                var functionDeclarations = FunctionDeclarationHelper.FunctionDeclarations;
-
-                var apiRequest = new ApiRequestBuilder()
-                    .WithSystemInstruction(_globalInstruction)
-                    .WithPrompt(userInput)
-                    .DisableAllSafetySettings()
-                    .WithTools(new ToolBuilder().AddFunctionDeclarations(functionDeclarations))
-                    .SetFunctionCallingMode(FunctionCallingMode.AUTO)
-                    .Build();
-
-                var modelResponse = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash);
-                if (!string.IsNullOrEmpty(modelResponse.Content))
+                while (true)
                 {
-                    SetAgentMessage(modelResponse.Content);
-                }
+                    var modelResponse = await _chatCompletionService.SendMessageAsync(userInput);
 
-                var functionCalls = (modelResponse.FunctionCalls == null || modelResponse.FunctionCalls.Count == 0) ? [] : modelResponse.FunctionCalls;
-
-                if (string.IsNullOrEmpty(modelResponse.Content) && functionCalls.Count == 0)
-                {
-                    var failedResonse = JsonHelper.AsObject<ApiResponse>(_generator.ResponseAsRawString);
-                    var finishReason = failedResonse?.Candidates.FirstOrDefault()?.FinishReason;
-                    _generator.ResponseAsRawString.CopyToClipboard();
-
-                    if (!string.IsNullOrEmpty(finishReason))
+                    if (!string.IsNullOrEmpty(modelResponse.Content))
                     {
-                        SetAgentMessage($"AskDB refused to answer! The reason code name is [{finishReason.Replace('_', ' ')}](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerateContentResponse#FinishReason).");
+                        SetAgentMessage(modelResponse.Content);
+                        break;
+                    }
+
+                    IEnumerable<FunctionCallContent> functionCalls = FunctionCallContent.GetFunctionCalls(modelResponse);
+
+                    if (!functionCalls.Any())
+                    {
+                        break;
+                    }
+
+                    foreach (FunctionCallContent functionCall in functionCalls)
+                    {
+                        //FunctionResultContent resultContent = await functionCall.InvokeAsync(_kernelFactory.Build());
+
+                        // Adding the function result to the chat history
+                        //_chatCompletionService.AddFunctionCallingResponse(resultContent);
+
+                        var parameter = functionCall.Arguments.FirstOrDefault(a => a.Key == "keyword");
+
+                        var functionName = functionCall.FunctionName;
                     }
                 }
 
-                var loopAttempt = 0;
-                while (functionCalls.Count > 0 && loopAttempt <= 10)
-                {
-                    loopAttempt++;
-                    await Task.Delay(2345);
-
-                    try
-                    {
-                        var functionResponses = new List<FunctionResponse>();
-
-                        foreach (var function in functionCalls)
-                        {
-                            try
-                            {
-                                var functionResponse = await CallFunctionAsync(function);
-                                if (functionResponse != null)
-                                {
-                                    functionResponses.Add(functionResponse);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                var output = $"Error in function **{function.Name}**:\n\n```console\n{ex.Message}. {ex.InnerException?.Message}\n```";
-
-                                functionResponses.Add(new FunctionResponse
-                                {
-                                    Name = function.Name,
-                                    Response = new Response
-                                    {
-                                        Output = $"{output}\n\nAction plan or user clarification or internet search is required.",
-                                    }
-                                });
-
-                                SetAgentMessage(output);
-                            }
-                            finally
-                            {
-                                await Task.Delay(543);
-                            }
-                        }
-
-                        var apiRequestWithFunctions = new ApiRequestBuilder()
-                            .WithSystemInstruction(_globalInstruction)
-                            .DisableAllSafetySettings()
-                            .WithTools(new ToolBuilder().AddFunctionDeclarations(functionDeclarations))
-                            .SetFunctionCallingMode(FunctionCallingMode.AUTO)
-                            .WithFunctionResponses(functionResponses)
-                            .WithPrompt(@"Please review the function responses and your action history against the user's initial request in order to take action: continue on function calling until the request is satified, or reply to the user immediately to provide the final answer or ask for user's clarification!")
-                            .Build();
-
-                        var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash);
-                        SetAgentMessage(modelResponseForFunction.Content);
-
-                        functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
-                    }
-                    catch (Exception ex)
-                    {
-                        SetAgentMessage($"Error: {ex.Message}. {ex.InnerException?.Message}");
-                        functionCalls = [];
-                    }
-                    finally
-                    {
-                        await Task.Delay(234);
-                    }
-                }
-
-                if (loopAttempt < 10)
-                {
-                    await LoadAgentSuggestionsAsync("Based on the current context, please provide up to 5 **short** and **concise** suggestions as the next step in my viewpoint, for me to use as the quick reply in order to continue the task.");
-                }
-                else
-                {
-                    await LoadAgentSuggestionsAsync("You have tried with 10 actions but cannot satisfy the task, please provide up to 5 **short** and **concise** suggestions as the next step in my viewpoint, for me to use as the quick reply in order to continue the task.");
-                }
             }
             catch (Exception ex)
             {
@@ -851,7 +671,7 @@ It **MUST** include at least:
 
         private async void CopyButton_Click(object sender, RoutedEventArgs e)
         {
-            var message = ((sender as Button)?.DataContext as ChatMessage)?.Message;
+            var message = ((sender as Button)?.DataContext as ChatContent)?.Message;
 
             if (string.IsNullOrEmpty(message))
             {
