@@ -96,7 +96,7 @@ namespace AskDB.App.Pages
 
             try
             {
-                var databaseInteractor = ServiceFactory.CreateInteractionService(data.DatabaseType, data.ConnectionString);
+                var databaseInteractor = data.DatabaseType.CreateDatabaseInteractionService(data.ConnectionString);
 
                 await databaseInteractor.EnsureDatabaseConnectionAsync();
 
@@ -139,7 +139,7 @@ namespace AskDB.App.Pages
 
             try
             {
-                var databaseInteractor = ServiceFactory.CreateInteractionService(data.DatabaseType, data.Value);
+                var databaseInteractor = data.DatabaseType.CreateDatabaseInteractionService(data.Value);
 
                 await databaseInteractor.EnsureDatabaseConnectionAsync();
 

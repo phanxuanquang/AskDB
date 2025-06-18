@@ -310,7 +310,7 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
             try
             {
-                _databaseInteractor = ServiceFactory.CreateInteractionService(request.DatabaseType, request.ConnectionString);
+                _databaseInteractor = request.DatabaseType.CreateDatabaseInteractionService(request.ConnectionString);
                 _generator = new Generator(Cache.ApiKey).EnableChatHistory(150);
 
                 try

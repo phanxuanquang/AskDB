@@ -157,7 +157,7 @@ namespace AskDB.App
                 if (_useConnectionString)
                 {
                     connectionString = ConnectionString.Value;
-                    var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, ConnectionString.Value);
+                    var databaseInteractor = ConnectionCredential.DatabaseType.CreateDatabaseInteractionService(ConnectionString.Value);
 
                     await databaseInteractor.EnsureDatabaseConnectionAsync();
                     await _db.SaveConnectionStringAsync(ConnectionString);
@@ -168,7 +168,7 @@ namespace AskDB.App
                         ? $"Data Source={SqliteFilePath}"
                         : ConnectionCredential.BuildConnectionString(5);
 
-                    var databaseInteractor = ServiceFactory.CreateInteractionService(ConnectionCredential.DatabaseType, connectionString);
+                    var databaseInteractor = ConnectionCredential.DatabaseType.CreateDatabaseInteractionService(connectionString);
                     await databaseInteractor.EnsureDatabaseConnectionAsync();
 
                     if (ConnectionCredential.DatabaseType == DatabaseType.SQLite)
