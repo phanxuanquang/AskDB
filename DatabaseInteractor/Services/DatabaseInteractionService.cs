@@ -174,8 +174,8 @@ This information can be crucial for:
 - Informing the user about their current capabilities within the database if they inquire or if it's relevant to a problem.")]
         public abstract Task<List<string>> GetUserPermissionsAsync();
 
-        [FunctionDeclaration("search_tables_by_name", @"Search for tables that may be relevant to the provided keyword by using approximate string matching algorithms (including Levenshtein Distance, Jaro-Winkler Similarity, and N-gram).
-If the keyword is an **empty string**, it will return **all available tables** in the current database, otherwise it will return a list of table names (that have the highest similarity with the entered keyword), along with their associated schema names (if applicable).
+        [FunctionDeclaration("search_tables_by_name", @"Search for tables that may be relevant to the provided keyword by using FuzzyWuzzy String Matching algorithm from Seat Geek.
+If the keyword is an **empty string**, it will return **all available tables** in the current database, otherwise it will return a list of table names (that have the highest Weighted Ratio with the entered keyword), along with their associated schema names (if applicable).
 
 ---
 
@@ -305,17 +305,9 @@ If the user doesn’t specify a schema or the schema is unclear:
 
         protected List<string> SearchTablesFromCachedTableNames(string keyword)
         {
-            var searcher = new SimilaritySearchHelper(CachedAllTableNames, 5);
-            var levenshteinResults = searcher.LevenshteinSearch(keyword, 0.8);
-            var jaroResults = searcher.JaroWinklerSearch(keyword, 0.8);
-            var ngramResults = searcher.NgramSearch(keyword, 2, 0.8);
+            var searcher = new TableNameSearcher(CachedAllTableNames.ToList());
 
-            var results = new HashSet<string>();
-            results.UnionWith(levenshteinResults);
-            results.UnionWith(jaroResults);
-            results.UnionWith(ngramResults);
-
-            return [.. results];
+            return searcher.SearchByThreshold(keyword, 65);
         }
 
         public async Task InitQueryTemplatesAsync()
@@ -327,6 +319,6 @@ If the user doesn’t specify a schema or the schema is unclear:
 
             SearchTablesByNameQueryTemplate = searchTablesTask.Result;
             GetTableStructureDetailQueryTemplate = getTableStructureTask.Result;
-        }    
+        }
     }
 }

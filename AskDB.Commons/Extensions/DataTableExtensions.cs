@@ -21,7 +21,7 @@ namespace AskDB.Commons.Extensions
             return results.Distinct().ToList();
         }
 
-        public static string ToMarkdown(this DataTable dataTable)
+        public static string ToMarkdown(this DataTable dataTable, int maxRow = 100)
         {
             if (dataTable == null || dataTable.Rows.Count == 0) return string.Empty;
 
@@ -39,13 +39,22 @@ namespace AskDB.Commons.Extensions
             }
             sb.AppendLine("|");
 
+            int count = 0;
             foreach (DataRow row in dataTable.Rows)
             {
+                count++;
                 for (int i = 0; i < dataTable.Columns.Count; i++)
                 {
                     sb.Append("| " + row[i].ToString() + " ");
                 }
                 sb.AppendLine("|");
+
+                if (count > maxRow)
+                {
+                    sb.AppendLine();
+                    sb.AppendLine($"> **Important:** The table above shows only {count}/{dataTable.Rows.Count} records due to your context lenght limitation. You should review your SQL query to avoid retrieving too many rows unnecessarily and to narrow down the records");
+                    break;
+                }
             }
 
             return sb.ToString();

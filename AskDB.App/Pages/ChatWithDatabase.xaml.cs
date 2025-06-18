@@ -647,7 +647,7 @@ It **MUST** include at least:
                 {
                     loopAttempt++;
                     await Task.Delay(2345);
-                    
+
                     try
                     {
                         var functionResponses = new List<FunctionResponse>();
@@ -721,7 +721,7 @@ It **MUST** include at least:
             {
                 ex.CopyToClipboard();
                 SetAgentMessage($"**Error:** {ex.Message}. {ex.InnerException?.Message}.\n\nThe reason detail has been copied to your clipboard.");
-            }                                                                                                                                                                                        
+            }
             finally
             {
                 SetLoading(false);
