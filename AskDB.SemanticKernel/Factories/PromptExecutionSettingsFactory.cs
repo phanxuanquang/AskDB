@@ -6,32 +6,59 @@ using Microsoft.SemanticKernel.Connectors.Ollama;
 using Microsoft.SemanticKernel.Connectors.Onnx;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
+#pragma warning disable SKEXP0070
+
 namespace AskDB.SemanticKernel.Factories
 {
     public static class PromptExecutionSettingsFactory
     {
         public static PromptExecutionSettings CreatePromptExecutionSettings(this AiServiceProvider serviceProvider)
         {
-            PromptExecutionSettings promptExecutionSettings;
+            var promptExecutionSettings = new PromptExecutionSettings
+            {
+                FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(options: new FunctionChoiceBehaviorOptions
+                {
+                    AllowConcurrentInvocation = true,
+                })
+            };
 
-#pragma warning disable SKEXP0070
             promptExecutionSettings = serviceProvider switch
             {
                 AiServiceProvider.OpenAI => new OpenAIPromptExecutionSettings
                 {
                     ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
+                    FunctionChoiceBehavior = promptExecutionSettings.FunctionChoiceBehavior,
                 },
                 AiServiceProvider.Gemini => new GeminiPromptExecutionSettings
                 {
-                    ToolCallBehavior = GeminiToolCallBehavior.EnableKernelFunctions,
+                    ToolCallBehavior = GeminiToolCallBehavior.AutoInvokeKernelFunctions,
+                    FunctionChoiceBehavior = promptExecutionSettings.FunctionChoiceBehavior,
                 },
-                AiServiceProvider.AzureOpenAI => new AzureOpenAIPromptExecutionSettings(),
-                AiServiceProvider.ONNX => new OnnxRuntimeGenAIPromptExecutionSettings(),
-                AiServiceProvider.Ollama => new OllamaPromptExecutionSettings(),
+                AiServiceProvider.AzureOpenAI => AzureOpenAIPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings),
+                AiServiceProvider.Ollama => OllamaPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings),
+                AiServiceProvider.ONNX => promptExecutionSettings as OnnxRuntimeGenAIPromptExecutionSettings,
                 _ => throw new NotImplementedException(),
             };
 
-            promptExecutionSettings.FunctionChoiceBehavior = FunctionChoiceBehavior.Auto();
+            return promptExecutionSettings!;
+        }
+
+        public static PromptExecutionSettings CreatePromptExecutionSettingsForJsonOutput(this PromptExecutionSettings promptExecutionSettings, AiServiceProvider serviceProvider, object jsonFormat)
+        {
+            switch (serviceProvider)
+            {
+                case AiServiceProvider.OpenAI:
+                    OpenAIPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings).ResponseFormat = jsonFormat;
+                    break;
+                case AiServiceProvider.Gemini:
+                    GeminiPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings).ResponseSchema = jsonFormat;
+                    GeminiPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings).ResponseMimeType = "application/json";
+                    break;
+                case AiServiceProvider.AzureOpenAI:
+                    AzureOpenAIPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings).ResponseFormat = jsonFormat;
+                    break;
+                default: throw new NotImplementedException($"The service provider {serviceProvider} does not support JSON output format.");
+            }
 
             return promptExecutionSettings;
         }

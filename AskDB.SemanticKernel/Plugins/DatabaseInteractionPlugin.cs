@@ -7,7 +7,7 @@ namespace AskDB.SemanticKernel.Plugins
 {
     public class DatabaseInteractionPlugin(DatabaseInteractionService databaseInteractionService)
     {
-        [KernelFunction("execute_query")]
+        [KernelFunction]
         [Description(@"Execute a **read-only SQL query** against the current database and return the result as a structured dataset (rows and columns).
 This function is strictly for executing `SELECT` statements or other **non-modifying**, **safe** SQL queries/scripts.
 
@@ -89,14 +89,16 @@ Use as part of a multi-step logic chain:
 * **Explore freely when helpful**: You’re allowed to query the DB to learn, build knowledge, or assist the user better — even without direct user instruction.
 * **Avoid surprises**: Don’t assume column names, data types, or content. Check first. 
 * **Think ahead**: Use early queries to prepare for more complex operations later.")]
-        public async Task<string> ExecuteQueryAsync(string sqlQuery)
+        public async Task<string> ExecuteQueryAsync(
+            [Description("The SQL query to execute. It should be a valid SQL command that returns data, such as a `SELECT` statement.")]
+            string sqlQuery)
         {
             var data = await databaseInteractionService.ExecuteQueryAsync(sqlQuery);
 
             return data.ToMarkdown();
         }
 
-        [KernelFunction("execute_non_query")]
+        [KernelFunction]
         [Description(@"Execute a SQL query that does not return any result (e.g., INSERT, UPDATE, DELETE).
 Use this function **EXCLUSIVELY** for executing SQL commands or SQL scripts that modify the database data or schema.
 
@@ -113,12 +115,14 @@ This includes, but is not limited to:
 - Prefer to use `get_table_structure` function to check and understand the structure of the relevant tables before executing if you are unsure about the query or its impact.
 - Prefer to use `execute_query` function to check the data of the impacted tables before executing if you are unsure about the query or its impact.
 - **DO NOT** use this function for SELECT statements or other read-only queries that are expected to return data")]
-        public async Task ExecuteNonQueryAsync(string sqlCommand)
+        public async Task ExecuteNonQueryAsync(
+            [Description("The complete, syntactically correct SQL command or SQL scripts (e.g., INSERT, UPDATE, DELETE, CREATE, ALTER) to be executed. Ensure the query is specific to the user-confirmed action plan.")]
+            string sqlCommand)
         {
             await databaseInteractionService.ExecuteNonQueryAsync(sqlCommand);
         }
 
-        [KernelFunction("get_user_permissions")]
+        [KernelFunction]
         [Description(@"Get the list of permissions for the current user.
 Use this function **EXCLUSIVELY** to retrieve a list of the database permissions currently granted to the application's user session.
 
@@ -131,7 +135,7 @@ This information can be crucial for:
             return await databaseInteractionService.GetUserPermissionsAsync();
         }
 
-        [KernelFunction("search_tables_by_name")]
+        [KernelFunction]
         [Description(@"Search for tables that may be relevant to the provided keyword by using FuzzyWuzzy String Matching algorithm from Seat Geek.
 If the keyword is an **empty string**, it will return **all available tables** in the current database, otherwise it will return a list of table names (that have the highest Weighted Ratio with the entered keyword), along with their associated schema names (if applicable).
 
@@ -193,12 +197,14 @@ This function is **CRITICAL** in the following use cases:
   * The user **misspells** or **partially writes** a table name.
   * You are about to call `get_table_structure` or generate SQL for a table, but schema/table name **ambiguity exists**.
 * If this function returns **multiple matches**, prompt the user to select or confirm the correct table before continuing.")]
-        public async Task<List<string>> SearchTablesByNameAsync(string? keyword)
+        public async Task<List<string>> SearchTablesByNameAsync(
+            [Description("A keyword to filter the table names. If an empty string is provided, all accessible table names with their associated schema are returned.")]
+            string? keyword)
         {
             return await databaseInteractionService.SearchTablesByNameAsync(keyword);
         }
 
-        [KernelFunction("get_table_structure")]
+        [KernelFunction]
         [Description(@"Retrieve detailed schema-level metadata of a specific database table, including column names, data types, nullability, constraints, foreign keys, and references.
 
 Use this function to inspect and understand the structure and relational properties of a database table before performing any query or analysis.
@@ -263,7 +269,11 @@ If the user doesn’t specify a schema or the schema is unclear:
 
 * Use the `search_tables_by_name` function first to identify available tables and their corresponding schemas.
 * If multiple candidates are returned or ambiguity remains, **prompt the user to clarify** which table/schema they meant before calling this function.")]
-        public async Task<string> GetTableStructureDetailAsync(string? schema, string table)
+        public async Task<string> GetTableStructureDetailAsync(
+            [Description("The exact name of the table for which to retrieve detailed schema information. This is often case-sensitive depending on the database.")]
+            string table,
+            [Description("The name of the schema containing the table. This is often case-sensitive depending on the database. **Be noted** that schema parameter is *only* supported for SQL Server and PostgreSQL database, otherwise, leave it empty or null value. In addition, if the schema name is not explicitly provided by the user or clear from context, just ignore it.")]
+            string? schema = "")
         {
             var data = await databaseInteractionService.GetTableStructureDetailAsync(schema, table);
 

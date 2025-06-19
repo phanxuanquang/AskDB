@@ -1,44 +1,48 @@
-﻿using AskDB.SemanticKernel.Factories;
+﻿using AskDB.SemanticKernel.Enums;
+using AskDB.SemanticKernel.Factories;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
 namespace AskDB.SemanticKernel.Services
 {
-    public class ChatCompletionService
+    public class AgentChatCompletionService
     {
         private readonly Kernel _kernel;
+        public readonly AiServiceProvider ServiceProvider;
         private readonly IChatCompletionService _chatCompletionService;
         private readonly int _maxMessageCount;
-        private readonly PromptExecutionSettings _promptExecutionSettings = new()
-        {
-            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
-        };
 
-        private ChatHistory _chatHistory;
+        private ChatHistory _chatHistories { get; set; }
 
-        public ChatCompletionService(KernelFactory kernelFactory, int maxMessageCount = 200)
+        public AgentChatCompletionService(KernelFactory kernelFactory, int maxMessageCount = 200)
         {
             _kernel = kernelFactory.Build();
+            ServiceProvider = kernelFactory.ServiceProvider;
             _chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
-            _chatHistory = [];
+            _chatHistories = [];
             _maxMessageCount = maxMessageCount;
+        }
+
+        public void AddChatHistory(ChatMessageContent chatMessageContent)
+        {
+            _chatHistories.Add(chatMessageContent);
         }
 
         public void AddFunctionCallingResponse(FunctionResultContent functionResultContent)
         {
-            _chatHistory.Add(functionResultContent.ToChatMessage());
+            _chatHistories.Add(functionResultContent.ToChatMessage());
         }
 
-        public ChatCompletionService WithSystemInstruction(string systemInstruction)
+        public AgentChatCompletionService WithSystemInstruction(string systemInstruction)
         {
             if (string.IsNullOrWhiteSpace(systemInstruction))
             {
                 throw new ArgumentException("System instruction cannot be null or empty.", nameof(systemInstruction));
             }
 
-            _chatHistory.Clear();
+            _chatHistories.Clear();
 
-            _chatHistory.Add(
+            _chatHistories.Add(
                 new()
                 {
                     Role = AuthorRole.System,
@@ -49,33 +53,33 @@ namespace AskDB.SemanticKernel.Services
             return this;
         }
 
-        public async Task<ChatMessageContent> SendMessageAsync(string message)
+        public async Task<ChatMessageContent> SendMessageAsync(string message, PromptExecutionSettings executionSettings)
         {
             if (string.IsNullOrWhiteSpace(message))
             {
                 throw new ArgumentException("Message cannot be null or empty.", nameof(message));
             }
 
-            _chatHistory.AddUserMessage(message.Trim());
+            _chatHistories.AddUserMessage(message.Trim());
 
-            if (_chatHistory.Count > _maxMessageCount)
+            if (_chatHistories.Count > _maxMessageCount)
             {
                 var reducer = new ChatHistoryTruncationReducer(targetCount: _maxMessageCount);
-                var reducedMessages = await reducer.ReduceAsync(_chatHistory);
+                var reducedMessages = await reducer.ReduceAsync(_chatHistories);
                 if (reducedMessages is not null)
                 {
-                    _chatHistory = [.. reducedMessages];
+                    _chatHistories = [.. reducedMessages];
                 }
             }
 
-            var chatCompletion = await _chatCompletionService.GetChatMessageContentAsync(
-                _chatHistory,
-                executionSettings: _promptExecutionSettings,
+            var response = await _chatCompletionService.GetChatMessageContentAsync(
+                _chatHistories,
+                executionSettings: executionSettings,
                 kernel: _kernel);
 
-            _chatHistory.Add(chatCompletion);
+            _chatHistories.Add(response);
 
-            return chatCompletion;
+            return response;
         }
     }
 }

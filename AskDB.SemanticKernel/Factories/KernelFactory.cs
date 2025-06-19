@@ -1,4 +1,5 @@
 ﻿using AskDB.SemanticKernel.Enums;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 
 namespace AskDB.SemanticKernel.Factories
@@ -16,6 +17,21 @@ namespace AskDB.SemanticKernel.Factories
         public KernelFactory WithPlugin(object plugin)
         {
             _kernelBuilder.Plugins.AddFromObject(plugin);
+            return this;
+        }
+
+        public KernelFactory WithService<TInterface, TImplementation>()
+            where TInterface : class
+            where TImplementation : class, TInterface
+        {
+            _kernelBuilder.Services.AddSingleton<TInterface, TImplementation>();
+            return this;
+        }
+
+        public KernelFactory WithFunctionInvocationFilter<TFilter>(TFilter implementation)
+            where TFilter : class, IFunctionInvocationFilter
+        {
+            _kernelBuilder.Services.AddSingleton<IFunctionInvocationFilter>(implementation);
             return this;
         }
 
