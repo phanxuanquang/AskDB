@@ -5,6 +5,7 @@ using AskDB.SemanticKernel.Factories;
 using AskDB.SemanticKernel.InvocationFilters;
 using AskDB.SemanticKernel.Plugins;
 using AskDB.SemanticKernel.Services;
+using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.UI.Controls;
 using DatabaseInteractor.Factories;
 using DatabaseInteractor.Helpers;
@@ -15,9 +16,13 @@ using GeminiDotNET.ApiModels.Enums;
 using GeminiDotNET.FunctionCallings.Attributes;
 using GeminiDotNET.Helpers;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
+using Microsoft.SemanticKernel.Planning;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
@@ -26,13 +31,18 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Data.Pdf;
+using Windows.Networking.NetworkOperators;
 using Windows.Storage.Pickers;
+using Windows.Storage.Streams;
 using Windows.System;
 using WinRT.Interop;
+using static Dapper.SqlMapper;
+using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace AskDB.App.Pages
 {
-    public sealed partial class ChatWithDatabase : Page, IFunctionInvocationFilter
+    public sealed partial class ChatWithDatabase : Page, IFunctionInvocationFilter, IAutoFunctionInvocationFilter
     {
         private readonly ObservableCollection<ChatContent> Messages = [];
         private readonly ObservableCollection<AgentSuggestion> AgentSuggestions = [];
@@ -333,7 +343,7 @@ Use this function to retrieve **critical, missing context** from the internet wh
                 _kernelFactory = new KernelFactory()
                     .UseGoogleGeminiProvider(Cache.ApiKey, "gemini-2.0-flash")
                     .WithPlugin(new DatabaseInteractionPlugin(_databaseInteractor))
-                    .WithService<IAutoFunctionInvocationFilter, AutoFunctionInvocationFilter>()
+                    .WithAutoFunctionInvocationFilter(this)
                     .WithFunctionInvocationFilter(this);
 
                 _chatCompletionService = new AgentChatCompletionService(_kernelFactory)
@@ -341,7 +351,7 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
                 await LoadTableNamesAsync();
 
-                await HandleUserInputAsync("any table about film");
+                await HandleUserInputAsync("search for tables that contain the word 'customer' in their name, then show me the table structure of the first 3 tables found.");
             }
             catch (Exception ex)
             {
@@ -488,25 +498,27 @@ Use this function to retrieve **critical, missing context** from the internet wh
         }
         #endregion
 
-        private async Task HandleUserInputAsync(string userInput)
+        private async Task HandleUserInputAsync(string userMessage)
         {
             try
             {
                 SetLoading(true, "Working");
-                SetUserMessage(userInput);
+                SetUserMessage(userMessage);
 
                 AgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(false);
                 AgentSuggestions.Clear();
 
                 while (true)
                 {
-                    var modelResponse = await _chatCompletionService.SendMessageAsync(userInput, _chatCompletionService.ServiceProvider.CreatePromptExecutionSettings());
+                    var result = await _chatCompletionService.SendMessageAsync(userMessage, _chatCompletionService.ServiceProvider.CreatePromptExecutionSettings());
 
-                    if (!string.IsNullOrEmpty(modelResponse.Content))
+                    if (!string.IsNullOrEmpty(result.Content))
                     {
-                        SetAgentMessage(modelResponse.Content);
+                        SetAgentMessage(result.Content);
                         break;
                     }
+
+                    SetAgentMessage("**Error:** No response from the agent. Please try again later.");
                 }
 
             }
@@ -611,14 +623,23 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
         public async Task OnFunctionInvocationAsync(FunctionInvocationContext context, Func<FunctionInvocationContext, Task> next)
         {
-            if (context.Function.PluginName != nameof(DatabaseInteractionPlugin))
-            {
-                return;
-            }
+            //if (context.Function.PluginName == nameof(DatabaseInteractionPlugin) && context.Function.Name == nameof(DatabaseInteractionPlugin.GetTableStructureDetailAsync))
+            //{
+            //    var schemaName = context.Arguments["schema"]?.ToString() ?? string.Empty;
+            //    var tableName = context.Arguments["table"]?.ToString() ?? string.Empty;
+            //    var tableStructure = await _databaseInteractor.GetTableStructureDetailAsync(schemaName, tableName);
+            //    if (tableStructure.Rows.Count > 0)
+            //    {
+            //        SetAgentMessage(null, tableStructure);
+            //    }
+            //    else
+            //    {
+            //        SetAgentMessage($"No structure found for table '{tableName}'.");
+            //    }
+            //    return;
+            //}
 
             await next(context);
-
-            await CallFunctionAsync(context);
         }
 
         public async Task CallFunctionAsync(FunctionInvocationContext context)
@@ -710,6 +731,27 @@ Use this function to retrieve **critical, missing context** from the internet wh
             {
                 // Handle other function invocations if needed
             }
+        }
+
+        public async Task OnAutoFunctionInvocationAsync(AutoFunctionInvocationContext context, Func<AutoFunctionInvocationContext, Task> next)
+        {
+            if (context.Function.PluginName == nameof(DatabaseInteractionPlugin) && context.Function.Name == nameof(DatabaseInteractionPlugin.GetTableStructureDetailAsync))
+            {
+                var schemaName = context.Arguments["schema"]?.ToString() ?? string.Empty;
+                var tableName = context.Arguments["table"]?.ToString() ?? string.Empty;
+                var tableStructure = await _databaseInteractor.GetTableStructureDetailAsync(schemaName, tableName);
+                if (tableStructure.Rows.Count > 0)
+                {
+                    SetAgentMessage(null, tableStructure);
+                }
+                else
+                {
+                    SetAgentMessage($"No structure found for table '{tableName}'.");
+                }
+                return;
+            }
+
+            await next(context);
         }
     }
 }

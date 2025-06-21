@@ -16,10 +16,13 @@ namespace AskDB.SemanticKernel.Factories
         {
             var promptExecutionSettings = new PromptExecutionSettings
             {
-                FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(options: new FunctionChoiceBehaviorOptions
-                {
-                    AllowConcurrentInvocation = true,
-                })
+                FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(
+                    options: new FunctionChoiceBehaviorOptions
+                    {
+                        AllowConcurrentInvocation = false,
+                        AllowParallelCalls = false,
+                    }, 
+                    autoInvoke: true)
             };
 
             promptExecutionSettings = serviceProvider switch

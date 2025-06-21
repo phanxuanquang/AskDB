@@ -7,7 +7,7 @@ namespace AskDB.SemanticKernel.Services
 {
     public class AgentChatCompletionService
     {
-        private readonly Kernel _kernel;
+        public readonly Kernel Kernel;
         public readonly AiServiceProvider ServiceProvider;
         private readonly IChatCompletionService _chatCompletionService;
         private readonly int _maxMessageCount;
@@ -16,9 +16,9 @@ namespace AskDB.SemanticKernel.Services
 
         public AgentChatCompletionService(KernelFactory kernelFactory, int maxMessageCount = 200)
         {
-            _kernel = kernelFactory.Build();
+            Kernel = kernelFactory.Build();
             ServiceProvider = kernelFactory.ServiceProvider;
-            _chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+            _chatCompletionService = Kernel.GetRequiredService<IChatCompletionService>();
             _chatHistories = [];
             _maxMessageCount = maxMessageCount;
         }
@@ -75,7 +75,7 @@ namespace AskDB.SemanticKernel.Services
             var response = await _chatCompletionService.GetChatMessageContentAsync(
                 _chatHistories,
                 executionSettings: executionSettings,
-                kernel: _kernel);
+                kernel: Kernel);
 
             _chatHistories.Add(response);
 

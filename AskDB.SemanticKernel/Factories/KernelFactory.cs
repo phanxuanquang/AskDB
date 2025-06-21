@@ -35,6 +35,13 @@ namespace AskDB.SemanticKernel.Factories
             return this;
         }
 
+        public KernelFactory WithAutoFunctionInvocationFilter<TFilter>(TFilter implementation)
+           where TFilter : class, IAutoFunctionInvocationFilter
+        {
+            _kernelBuilder.Services.AddSingleton<IAutoFunctionInvocationFilter>(implementation);
+            return this;
+        }
+
         public Kernel Build()
         {
             return _kernelBuilder.Build();

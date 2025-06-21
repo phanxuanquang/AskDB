@@ -17,7 +17,6 @@ namespace AskDB.Test
                 .WithService<IFunctionInvocationFilter, FunctionInvocationFilter>();
 
             var chatCompletionService = new AgentChatCompletionService(kernelFactory);
-            ;
         }
     }
 
