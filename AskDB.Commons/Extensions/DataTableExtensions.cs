@@ -52,7 +52,7 @@ namespace AskDB.Commons.Extensions
                 if (count > maxRow)
                 {
                     sb.AppendLine();
-                    sb.AppendLine($"> **Important:** The table above shows only {count}/{dataTable.Rows.Count} records due to your context lenght limitation. You should review your SQL query to avoid retrieving too many rows unnecessarily and to narrow down the records");
+                    sb.AppendLine($"> **Important:** I only provide you with {count}/{dataTable.Rows.Count} records due to your context lenght limitation.");
                     break;
                 }
             }

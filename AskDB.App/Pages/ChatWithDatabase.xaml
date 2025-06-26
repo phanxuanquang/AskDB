@@ -9,7 +9,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
     xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls" 
     xmlns:view_models="using:AskDB.App.View_Models" 
-    xmlns:animations="using:CommunityToolkit.WinUI.Animations" xmlns:converters="using:AskDB.App.Converters"
+    xmlns:animations="using:CommunityToolkit.WinUI.Animations" xmlns:converters="using:AskDB.App.Converters" xmlns:charts="using:AskDB.App.Local_Controls.Charts"
     mc:Ignorable="d">
 
     <Page.Resources>
@@ -17,6 +17,7 @@
         <converters:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
         <converters:BoolToHorizontalAlignment x:Key="BoolToHorizontalAlignment"/>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:DataVisualizationInfoToChartVisualizationInfo x:Key="DataVisualizationInfoToChartVisualizationInfo"/>
     </Page.Resources>
 
     <Grid>
@@ -84,6 +85,10 @@
                                     AlternatingRowBackground="{ThemeResource ControlAltFillColorTertiaryBrush}"
                                     Visibility="{x:Bind Data, Converter={StaticResource DataTableToVisibilityConverter}, Mode=OneWay}"
                                     ItemsSource="{x:Bind QueryResults, Mode=OneWay}"/>
+                                <charts:ChartVisualizer 
+                                    Width="800"
+                                    VisualizationInfo="{x:Bind DataVisualizationInfo, Mode=OneWay, Converter={StaticResource DataVisualizationInfoToChartVisualizationInfo}}" 
+                                    Visibility="{x:Bind DataVisualizationInfo.DataSet, Converter={StaticResource DataTableToVisibilityConverter}, Mode=OneWay}"/>
                                 <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left">
                                     <Button Padding="6" ToolTipService.ToolTip="Export the data" ToolTipService.Placement="Left" Click="ExportButton_Click" Visibility="{x:Bind Data, Converter={StaticResource DataTableToVisibilityConverter}, Mode=OneWay}">
                                         <FontIcon Glyph="&#xE896;" FontSize="14"/>

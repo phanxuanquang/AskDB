@@ -67,7 +67,7 @@ namespace AskDB.App
 
         private void ColorThemeToggle_Click(object sender, RoutedEventArgs e)
         {
-            RootGrid.RequestedTheme = RootGrid.RequestedTheme == ElementTheme.Dark ? ElementTheme.Light : ElementTheme.Dark;
+            App.AppTheme = RootGrid.RequestedTheme = RootGrid.RequestedTheme == ElementTheme.Dark ? ElementTheme.Light : ElementTheme.Dark;
         }
 
         private void BackButton_Click(object sender, RoutedEventArgs e)
@@ -150,9 +150,9 @@ namespace AskDB.App
             }
         }
 
-        private void SendFeedbackButton_Click(object sender, RoutedEventArgs e)
+        private async void SendFeedbackButton_Click(object sender, RoutedEventArgs e)
         {
-            LicenseHelper.SendFeedbackAsyn();
+            await LicenseHelper.SendFeedbackAsyn();
         }
     }
 }

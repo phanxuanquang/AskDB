@@ -1,4 +1,5 @@
 ﻿using AskDB.App.Helpers;
+using AskDB.App.Local_Controls.Charts.Enums;
 using AskDB.App.View_Models;
 using AskDB.Commons.Extensions;
 using CommunityToolkit.WinUI.UI.Controls;
@@ -294,6 +295,28 @@ Use this function to retrieve **critical, missing context** from the internet wh
                 return $"**Error:** {ex.Message}";
             }
         }
+
+        [FunctionDeclaration("visualize_data_table", @"Visualize the data table with the specified label and value columns. 
+This function is used to create a cartesian chart visualization of the data table returned from the database query.
+You can specify the label column name (horizontal axis) and value column name (vertical axis) to visualize the data in a line chart format.
+You can also use this function to visualize the data table returned from the `execute_query` function.
+This function should not be used if the user has not confirmed the data table to be visualized, or if the data table is empty or does not contain the specified columns.")]
+        private void VisualizeDataTable(string labelColumnName, string valueColumnName, DataTable dataTable)
+        {
+            Messages.Add(new ChatMessage
+            {
+                Message = string.Empty,
+                IsFromUser = false,
+                IsFromAgent = true,
+                DataVisualizationInfo = new DataVisualizationInfo
+                {
+                    XAxisName = labelColumnName,
+                    YAxisName = valueColumnName,
+                    DataSet = dataTable,
+                    SeriesType = ChartSeriesType.Line,
+                },
+            });
+        }
         #endregion
 
         #region Event Handlers
@@ -493,7 +516,7 @@ This is the list of table names in the database: {string.Join(", ", tableNames.S
             Messages.Add(chatMessage);
         }
 
-        private void SetAgentMessage(string? message, DataTable? dataTable = null)
+        private void SetAgentMessage(string? message, DataTable? dataTable = null, long? queryResultId = null)
         {
             var isDataTableEmpty = dataTable == null || dataTable.Rows.Count == 0;
 
@@ -503,7 +526,8 @@ This is the list of table names in the database: {string.Join(", ", tableNames.S
                 IsFromUser = false,
                 IsFromAgent = true,
                 QueryResults = isDataTableEmpty ? [] : new ObservableCollection<object>(dataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray)),
-                Data = isDataTableEmpty ? null : dataTable
+                Data = isDataTableEmpty ? null : dataTable,
+                QueryResultId = queryResultId
             };
 
             Messages.Add(chatMessage);
@@ -598,6 +622,28 @@ It **MUST** include at least:
                     }
                 },
                 Required = ["table"]
+            });
+            FunctionDeclarationHelper.RegisterFunction(VisualizeDataTable, new Parameters
+            {
+                Properties = new
+                {
+                    queryResultId = new
+                    {
+                        type = "integer",
+                        description = "The unique identifier of the query result to visualize. This should match the ID of the data table returned from the `execute_query` function."
+                    },
+                    labelColumnName = new
+                    {
+                        type = "string",
+                        description = "The name of the column to use for the horizontal axis (labels) in the chart visualization. The data type of this column should be related to string, date, time."
+                    },
+                    valueColumnName = new
+                    {
+                        type = "string",
+                        description = "The name of the column to use for the vertical axis (values) in the chart visualization. The data type of this column should be numberic types."
+                    }
+                },
+                Required = ["queryResultId", "labelColumnName", "valueColumnName"]
             });
         }
         #endregion
@@ -727,6 +773,7 @@ It **MUST** include at least:
                 SetLoading(false);
             }
         }
+
         private async Task<FunctionResponse> CallFunctionAsync(FunctionCall function)
         {
             switch (function.Name)
@@ -740,8 +787,11 @@ It **MUST** include at least:
                             var dataTable = await _databaseInteractor.ExecuteQueryAsync(sqlQuery);
                             if (dataTable != null && dataTable.Rows.Count > 0)
                             {
-                                SetAgentMessage(null, dataTable);
-                                return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
+                                var queryResultId = DateTime.Now.Ticks % 10000;
+                                var message = $"> *Additional Note: In case this query result (the table below) is used for data visualization, its ID is `{queryResultId}`. \n\n{dataTable.ToMarkdown()}";
+
+                                SetAgentMessage(null, dataTable, queryResultId);
+                                return FunctionCallingHelper.CreateResponse(name, message);
                             }
                             else
                             {
@@ -824,6 +874,20 @@ It **MUST** include at least:
                         var permissionsInMarkdown = string.Join(", ", permissions.Select(x => $"`{x}`"));
                         return FunctionCallingHelper.CreateResponse(name, permissionsInMarkdown);
                     }
+                case var name when name == FunctionDeclarationHelper.GetFunctionName(VisualizeDataTable):
+                    {
+                        var queryResultId = FunctionCallingHelper.GetParameterValue<long>(function, "queryResultId");
+                        var labelColumnName = FunctionCallingHelper.GetParameterValue<string>(function, "labelColumnName");
+                        var valueColumnName = FunctionCallingHelper.GetParameterValue<string>(function, "valueColumnName");
+                        var dataSet = Messages.FirstOrDefault(x => x.QueryResultId.HasValue && x.QueryResultId == queryResultId);
+                        if (dataSet == null || dataSet.Data == null || dataSet.Data.Rows.Count == 0)
+                        {
+                            return FunctionCallingHelper.CreateResponse(name, "The data table is empty or does not exist. Please double-check the `queryResultId` value or execute the query again.");
+                        }
+                        SetAgentMessage($"Let me visualize the data table with `{labelColumnName}` as the horizontal axis and `{valueColumnName}` as the vertical axis, from the query result `{queryResultId}`.");
+                        VisualizeDataTable(labelColumnName!, valueColumnName!, dataSet.Data);
+                        return FunctionCallingHelper.CreateResponse(name, $"The data table has been visualized with `{labelColumnName}` as the horizontal axis and `{valueColumnName}` as the vertical axis.");
+                    }
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(RequestForActionPlanAsync):
                     {
                         SetAgentMessage("Let me analyze the current situation and create an action plan.");
@@ -845,7 +909,8 @@ It **MUST** include at least:
                         ChangeTheConversationLanguage(language!);
                         return FunctionCallingHelper.CreateResponse(name, $"From now on, AskDB **must use {language}** for the conversation (except for the tool calling).");
                     }
-                default: throw new NotImplementedException($"Function '{function.Name}' is not implemented.");
+                default:
+                    throw new NotImplementedException($"Function '{function.Name}' is not implemented.");
             }
         }
 
