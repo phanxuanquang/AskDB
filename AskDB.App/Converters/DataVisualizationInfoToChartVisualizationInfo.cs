@@ -16,12 +16,12 @@ namespace AskDB.App.Converters
             {
                 if (dataVisualizationInfo.DataSet == null || dataVisualizationInfo.DataSet.Rows.Count == 0)
                 {
-                    throw new ArgumentNullException(nameof(dataVisualizationInfo.DataSet), "DataVisualizationInfo or DataSet cannot be null or empty.");
+                    return null;
                 }
 
                 if (!dataVisualizationInfo.DataSet.Columns.Contains(dataVisualizationInfo.XAxisName) || !dataVisualizationInfo.DataSet.Columns.Contains(dataVisualizationInfo.YAxisName))
                 {
-                    throw new ArgumentException("Horizontal or Vertical axis columns are missing.", nameof(dataVisualizationInfo.DataSet));
+                    return null;
                 }
 
                 var labels = new List<string>();

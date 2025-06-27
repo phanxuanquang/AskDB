@@ -12,7 +12,7 @@
     mc:Ignorable="d">
 
     <Page.Resources>
-        <converters:IEnumerableToVisibilityConverter x:Key="IEnumerableToVisibilityConverter"/>
+        <converters:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVisibilityConverter"/>
     </Page.Resources>
     
     <Grid MaxWidth="1280">
@@ -23,7 +23,7 @@
                     <Paragraph>AskDB found the following connection information from your previous connection sessions. Please choose one or skip to setup a new connection to your database.</Paragraph>
                 </RichTextBlock>
             </StackPanel>
-            <StackPanel Spacing="12" Visibility="{x:Bind ExistingDatabaseConnectionInfors, Converter={StaticResource IEnumerableToVisibilityConverter}}">
+            <StackPanel Spacing="12" Visibility="{x:Bind ExistingDatabaseConnectionInfors, Converter={StaticResource NullOrEmptyToVisibilityConverter}}">
                 <TextBlock Text="Connection Credentials" Style="{StaticResource BodyStrongTextBlockStyle}"/>
                 <ItemsView Padding="12,0" SelectionMode="None" ItemsSource="{x:Bind ExistingDatabaseConnectionInfors}" MaxHeight="360" IsItemInvokedEnabled="True" ItemInvoked="DatabaseCredentionItemsView_ItemInvoked">
                     <ItemsView.Layout>
@@ -66,7 +66,7 @@
                     </ItemsView.ItemTemplate>
                 </ItemsView>
             </StackPanel>
-            <StackPanel Spacing="12" Visibility="{x:Bind ExistingConnectionStringInfors, Converter={StaticResource IEnumerableToVisibilityConverter}}">
+            <StackPanel Spacing="12" Visibility="{x:Bind ExistingConnectionStringInfors, Converter={StaticResource NullOrEmptyToVisibilityConverter}}">
                 <TextBlock Text="Connection Strings" Style="{StaticResource BodyStrongTextBlockStyle}"/>
                 <ItemsView Padding="12,0" SelectionMode="None" ItemsSource="{x:Bind ExistingConnectionStringInfors}" MaxHeight="360" IsItemInvokedEnabled="True" ItemInvoked="ConnectionStringItemsView_ItemInvoked">
                     <ItemsView.Layout>

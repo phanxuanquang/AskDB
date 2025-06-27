@@ -40,6 +40,7 @@ namespace AskDB.App.Pages
         private string _globalInstruction;
         private string _actionPlanInstruction;
 
+
         public ChatWithDatabase()
         {
             this.InitializeComponent();
@@ -305,7 +306,6 @@ This function should not be used if the user has not confirmed the data table to
         {
             Messages.Add(new ChatMessage
             {
-                Message = string.Empty,
                 IsFromUser = false,
                 IsFromAgent = true,
                 DataVisualizationInfo = new DataVisualizationInfo
@@ -372,7 +372,7 @@ This is the list of table names in the database: {string.Join(", ", tableNames.S
                     var requestForAgentSuggestions = new ApiRequestBuilder()
                        .WithSystemInstruction(_globalInstruction)
                        .DisableAllSafetySettings()
-                       .WithDefaultGenerationConfig(1.5F, 350)
+                       .WithDefaultGenerationConfig()
                        .WithPrompt("In order to start the conversation, please introduce to me about yourself, such as who you are, what you can do, what you can help me, or anything else that you think it may be relavant to my database and be useful to me; and some good practices for me to help you to do the task effectively. Take me as your friend or your teammate, avoid to use formal-like tone while talking to me; just use a natural, friendly tone with daily-life word when talking to me, like you are talking with your friends in the real life.")
                        .Build();
 
@@ -522,10 +522,9 @@ This is the list of table names in the database: {string.Join(", ", tableNames.S
 
             var chatMessage = new ChatMessage
             {
-                Message = string.IsNullOrEmpty(message) ? string.Empty : message,
+                Message = message,
                 IsFromUser = false,
                 IsFromAgent = true,
-                QueryResults = isDataTableEmpty ? [] : new ObservableCollection<object>(dataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray)),
                 Data = isDataTableEmpty ? null : dataTable,
                 QueryResultId = queryResultId
             };

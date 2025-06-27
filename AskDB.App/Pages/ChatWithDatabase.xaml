@@ -13,11 +13,11 @@
     mc:Ignorable="d">
 
     <Page.Resources>
-        <converters:DataTableToVisibilityConverter x:Key="DataTableToVisibilityConverter"/>
-        <converters:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
         <converters:BoolToHorizontalAlignment x:Key="BoolToHorizontalAlignment"/>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <converters:DataVisualizationInfoToChartVisualizationInfo x:Key="DataVisualizationInfoToChartVisualizationInfo"/>
+        <converters:DataTableToObservableCollectionConverter x:Key="DataTableToObservableCollectionConverter"/>
+        <converters:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVisibilityConverter"/>
     </Page.Resources>
 
     <Grid>
@@ -70,6 +70,7 @@
                                     InlineCodeBackground="{ThemeResource SystemFillColorCautionBackgroundBrush}"
                                     ParagraphLineHeight="24"
                                     Text="{x:Bind Message}"
+                                    Visibility="{x:Bind Message, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}"
                                     LinkClicked="MarkdownTextBlock_LinkClicked"/>
                                 <controls1:DataGrid 
                                     IsReadOnly="True" 
@@ -83,17 +84,27 @@
                                     AutoGeneratingColumn="DataGrid_AutoGeneratingColumn"
                                     RowBackground="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
                                     AlternatingRowBackground="{ThemeResource ControlAltFillColorTertiaryBrush}"
-                                    Visibility="{x:Bind Data, Converter={StaticResource DataTableToVisibilityConverter}, Mode=OneWay}"
-                                    ItemsSource="{x:Bind QueryResults, Mode=OneWay}"/>
+                                    Visibility="{x:Bind Data, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}"
+                                    ItemsSource="{x:Bind Data, Converter={StaticResource DataTableToObservableCollectionConverter},Mode=OneWay}"/>
                                 <charts:ChartVisualizer 
                                     Width="800"
                                     VisualizationInfo="{x:Bind DataVisualizationInfo, Mode=OneWay, Converter={StaticResource DataVisualizationInfoToChartVisualizationInfo}}" 
-                                    Visibility="{x:Bind DataVisualizationInfo.DataSet, Converter={StaticResource DataTableToVisibilityConverter}, Mode=OneWay}"/>
+                                    Visibility="{x:Bind DataVisualizationInfo, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}"/>
                                 <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left">
-                                    <Button Padding="6" ToolTipService.ToolTip="Export the data" ToolTipService.Placement="Left" Click="ExportButton_Click" Visibility="{x:Bind Data, Converter={StaticResource DataTableToVisibilityConverter}, Mode=OneWay}">
+                                    <Button 
+                                        Padding="6" 
+                                        ToolTipService.ToolTip="Export the data" 
+                                        ToolTipService.Placement="Left" 
+                                        Click="ExportButton_Click" 
+                                        Visibility="{x:Bind Data, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}">
                                         <FontIcon Glyph="&#xE896;" FontSize="14"/>
                                     </Button>
-                                    <Button Padding="6" ToolTipService.ToolTip="Copy" ToolTipService.Placement="Left" Click="CopyButton_Click">
+                                    <Button 
+                                        Padding="6" 
+                                        ToolTipService.ToolTip="Copy" 
+                                        ToolTipService.Placement="Left" 
+                                        Click="CopyButton_Click" 
+                                        Visibility="{x:Bind Message, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}">
                                         <FontIcon Glyph="&#xE8C8;" FontSize="14"/>
                                     </Button>
                                 </StackPanel>
@@ -109,6 +120,7 @@
                 Grid.Row="1" 
                 SelectionMode="None" 
                 IsItemInvokedEnabled="True" 
+                Visibility="{x:Bind AgentSuggestions, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}"
                 ItemsSource="{x:Bind AgentSuggestions, Mode=OneWay}" 
                 ItemInvoked="SuggestionItemView_ItemInvoked">
                 <ItemsView.Layout>
@@ -129,11 +141,22 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox MaxHeight="100" VerticalAlignment="Stretch" PlaceholderText="Enter your question here" AcceptsReturn="True" x:Name="QueryBox" KeyUp="QueryBox_KeyUp"/>
-                <Button Grid.Column="1" Click="SendButton_Click" ToolTipService.ToolTip="Send your message" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Style="{ThemeResource AccentButtonStyle}">
+                <TextBox Grid.Column="0" MaxHeight="100" VerticalAlignment="Stretch" PlaceholderText="Enter your question here" AcceptsReturn="True" x:Name="QueryBox" KeyUp="QueryBox_KeyUp" IsEnabled="False"/>
+                <Button 
+                    Grid.Column="1" 
+                    Click="SendButton_Click"
+                    ToolTipService.ToolTip="Send your message" 
+                    VerticalAlignment="Stretch" 
+                    HorizontalAlignment="Stretch" 
+                    Style="{ThemeResource AccentButtonStyle}">
                     <FontIcon Glyph="&#xF4A5;" FontSize="17"/>
                 </Button>
-                <Button Grid.Column="2" Click="ResetButton_Click" ToolTipService.ToolTip="Reset the conversation" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" >
+                <Button 
+                    Grid.Column="2" 
+                    Click="ResetButton_Click" 
+                    ToolTipService.ToolTip="Reset the conversation" 
+                    VerticalAlignment="Stretch" 
+                    HorizontalAlignment="Stretch">
                     <FontIcon Glyph="&#xE777;" FontSize="17"/>
                 </Button>
             </Grid>
