@@ -13,10 +13,7 @@
     mc:Ignorable="d">
 
     <Page.Resources>
-        <converters:DataTableToVisibilityConverter x:Key="DataTableToVisibilityConverter"/>
-        <converters:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
         <converters:BoolToHorizontalAlignmentConverter x:Key="BoolToHorizontalAlignment"/>
-        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <converters:DataVisualizationInfoToChartVisualizationInfoConverter x:Key="DataVisualizationInfoToChartVisualizationInfoConverter"/>
         <converters:DataTableToObservableCollectionConverter x:Key="DataTableToObservableCollectionConverter"/>
         <converters:NullValueToVisibilityConverter x:Key="NullValueToVisibilityConverter"/>

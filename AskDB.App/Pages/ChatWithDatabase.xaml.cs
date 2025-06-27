@@ -298,7 +298,7 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
         [FunctionDeclaration("visualize_data_table", @"Visualize the data table with the specified label and value columns. 
 This function is used to create a cartesian chart visualization of the data table returned from the database query.
-You can specify the label column name (horizontal axis) and value column name (vertical axis) to visualize the data in a line chart format.
+You can specify the label column name (horizontal axis) and value column name (vertical axis) to visualize the data in a column chart format.
 You can also use this function to visualize the data table returned from the `execute_query` function.
 This function should not be used if the user has not confirmed the data table to be visualized, or if the data table is empty or does not contain the specified columns.")]
         private void VisualizeDataTable(string labelColumnName, string valueColumnName, DataTable dataTable)
