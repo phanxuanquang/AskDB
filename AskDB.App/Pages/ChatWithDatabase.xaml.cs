@@ -313,7 +313,7 @@ This function should not be used if the user has not confirmed the data table to
                     XAxisName = labelColumnName,
                     YAxisName = valueColumnName,
                     DataSet = dataTable,
-                    SeriesType = ChartSeriesType.Line,
+                    SeriesType = ChartSeriesType.Column,
                 },
             });
         }
@@ -522,10 +522,9 @@ This is the list of table names in the database: {string.Join(", ", tableNames.S
 
             var chatMessage = new ChatMessage
             {
-                Message = string.IsNullOrEmpty(message) ? string.Empty : message,
+                Message = message,
                 IsFromUser = false,
                 IsFromAgent = true,
-                QueryResults = isDataTableEmpty ? [] : new ObservableCollection<object>(dataTable.Rows.Cast<DataRow>().Select(row => row.ItemArray)),
                 Data = isDataTableEmpty ? null : dataTable,
                 QueryResultId = queryResultId
             };
@@ -788,7 +787,7 @@ It **MUST** include at least:
                             if (dataTable != null && dataTable.Rows.Count > 0)
                             {
                                 var queryResultId = DateTime.Now.Ticks % 10000;
-                                var message = $"> *Additional Note: In case this query result (the table below) is used for data visualization, its ID is `{queryResultId}`. \n\n{dataTable.ToMarkdown()}";
+                                var message = $"\n\n> *Additional Note: In case this query result (the table below) is used for data visualization, its ID is `{queryResultId}`. \n\n{dataTable.ToMarkdown()}\n\nThe table above is also displayed to the user, no need to show it again.";
 
                                 SetAgentMessage(null, dataTable, queryResultId);
                                 return FunctionCallingHelper.CreateResponse(name, message);

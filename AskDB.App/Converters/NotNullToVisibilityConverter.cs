@@ -4,14 +4,14 @@ using System;
 
 namespace AskDB.App.Converters
 {
-    public partial class BoolToHorizontalAlignmentConverter : IValueConverter
+    public partial class NullValueToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, string language)
-          => value is bool isFromUser && isFromUser
-                ? HorizontalAlignment.Left
-                : HorizontalAlignment.Right;
+            => value is not null ? Visibility.Visible : Visibility.Collapsed;
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
-            => throw new NotImplementedException();
+        {
+            throw new NotImplementedException();
+        }
     }
 }
