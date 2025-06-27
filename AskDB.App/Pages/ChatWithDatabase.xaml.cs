@@ -20,8 +20,10 @@ using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Data;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Pickers;
@@ -30,7 +32,7 @@ using WinRT.Interop;
 
 namespace AskDB.App.Pages
 {
-    public sealed partial class ChatWithDatabase : Page
+    public sealed partial class ChatWithDatabase : Page, INotifyPropertyChanged
     {
         private readonly ObservableCollection<ChatMessage> Messages = [];
         private readonly ObservableCollection<AgentSuggestion> AgentSuggestions = [];
@@ -39,7 +41,23 @@ namespace AskDB.App.Pages
         private DatabaseInteractionService _databaseInteractor;
         private string _globalInstruction;
         private string _actionPlanInstruction;
+        private bool _isLoading = false;
 
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set
+            {
+                _isLoading = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
 
         public ChatWithDatabase()
         {
@@ -150,7 +168,7 @@ Use this function when you:
                     .WithPrompt("I have some blocking points here and need you to make an action plan to overcome. Now think deeply step-by-step about the current situation, then provide a clear and detailed action plan.")
                     .Build();
 
-                var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, ModelVersion.Gemini_20_Flash);
+                var actionPlanResponse = await _generator.GenerateContentAsync(actionPlanRequest, Cache.DefaultModelAlias);
 
                 return actionPlanResponse.Content;
             }
@@ -288,7 +306,7 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
                 var generator = new Generator(Cache.ApiKey);
 
-                var searchResponse = await generator.GenerateContentAsync(searchRequest, ModelVersion.Gemini_20_Flash);
+                var searchResponse = await generator.GenerateContentAsync(searchRequest, Cache.DefaultModelAlias);
                 return searchResponse.Content;
             }
             catch (Exception ex)
@@ -313,7 +331,7 @@ This function should not be used if the user has not confirmed the data table to
                     XAxisName = labelColumnName,
                     YAxisName = valueColumnName,
                     DataSet = dataTable,
-                    SeriesType = ChartSeriesType.Line,
+                    SeriesType = ChartSeriesType.Column,
                 },
             });
         }
@@ -329,8 +347,7 @@ This function should not be used if the user has not confirmed the data table to
                 return;
             }
 
-            SetLoading(true, "Working");
-
+            SetLoading(true);
             try
             {
                 _databaseInteractor = ServiceFactory.CreateInteractionService(request.DatabaseType, request.ConnectionString);
@@ -498,11 +515,9 @@ This is the list of table names in the database: {string.Join(", ", tableNames.S
         #endregion
 
         #region Message and Progress Content Bindings
-        private void SetLoading(bool isLoading, string? message = null)
+        private void SetLoading(bool isLoading)
         {
-            LoadingIndicator.SetLoading(message, isLoading);
-            LoadingOverlay.Visibility = VisibilityHelper.SetVisible(isLoading);
-            MessageSpace.Opacity = isLoading ? 0.5 : 1;
+            IsLoading = isLoading;
         }
         private void SetUserMessage(string message)
         {
@@ -651,7 +666,7 @@ It **MUST** include at least:
         {
             try
             {
-                SetLoading(true, "Working");
+                SetLoading(true);
                 SetUserMessage(userInput);
 
                 AgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(false);
@@ -667,7 +682,7 @@ It **MUST** include at least:
                     .SetFunctionCallingMode(FunctionCallingMode.AUTO)
                     .Build();
 
-                var modelResponse = await _generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash);
+                var modelResponse = await _generator.GenerateContentAsync(apiRequest, Cache.DefaultModelAlias);
                 if (!string.IsNullOrEmpty(modelResponse.Content))
                 {
                     SetAgentMessage(modelResponse.Content);
@@ -737,10 +752,26 @@ It **MUST** include at least:
                             .WithPrompt(@"Please review the function responses and your action history against the user's initial request in order to take action: continue on function calling until the request is satified, or reply to the user immediately to provide the final answer or ask for user's clarification!")
                             .Build();
 
-                        var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, ModelVersion.Gemini_20_Flash);
-                        SetAgentMessage(modelResponseForFunction.Content);
+                        var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, Cache.DefaultModelAlias);
 
+                        if (!string.IsNullOrEmpty(modelResponseForFunction.Content))
+                        {
+                            SetAgentMessage(modelResponseForFunction.Content);
+                        }
+                        
                         functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
+
+                        if (string.IsNullOrEmpty(modelResponseForFunction.Content) && functionCalls.Count == 0)
+                        {
+                            var failedResonse = JsonHelper.AsObject<ApiResponse>(_generator.ResponseAsRawString);
+                            var finishReason = failedResonse?.Candidates.FirstOrDefault()?.FinishReason;
+                            _generator.ResponseAsRawString.CopyToClipboard();
+
+                            if (!string.IsNullOrEmpty(finishReason))
+                            {
+                                SetAgentMessage($"AskDB refused to answer! The reason code name is [{finishReason.Replace('_', ' ')}](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerateContentResponse#FinishReason).");
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -883,6 +914,7 @@ It **MUST** include at least:
                         {
                             return FunctionCallingHelper.CreateResponse(name, "The data table is empty or does not exist. Please double-check the `queryResultId` value or execute the query again.");
                         }
+
                         SetAgentMessage($"Let me visualize the data table with `{labelColumnName}` as the horizontal axis and `{valueColumnName}` as the vertical axis, from the query result `{queryResultId}`.");
                         VisualizeDataTable(labelColumnName!, valueColumnName!, dataSet.Data);
                         return FunctionCallingHelper.CreateResponse(name, $"The data table has been visualized with `{labelColumnName}` as the horizontal axis and `{valueColumnName}` as the vertical axis.");
@@ -973,7 +1005,7 @@ It **MUST** include at least:
                 var requestForAgentSuggestions = new ApiRequestBuilder()
                    .WithSystemInstruction(_globalInstruction)
                    .DisableAllSafetySettings()
-                   .WithDefaultGenerationConfig(0.7F, 250)
+                   .WithDefaultGenerationConfig(0.7F)
                    .WithResponseSchema(new
                    {
                        type = "object",

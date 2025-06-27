@@ -11,7 +11,7 @@ namespace AskDB.App.Helpers
 
         public static bool HasUserEverConnectedToDatabase { get; set; } = false;
 
-        public const string ReasoningModelAlias = "gemini-2.5-flash-preview-05-20";
+        public const string DefaultModelAlias = "gemini-2.5-flash";
 
         public static void CopyToClipboard(this string content)
         {

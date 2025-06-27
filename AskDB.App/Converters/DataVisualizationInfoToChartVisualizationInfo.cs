@@ -8,7 +8,7 @@ using System.Data;
 
 namespace AskDB.App.Converters
 {
-    public partial class DataVisualizationInfoToChartVisualizationInfo : IValueConverter
+    public partial class DataVisualizationInfoToChartVisualizationInfoConverter : IValueConverter
     {
         public object? Convert(object value, Type targetType, object parameter, string language)
         {
