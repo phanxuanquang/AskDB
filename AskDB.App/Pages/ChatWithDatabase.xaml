@@ -13,10 +13,11 @@
     mc:Ignorable="d">
 
     <Page.Resources>
-        <converters:BoolToHorizontalAlignmentConverter x:Key="BoolToHorizontalAlignment"/>
-        <converters:DataVisualizationInfoToChartVisualizationInfoConverter x:Key="DataVisualizationInfoToChartVisualizationInfoConverter"/>
-        <converters:DataTableToObservableCollectionConverter x:Key="DataTableToObservableCollectionConverter"/>
-        <converters:NullValueToVisibilityConverter x:Key="NullValueToVisibilityConverter"/>
+        <converters:DataTableToVisibilityConverter x:Key="DataTableToVisibilityConverter"/>
+        <converters:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
+        <converters:BoolToHorizontalAlignment x:Key="BoolToHorizontalAlignment"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:DataVisualizationInfoToChartVisualizationInfo x:Key="DataVisualizationInfoToChartVisualizationInfo"/>
     </Page.Resources>
 
     <Grid>
@@ -68,9 +69,8 @@
                                     QuoteBackground="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
                                     InlineCodeBackground="{ThemeResource SystemFillColorCautionBackgroundBrush}"
                                     ParagraphLineHeight="24"
-                                    Text="{x:Bind Message, Mode=OneWay}"
-                                    LinkClicked="MarkdownTextBlock_LinkClicked"
-                                    Visibility="{x:Bind Message, Converter={StaticResource NullValueToVisibilityConverter}, Mode=OneWay}"/>
+                                    Text="{x:Bind Message}"
+                                    LinkClicked="MarkdownTextBlock_LinkClicked"/>
                                 <controls1:DataGrid 
                                     IsReadOnly="True" 
                                     CanUserReorderColumns="True" 
@@ -83,22 +83,21 @@
                                     AutoGeneratingColumn="DataGrid_AutoGeneratingColumn"
                                     RowBackground="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
                                     AlternatingRowBackground="{ThemeResource ControlAltFillColorTertiaryBrush}"
-                                    Visibility="{x:Bind Data, Converter={StaticResource NullValueToVisibilityConverter}, Mode=OneWay}"
-                                    ItemsSource="{x:Bind Data, Converter={StaticResource DataTableToObservableCollectionConverter}, Mode=OneWay}"/>
+                                    Visibility="{x:Bind Data, Converter={StaticResource DataTableToVisibilityConverter}, Mode=OneWay}"
+                                    ItemsSource="{x:Bind QueryResults, Mode=OneWay}"/>
                                 <charts:ChartVisualizer 
-                                    Width="800" 
-                                    VisualizationInfo="{x:Bind DataVisualizationInfo, Mode=OneWay, Converter={StaticResource DataVisualizationInfoToChartVisualizationInfoConverter}}" 
-                                    Visibility="{x:Bind DataVisualizationInfo, Converter={StaticResource NullValueToVisibilityConverter}, Mode=OneWay}"/>
+                                    Width="800"
+                                    VisualizationInfo="{x:Bind DataVisualizationInfo, Mode=OneWay, Converter={StaticResource DataVisualizationInfoToChartVisualizationInfo}}" 
+                                    Visibility="{x:Bind DataVisualizationInfo.DataSet, Converter={StaticResource DataTableToVisibilityConverter}, Mode=OneWay}"/>
                                 <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left">
-                                    <Button Padding="6" ToolTipService.ToolTip="Export the data" ToolTipService.Placement="Left" Click="ExportButton_Click" Visibility="{x:Bind Data, Converter={StaticResource NullValueToVisibilityConverter}, Mode=OneWay}">
+                                    <Button Padding="6" ToolTipService.ToolTip="Export the data" ToolTipService.Placement="Left" Click="ExportButton_Click" Visibility="{x:Bind Data, Converter={StaticResource DataTableToVisibilityConverter}, Mode=OneWay}">
                                         <FontIcon Glyph="&#xE896;" FontSize="14"/>
                                     </Button>
-                                    <Button Padding="6" ToolTipService.ToolTip="Copy" ToolTipService.Placement="Left" Click="CopyButton_Click" Visibility="{x:Bind Message, Converter={StaticResource NullValueToVisibilityConverter}, Mode=OneWay}">
+                                    <Button Padding="6" ToolTipService.ToolTip="Copy" ToolTipService.Placement="Left" Click="CopyButton_Click">
                                         <FontIcon Glyph="&#xE8C8;" FontSize="14"/>
                                     </Button>
                                 </StackPanel>
                             </StackPanel>
-                            
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>

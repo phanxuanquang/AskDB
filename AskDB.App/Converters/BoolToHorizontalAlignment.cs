@@ -4,7 +4,7 @@ using System;
 
 namespace AskDB.App.Converters
 {
-    public partial class BoolToHorizontalAlignmentConverter : IValueConverter
+    public partial class BoolToHorizontalAlignment : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, string language)
           => value is bool isFromUser && isFromUser
