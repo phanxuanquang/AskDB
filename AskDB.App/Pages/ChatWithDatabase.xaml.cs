@@ -854,7 +854,6 @@ It **MUST** include at least:
                     {
                         var schema = FunctionCallingHelper.GetParameterValue<string>(function, "schema");
                         var table = FunctionCallingHelper.GetParameterValue<string>(function, "table");
-                        SetAgentMessage($"Let me check the schema information for the table `{schema}.{table}`");
 
                         try
                         {
@@ -862,11 +861,12 @@ It **MUST** include at least:
 
                             if (dataTable != null && dataTable.Rows.Count > 0)
                             {
-                                SetAgentMessage(null, dataTable);
+                                SetAgentMessage($"Let me check the schema information for the table `{schema}.{table}`", dataTable);
                                 return FunctionCallingHelper.CreateResponse(name, dataTable.ToMarkdown());
                             }
                             else
                             {
+                                SetAgentMessage($"The table `{schema}.{table}` does not exist or has no columns.");
                                 return FunctionCallingHelper.CreateResponse(name, "Invalid table or table not found.");
                             }
                         }
