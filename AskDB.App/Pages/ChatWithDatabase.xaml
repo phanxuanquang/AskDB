@@ -111,11 +111,18 @@
                                 </Button>
                             </StackPanel>
                         </StackPanel>
-                        <charts:ChartVisualizer 
-                        HorizontalAlignment="Left"
-                        Width="800"
-                        VisualizationInfo="{x:Bind DataVisualizationInfo, Converter={StaticResource DataVisualizationInfoToChartVisualizationInfoConverter}, Mode=OneWay}" 
-                        Visibility="{x:Bind DataVisualizationInfo, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}"/>
+
+                        <StackPanel  
+                            Padding="8"
+                            CornerRadius="{StaticResource OverlayCornerRadius}"
+                            Visibility="{x:Bind IsChart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                            Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
+                            HorizontalAlignment="Left">
+                            <charts:ChartVisualizer 
+                                HorizontalAlignment="Left"
+                                Width="800"
+                                VisualizationInfo="{x:Bind DataVisualizationInfo, Converter={StaticResource DataVisualizationInfoToChartVisualizationInfoConverter}, Mode=OneWay}" />
+                        </StackPanel>
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>

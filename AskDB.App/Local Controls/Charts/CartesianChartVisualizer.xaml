@@ -6,9 +6,7 @@
     xmlns:local="using:AskDB.App.Local_Controls.Charts"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:winui="using:LiveChartsCore.SkiaSharpView.WinUI"
-    mc:Ignorable="d"
-    CornerRadius="{StaticResource OverlayCornerRadius}" 
-    Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}">
+    mc:Ignorable="d">
 
     <winui:CartesianChart 
         XAxes="{x:Bind VisualizationInfo.XAxes, Mode=OneWay}" 
@@ -17,7 +15,7 @@
         ZoomMode="X"
         ZoomingSpeed="0.5"
         AnimationsSpeed="00:00:00.500"
-        Height="300"
+        Height="500"
         x:Name="CartesianChart"
         ActualThemeChanged="CartesianChart_ActualThemeChanged"/>
 </Page>

@@ -325,7 +325,8 @@ This function should not be used if the user has not confirmed the data table to
             Messages.Add(new ChatMessage
             {
                 IsFromUser = false,
-                IsFromAgent = true,
+                IsFromAgent = false,
+                IsChart = true,
                 DataVisualizationInfo = new DataVisualizationInfo
                 {
                     XAxisName = labelColumnName,
@@ -915,7 +916,6 @@ It **MUST** include at least:
                             return FunctionCallingHelper.CreateResponse(name, "The data table is empty or does not exist. Please double-check the `queryResultId` value or execute the query again.");
                         }
 
-                        SetAgentMessage($"Let me visualize the data table with `{labelColumnName}` as the horizontal axis and `{valueColumnName}` as the vertical axis, from the query result `{queryResultId}`.");
                         VisualizeDataTable(labelColumnName!, valueColumnName!, dataSet.Data);
                         return FunctionCallingHelper.CreateResponse(name, $"The data table has been visualized with `{labelColumnName}` as the horizontal axis and `{valueColumnName}` as the vertical axis.");
                     }
