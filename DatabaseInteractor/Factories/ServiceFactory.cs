@@ -16,7 +16,7 @@ namespace DatabaseInteractor.Factories
 
             connectionString = connectionString.Trim();
 
-            return dbType switch                                              
+            return dbType switch
             {
                 DatabaseType.SqlServer => new SqlConnection(connectionString),
                 DatabaseType.MySQL => new MySqlConnection(connectionString),

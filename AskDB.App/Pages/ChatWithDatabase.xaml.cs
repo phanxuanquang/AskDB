@@ -13,6 +13,7 @@ using GeminiDotNET.ApiModels.Response.Success;
 using GeminiDotNET.ApiModels.Response.Success.FunctionCalling;
 using GeminiDotNET.FunctionCallings.Attributes;
 using GeminiDotNET.Helpers;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
@@ -29,6 +30,7 @@ using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Pickers;
 using Windows.System;
+using Windows.UI.Core;
 using WinRT.Interop;
 
 namespace AskDB.App.Pages
@@ -43,6 +45,8 @@ namespace AskDB.App.Pages
         private string _globalInstruction;
         private string _actionPlanInstruction;
         private bool _isLoading = false;
+
+        private bool _isImeActive = true;
 
         public bool IsLoading
         {
@@ -298,11 +302,36 @@ Use this function to retrieve **critical, missing context** from the internet wh
             try
             {
                 var searchRequest = new ApiRequestBuilder()
-                .WithSystemInstruction(_globalInstruction)
+                .WithSystemInstruction(@"### **Your Persona**
+- You are an advanced AI research and reasoning agent. 
+- Your primary task is to deeply analyze each markdown-formatted requirement input and perform an intelligent internet search using your built-in **Google Search** tool to gather precise, relevant, and actionable information.
+- You are not just searching. You are solving. 
+- Your role is to think like a senior technical researcher who uses the internet as a tool, not a crutch.
+
+### **Your responsibilities**
+
+1. **Comprehend the full intent** of the input: parse it like an expert analyst. Identify key objectives, constraints, and implicit assumptions.
+
+2. **Formulate effective search queries** based on the requirement’s core goal. Avoid generic or vague queries. Use concise, focused terms that target exactly what’s needed.
+
+3. **Perform intelligent search** using your built-in Google Search tool.
+
+   * Prioritize **official and highly reputable sources**.
+   * Use reasoning to evaluate the credibility, accuracy, and relevance of each result.
+   * Cross-verify across multiple sources when necessary.
+
+4. **Synthesize a complete answer** that fulfills the requirement fully:
+
+   * Provide a clear explanation, not just raw data
+   * Include reasoning: why this solution fits the problem
+   * Include direct links to trusted sources
+   * Present results in the format requested (e.g., list, table, explanation)
+
+5. **Be precise and thorough.** Never return vague, partial, or assumed answers. If the input asks for 7 points, your output must cover all 7 clearly and logically.")
                 .WithTools(new ToolBuilder().EnableGoogleSearch())
-                .WithDefaultGenerationConfig(0.5F)
+                .WithDefaultGenerationConfig(0.4F)
                 .DisableAllSafetySettings()
-                .WithPrompt($"Now perform an **in-depth internet research**, then provide a detailed reported in markdown format. The search result MUST satify the below requirement:\n\n{requirement}")
+                .WithPrompt($"Now perform an **in-depth internet research**, then provide a detailed report in markdown format. The search result **MUST** satisfy the below requirement:\n\n{requirement}")
                 .Build();
 
                 var generator = new Generator(Cache.ApiKey);
@@ -441,10 +470,37 @@ This function should not be used if the user has not confirmed the data table to
         }
         private void QueryBox_KeyUp(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
         {
-            if (e.Key == VirtualKey.Enter)
+            var textbox = sender as TextBox;
+
+            if (textbox == null)
             {
+                return;
+            }
+
+            if (e.Key == VirtualKey.Enter
+                && !InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down)
+                && !string.IsNullOrWhiteSpace(textbox.Text)
+                && !_isImeActive)
+            {
+                var cursorPosition = textbox.SelectionStart;
+                var text = textbox.Text;
+                if (cursorPosition > 0 && (text[cursorPosition - 1] == '\n' || text[cursorPosition - 1] == '\r'))
+                {
+                    text = text.Remove(cursorPosition - 1, 1);
+                    textbox.Text = text;
+                }
+
+                textbox.SelectionStart = cursorPosition - 1;
+
+                var currentPlaceholder = textbox.PlaceholderText;
+
+                textbox.PlaceholderText = "Please wait for the response to complete before entering a new message";
                 SendButton_Click(sender, e);
-                e.Handled = true;
+                textbox.PlaceholderText = currentPlaceholder;
+            }
+            else
+            {
+                _isImeActive = true;
             }
         }
         private void DataGrid_AutoGeneratingColumn(object sender, DataGridAutoGeneratingColumnEventArgs e)
@@ -483,10 +539,13 @@ This function should not be used if the user has not confirmed the data table to
 
             await HandleUserInputAsync(userInput);
         }
-        private async void MarkdownTextBlock_LinkClicked(object sender, LinkClickedEventArgs e)
+        private void MarkdownTextBlock_LinkClicked(object sender, LinkClickedEventArgs e)
         {
-            var uri = new Uri(e.Link);
-            await Launcher.LaunchUriAsync(uri);
+            Task.Run(async () =>
+            {
+                var uri = new Uri(e.Link);
+                await Launcher.LaunchUriAsync(uri);
+            });
         }
         #endregion
 
@@ -787,7 +846,6 @@ It **MUST** include at least:
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(_databaseInteractor.ExecuteQueryAsync):
                     {
                         var sqlQuery = FunctionCallingHelper.GetParameterValue<string>(function, "sqlQuery");
-                        SetAgentMessage($"Let me execute this query to check the data:\n\n```sql\n{sqlQuery}\n```");
                         try
                         {
                             var dataTable = await _databaseInteractor.ExecuteQueryAsync(sqlQuery);
@@ -796,7 +854,7 @@ It **MUST** include at least:
                                 var queryResultId = DateTime.Now.Ticks % 10000;
                                 var message = $"> *Additional Note: In case this query result (the table below) is used for data visualization, its ID is `{queryResultId}`. \n\n{dataTable.ToMarkdown()}";
 
-                                SetAgentMessage(null, dataTable, queryResultId);
+                                SetAgentMessage($"Let me execute this query to check the data:\n\n```sql\n{sqlQuery}\n```", dataTable, queryResultId);
                                 return FunctionCallingHelper.CreateResponse(name, message);
                             }
                             else
@@ -806,7 +864,7 @@ It **MUST** include at least:
                         }
                         catch (Exception ex)
                         {
-                            SetAgentMessage($"Error while executing your query.\n\n```console\n{ex.Message}\n```");
+                            SetAgentMessage($"Error while executing your query.\n\n```sql\n{sqlQuery}\n```\n\n```console\n{ex.Message}\n```");
                             return FunctionCallingHelper.CreateResponse(name, $"Error while executing your {_databaseInteractor.DatabaseType.GetDescription()} query.\n\n```console\n{ex.Message}\n```\n\nMake sure that you understand the SQL query clearly before executing it! If the SQL query is too complex, try to break it down first, follow the *KISS (Keep It Simple, Stupid)* principles");
                         }
                     }
@@ -817,7 +875,7 @@ It **MUST** include at least:
                         try
                         {
                             await _databaseInteractor.ExecuteNonQueryAsync(sqlQuery);
-                            return FunctionCallingHelper.CreateResponse(name, $"Command executed successfully.\n\n```sql\n{sqlQuery}\n```");
+                            return FunctionCallingHelper.CreateResponse(name, $"Command executed successfully.");
                         }
                         catch (Exception ex)
                         {
@@ -904,7 +962,7 @@ It **MUST** include at least:
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(RequestForInternetSearchAsync):
                     {
                         var requirement = FunctionCallingHelper.GetParameterValue<string>(function, "requirement");
-                        SetAgentMessage($"Let me perform an in-depth internet search following this description:\n\n{requirement}");
+                        SetAgentMessage($"Let me perform an in-depth internet search following this description:\n\n```markdown\n{requirement}\n```");
                         var searchResult = await RequestForInternetSearchAsync(requirement!);
                         SetAgentMessage(searchResult);
                         return FunctionCallingHelper.CreateResponse(name, searchResult);
@@ -1089,6 +1147,11 @@ This is the list of table names in the database: {string.Join(", ", tableNames.S
             {
                 SetAgentMessage(response.Content);
             }
+        }
+
+        private void QueryBox_PreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            _isImeActive = false;
         }
     }
 }

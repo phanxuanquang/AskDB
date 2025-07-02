@@ -21,6 +21,83 @@
         <converters:DataTableToObservableCollectionConverter x:Key="DataTableToObservableCollectionConverter"/>
         <converters:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVisibilityConverter"/>
         <converters:BoolToNegativeBoolConverter x:Key="BoolToNegativeBoolConverter"/>
+
+        <view_models:ChatTemplateSelector x:Key="ChatTemplateSelector" AssistantTemplate="{StaticResource AssistantDataTemplate}" UserTemplate="{StaticResource UserDataTemplate}" />
+
+        <DataTemplate x:Key="UserDataTemplate" x:DataType="view_models:ChatMessage">
+            <StackPanel 
+                HorizontalAlignment="Right" 
+                MaxWidth="640" 
+                Padding="16,12"
+                CornerRadius="{StaticResource OverlayCornerRadius}"
+                Background="{ThemeResource AccentFillColorDefaultBrush}">
+                <controls1:MarkdownTextBlock 
+                    TextWrapping="WrapWholeWords" 
+                    Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                    Background="Transparent" 
+                    Text="{x:Bind Message, Mode=OneWay}"
+                    LinkClicked="MarkdownTextBlock_LinkClicked"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="AssistantDataTemplate" x:DataType="view_models:ChatMessage">
+            <Grid Margin="0,8">
+                <StackPanel  
+                    HorizontalAlignment="Left"
+                    Padding="16,12"
+                    CornerRadius="{StaticResource OverlayCornerRadius}"
+                    Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
+                    Spacing="6">
+                    <StackPanel Spacing="12">
+                        <controls1:MarkdownTextBlock 
+                             TextWrapping="WrapWholeWords" 
+                             Background="Transparent" 
+                             CodePadding="12"
+                             QuotePadding="6"
+                             QuoteBackground="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
+                             InlineCodeBackground="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                             ParagraphLineHeight="24"
+                             Text="{x:Bind Message, Mode=OneWay}"
+                             Visibility="{x:Bind Message, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}"
+                             LinkClicked="MarkdownTextBlock_LinkClicked"/>
+                        <controls1:DataGrid 
+                             IsReadOnly="True" 
+                             CanUserReorderColumns="True" 
+                             CanUserResizeColumns="True"
+                             CanUserSortColumns="True"
+                             AutoGenerateColumns="True" 
+                             VerticalScrollBarVisibility="Auto"
+                             GridLinesVisibility="All"
+                             MaxHeight="500"
+                             AutoGeneratingColumn="DataGrid_AutoGeneratingColumn"
+                             RowBackground="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
+                             AlternatingRowBackground="{ThemeResource ControlAltFillColorTertiaryBrush}"
+                             Visibility="{x:Bind Data, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}"
+                             ItemsSource="{x:Bind Data, Converter={StaticResource DataTableToObservableCollectionConverter}, Mode=OneWay}"/>
+                    </StackPanel>
+                   
+                    <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Left">
+                        <Button 
+                            Padding="5" 
+                            ToolTipService.ToolTip="Copy" 
+                            ToolTipService.Placement="Left" 
+                            Click="CopyButton_Click" 
+                            Visibility="{x:Bind Message, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}">
+                            <FontIcon Glyph="&#xE8C8;" FontSize="{StaticResource CaptionTextBlockFontSize}"/>
+                        </Button>
+                        <Button 
+                            Padding="5"  
+                            ToolTipService.ToolTip="Export the data" 
+                            ToolTipService.Placement="Left" 
+                            Click="ExportButton_Click" 
+                            Visibility="{x:Bind Data, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}">
+                            <FontIcon Glyph="&#xE896;" FontSize="{StaticResource CaptionTextBlockFontSize}"/>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+        
     </Page.Resources>
 
     <Grid RowSpacing="8">
@@ -39,95 +116,19 @@
             CanDragItems="False" 
             CanReorderItems="False" 
             SelectionMode="None" 
+            Padding="-8,0"
+            ItemTemplateSelector="{StaticResource ChatTemplateSelector}"
             ItemsSource="{x:Bind Messages}">
             <ListView.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"/>
+                    <ItemsStackPanel VerticalAlignment="Bottom" ItemsUpdatingScrollMode="KeepLastItemInView" />
                 </ItemsPanelTemplate>
             </ListView.ItemsPanel>
-            <ListView.ItemTemplate>
-                <DataTemplate x:DataType="view_models:ChatMessage">
-                    <Grid Margin="0,8">
-                        <StackPanel 
-                            HorizontalAlignment="Right" 
-                            MaxWidth="640" 
-                            Padding="16,12"
-                            CornerRadius="{StaticResource OverlayCornerRadius}"
-                            Background="{ThemeResource AccentFillColorDefaultBrush}"
-                            Visibility="{x:Bind IsFromUser, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                            <controls1:MarkdownTextBlock 
-                                TextWrapping="WrapWholeWords" 
-                                Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
-                                Background="Transparent" 
-                                Text="{x:Bind Message}"
-                                LinkClicked="MarkdownTextBlock_LinkClicked"/>
-                        </StackPanel>
-                        <StackPanel  
-                            Padding="16,12"
-                            CornerRadius="{StaticResource OverlayCornerRadius}"
-                            Visibility="{x:Bind IsFromAgent, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
-                            Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
-                            HorizontalAlignment="Left"
-                            Spacing="6">
-                            <controls1:MarkdownTextBlock 
-                                TextWrapping="WrapWholeWords" 
-                                Background="Transparent" 
-                                CodePadding="12"
-                                QuotePadding="6"
-                                QuoteBackground="{ThemeResource SystemFillColorCriticalBackgroundBrush}"
-                                InlineCodeBackground="{ThemeResource SystemFillColorCautionBackgroundBrush}"
-                                ParagraphLineHeight="24"
-                                Text="{x:Bind Message}"
-                                Visibility="{x:Bind Message, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}"
-                                LinkClicked="MarkdownTextBlock_LinkClicked"/>
-                            <controls1:DataGrid 
-                                IsReadOnly="True" 
-                                CanUserReorderColumns="True" 
-                                CanUserResizeColumns="True"
-                                CanUserSortColumns="True"
-                                AutoGenerateColumns="True" 
-                                VerticalScrollBarVisibility="Auto"
-                                GridLinesVisibility="All"
-                                MaxHeight="500"
-                                AutoGeneratingColumn="DataGrid_AutoGeneratingColumn"
-                                RowBackground="{ThemeResource SystemFillColorAttentionBackgroundBrush}"
-                                AlternatingRowBackground="{ThemeResource ControlAltFillColorTertiaryBrush}"
-                                Visibility="{x:Bind Data, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}"
-                                ItemsSource="{x:Bind Data, Converter={StaticResource DataTableToObservableCollectionConverter},Mode=OneWay}"/>
-                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left">
-                                <Button 
-                                    Padding="6" 
-                                    ToolTipService.ToolTip="Export the data" 
-                                    ToolTipService.Placement="Left" 
-                                    Click="ExportButton_Click" 
-                                    Visibility="{x:Bind Data, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}">
-                                    <FontIcon Glyph="&#xE896;" FontSize="14"/>
-                                </Button>
-                                <Button 
-                                    Padding="6" 
-                                    ToolTipService.ToolTip="Copy" 
-                                    ToolTipService.Placement="Left" 
-                                    Click="CopyButton_Click" 
-                                    Visibility="{x:Bind Message, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}">
-                                    <FontIcon Glyph="&#xE8C8;" FontSize="14"/>
-                                </Button>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <StackPanel  
-                            Padding="8"
-                            CornerRadius="{StaticResource OverlayCornerRadius}"
-                            Visibility="{x:Bind IsChart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
-                            Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
-                            HorizontalAlignment="Left">
-                            <charts:ChartVisualizer 
-                                HorizontalAlignment="Left"
-                                Width="800"
-                                VisualizationInfo="{x:Bind DataVisualizationInfo, Converter={StaticResource DataVisualizationInfoToChartVisualizationInfoConverter}, Mode=OneWay}" />
-                        </StackPanel>
-                    </Grid>
-                </DataTemplate>
-            </ListView.ItemTemplate>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                </Style>
+            </ListView.ItemContainerStyle>
         </ListView>
         <InfoBar 
             Grid.Row="0" 
@@ -168,12 +169,15 @@
             </Grid.ColumnDefinitions>
             <TextBox 
                 Grid.Column="0" 
-                MaxHeight="100" 
+                MaxHeight="148" 
                 VerticalAlignment="Stretch" 
-                PlaceholderText="Enter your question here" 
+                TextWrapping="Wrap" 
+                PlaceholderText="Enter your message (press Shift + Enter to insert a new line" 
+                ScrollViewer.VerticalScrollBarVisibility="Auto"
                 AcceptsReturn="True" 
                 x:Name="QueryBox" 
                 KeyUp="QueryBox_KeyUp"
+                PreviewKeyDown="QueryBox_PreviewKeyDown"
                 IsEnabled="{x:Bind IsLoading, Converter={StaticResource BoolToNegativeBoolConverter}, Mode=OneWay}"/>
             <ProgressBar 
                 Grid.Column="0"
@@ -205,7 +209,7 @@
         <TextBlock 
             Grid.Row="3" 
             Text="AskDB can make mistakes sometimes. Double-checking is highly reccommended." 
-            Opacity="0.8" 
+            Opacity="0.5" 
             TextAlignment="Center" 
             Style="{StaticResource CaptionTextBlockStyle}"/>
     </Grid>
