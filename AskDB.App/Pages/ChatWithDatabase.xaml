@@ -9,7 +9,9 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
     xmlns:controls1="using:CommunityToolkit.WinUI.UI.Controls" 
     xmlns:view_models="using:AskDB.App.View_Models" 
-    xmlns:animations="using:CommunityToolkit.WinUI.Animations" xmlns:converters="using:AskDB.App.Converters" xmlns:charts="using:AskDB.App.Local_Controls.Charts"
+    xmlns:animations="using:CommunityToolkit.WinUI.Animations" 
+    xmlns:converters="using:AskDB.App.Converters" 
+    xmlns:charts="using:AskDB.App.Local_Controls.Charts"
     mc:Ignorable="d">
 
     <Page.Resources>

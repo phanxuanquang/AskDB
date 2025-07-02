@@ -1,5 +1,4 @@
-﻿using Microsoft.UI.Xaml;
-using System.Data;
+﻿using System.Data;
 
 namespace AskDB.App.View_Models
 {

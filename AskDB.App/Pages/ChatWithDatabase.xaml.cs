@@ -24,6 +24,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Pickers;
@@ -349,10 +350,10 @@ This function should not be used if the user has not confirmed the data table to
             }
 
             SetLoading(true);
+
             try
             {
                 _databaseInteractor = ServiceFactory.CreateInteractionService(request.DatabaseType, request.ConnectionString);
-                _generator = new Generator(Cache.ApiKey).EnableChatHistory(150);
 
                 try
                 {
@@ -375,31 +376,7 @@ This function should not be used if the user has not confirmed the data table to
 
                 try
                 {
-                    var tableNames = await LoadTableNamesAsync();
-
-                    if (tableNames.Count > 0)
-                    {
-                        await LoadAgentSuggestionsAsync($@"Based on the list of table names provided below, suggest me with 5 concise and interesting ideas from my viewpoint that I might ask to start the conversation.
-The suggested ideas should be phrased as questions or commands in natural language, assuming I am not technical but want to understand and explore the data for analysis purpose or predictional purpose.
-Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table structure, etc.
-Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, concise, specific, user-friendly, and **MUST NOT** be relevant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
-
-This is the list of table names in the database: {string.Join(", ", tableNames.Select(x => $"`{x}`"))}");
-                    }
-
-                    var requestForAgentSuggestions = new ApiRequestBuilder()
-                       .WithSystemInstruction(_globalInstruction)
-                       .DisableAllSafetySettings()
-                       .WithDefaultGenerationConfig()
-                       .WithPrompt("In order to start the conversation, please introduce to me about yourself, such as who you are, what you can do, what you can help me, or anything else that you think it may be relavant to my database and be useful to me; and some good practices for me to help you to do the task effectively. Take me as your friend or your teammate, avoid to use formal-like tone while talking to me; just use a natural, friendly tone with daily-life word when talking to me, like you are talking with your friends in the real life.")
-                       .Build();
-
-                    var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
-
-                    if (!string.IsNullOrEmpty(response.Content))
-                    {
-                        SetAgentMessage(response.Content);
-                    }
+                    await ResetConversationAsync();
                 }
                 catch (Exception ex)
                 {
@@ -412,10 +389,8 @@ This is the list of table names in the database: {string.Join(", ", tableNames.S
                 await DialogHelper.ShowErrorAsync($"{ex.Message}.\nThe error details have been copied to your clipboard.");
                 Frame.GoBack();
             }
-            finally
-            {
-                SetLoading(false);
-            }
+
+            SetLoading(false);
         }
         private async void ExportButton_Click(object sender, RoutedEventArgs e)
         {
@@ -759,7 +734,7 @@ It **MUST** include at least:
                         {
                             SetAgentMessage(modelResponseForFunction.Content);
                         }
-                        
+
                         functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
 
                         if (string.IsNullOrEmpty(modelResponseForFunction.Content) && functionCalls.Count == 0)
@@ -987,7 +962,7 @@ It **MUST** include at least:
 
             if (result == ContentDialogResult.Primary)
             {
-                var tableNames = await _databaseInteractor.SearchTablesByNameAsync(string.Empty, null);
+                var tableNames = await _databaseInteractor.SearchTablesByNameAsync(null);
                 _databaseInteractor.CachedAllTableNames.UnionWith(tableNames);
 
                 return tableNames;
@@ -998,7 +973,7 @@ It **MUST** include at least:
 
         private async Task LoadAgentSuggestionsAsync(string prompt)
         {
-            if (AgentSuggestions.Count > 0) AgentSuggestions.Clear();
+            AgentSuggestions.Clear();
 
             try
             {
@@ -1032,18 +1007,17 @@ It **MUST** include at least:
                     return;
                 }
 
-                var agentResponse = JsonHelper.AsObject<AgentResponse>(response.Content);
+                using JsonDocument doc = JsonDocument.Parse(response.Content);
+                var root = doc.RootElement;
 
-                if (agentResponse?.UserResponseSuggestions != null && agentResponse.UserResponseSuggestions.Count > 0)
+                if (root.TryGetProperty("UserResponseSuggestions", out var suggestionsElement))
                 {
-                    var suggestions = agentResponse.UserResponseSuggestions.Select(suggestion => new AgentSuggestion
+                    foreach (var item in suggestionsElement.EnumerateArray())
                     {
-                        UserResponseSuggestion = suggestion
-                    });
-
-                    foreach (var suggestion in suggestions)
-                    {
-                        AgentSuggestions.Add(suggestion);
+                        AgentSuggestions.Add(new AgentSuggestion
+                        {
+                            UserResponseSuggestion = item.GetString()
+                        });
                     }
 
                     AgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(true);
@@ -1064,33 +1038,56 @@ It **MUST** include at least:
             }
 
             var result = await DialogHelper.ShowDialogWithOptions("Reset the conversation", "This action will clear our conversation. Are you sure to proceed?", "Yes");
-            if (result == ContentDialogResult.Primary)
+            if (result != ContentDialogResult.Primary)
             {
-                _generator = new Generator(Cache.ApiKey).EnableChatHistory(200);
-                Messages.Clear();
-                AgentSuggestions.Clear();
+                return;
+            }
 
-                try
-                {
-                    SetLoading(true);
-                    var requestForAgentSuggestions = new ApiRequestBuilder()
-                        .WithSystemInstruction(_globalInstruction)
-                        .DisableAllSafetySettings()
-                        .WithDefaultGenerationConfig()
-                        .WithPrompt("In order to start the conversation, please introduce to me about yourself, such as who you are, what you can do, what you can help me, or anything else; and at least 3 best practices for me to help you to do the task effectively. Take me as your friend or your teammate, avoid to use formal-like tone while talking to me; just use a natural, friendly tone with daily-life word when talking to me, like you are talking with your friends in the real life.")
-                        .Build();
+            SetLoading(true);
 
-                    var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
+            try
+            {
+                await ResetConversationAsync();
+            }
+            catch (Exception ex)
+            {
+                ex.CopyToClipboard();
+                await ShowInforBarAsync($"Error while resetting the conversation: {ex.Message}", false);
+            }
 
-                    if (!string.IsNullOrEmpty(response.Content))
-                    {
-                        SetAgentMessage(response.Content);
-                    }
-                }
-                finally
-                {
-                    SetLoading(false);
-                }
+            SetLoading(false);
+        }
+
+        private async Task ResetConversationAsync()
+        {
+            _generator = new Generator(Cache.ApiKey).EnableChatHistory(200);
+            Messages.Clear();
+            AgentSuggestions.Clear();
+
+            var tableNames = await LoadTableNamesAsync();
+
+            if (tableNames.Count > 0)
+            {
+                await LoadAgentSuggestionsAsync($@"Based on the list of table names provided below, suggest me with 5 concise and interesting ideas from my viewpoint that I might ask to start the conversation.
+The suggested ideas should be phrased as questions or commands in natural language, assuming I am not technical but want to understand and explore the data for analysis purpose or predictional purpose.
+Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table structure, etc.
+Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, concise, specific, user-friendly, and **MUST NOT** be relevant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
+
+This is the list of table names in the database: {string.Join(", ", tableNames.Select(x => $"`{x}`"))}");
+            }
+
+            var requestForAgentSuggestions = new ApiRequestBuilder()
+               .WithSystemInstruction(_globalInstruction)
+               .DisableAllSafetySettings()
+               .WithDefaultGenerationConfig()
+               .WithPrompt("In order to start the conversation, please introduce to me about yourself, such as who you are, what you can do, what you can help me, or anything else that you think it may be relavant to my database and be useful to me; and some good practices for me to help you to do the task effectively. Take me as your friend or your teammate, avoid to use formal-like tone while talking to me; just use a natural, friendly tone with daily-life word when talking to me, like you are talking with your friends in the real life.")
+               .Build();
+
+            var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
+
+            if (!string.IsNullOrEmpty(response.Content))
+            {
+                SetAgentMessage(response.Content);
             }
         }
     }
