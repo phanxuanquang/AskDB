@@ -355,7 +355,7 @@ This function should not be used if the user has not confirmed the data table to
             Messages.Add(new ChatMessage
             {
                 IsFromUser = false,
-                IsFromAgent = false,
+                IsFromAgent = true,
                 IsChart = true,
                 DataVisualizationInfo = new DataVisualizationInfo
                 {
