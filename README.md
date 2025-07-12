@@ -75,6 +75,8 @@ Advanced safety protocols, including a **Confirmation Gauntlet** for critical op
 - [Microsoft Store](https://apps.microsoft.com/store/detail/9P1MCX47432Z?cid=DevShareMCLPCS)
 
 ### Portable Version
+> *The portable version is a alternative for the official version in case you cannot install AskDB from Microsoft Store.*
+
 - Step 1: Download and extract the **AskDB.zip** from [**THIS**](https://github.com/phanxuanquang/AskDB/releases/latest) release.
 - Step 2: Run the **AskDB.exe** file (skip the **Unknown Published** warning from Windows if any).
 - Step 3: Follow the instruction to get started.
