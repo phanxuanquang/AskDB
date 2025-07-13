@@ -74,6 +74,10 @@
                              AlternatingRowBackground="{ThemeResource ControlAltFillColorTertiaryBrush}"
                              Visibility="{x:Bind Data, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}"
                              ItemsSource="{x:Bind Data, Converter={StaticResource DataTableToObservableCollectionConverter}, Mode=OneWay}"/>
+                        <charts:ChartVisualizer 
+                            Visibility="{x:Bind IsChart, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" 
+                            VisualizationInfo="{x:Bind DataVisualizationInfo, Converter={StaticResource DataVisualizationInfoToChartVisualizationInfoConverter}, Mode=OneWay}"
+                            Width="800"/>
                     </StackPanel>
                    
                     <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Left">
