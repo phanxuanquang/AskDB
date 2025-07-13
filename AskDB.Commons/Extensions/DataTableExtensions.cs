@@ -57,7 +57,7 @@ namespace AskDB.Commons.Extensions
                 }
             }
 
-            return sb.ToString();
+            return sb.ToString().Trim();
         }
 
         public static async Task ToCsvAsync(this DataTable dataTable, string filePath)

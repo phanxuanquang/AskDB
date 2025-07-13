@@ -672,28 +672,28 @@ It **MUST** include at least:
                 },
                 Required = ["table"]
             });
-            FunctionDeclarationHelper.RegisterFunction(VisualizeDataTable, new Parameters
-            {
-                Properties = new
-                {
-                    queryResultId = new
-                    {
-                        type = "integer",
-                        description = "The unique identifier of the query result to visualize. This should match the ID of the data table returned from the `execute_query` function."
-                    },
-                    labelColumnName = new
-                    {
-                        type = "string",
-                        description = "The name of the column to use for the horizontal axis (labels) in the chart visualization. The data type of this column should be related to string, date, time."
-                    },
-                    valueColumnName = new
-                    {
-                        type = "string",
-                        description = "The name of the column to use for the vertical axis (values) in the chart visualization. The data type of this column should be numberic types."
-                    }
-                },
-                Required = ["queryResultId", "labelColumnName", "valueColumnName"]
-            });
+            //FunctionDeclarationHelper.RegisterFunction(VisualizeDataTable, new Parameters
+            //{
+            //    Properties = new
+            //    {
+            //        queryResultId = new
+            //        {
+            //            type = "integer",
+            //            description = "The unique identifier of the query result to visualize. This should match the ID of the data table returned from the `execute_query` function."
+            //        },
+            //        labelColumnName = new
+            //        {
+            //            type = "string",
+            //            description = "The name of the column to use for the horizontal axis (labels) in the chart visualization. The data type of this column should be related to string, date, time."
+            //        },
+            //        valueColumnName = new
+            //        {
+            //            type = "string",
+            //            description = "The name of the column to use for the vertical axis (values) in the chart visualization. The data type of this column should be numberic types."
+            //        }
+            //    },
+            //    Required = ["queryResultId", "labelColumnName", "valueColumnName"]
+            //});
         }
         #endregion
 
@@ -707,131 +707,89 @@ It **MUST** include at least:
                 AgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(false);
                 AgentSuggestions.Clear();
 
-                var functionDeclarations = FunctionDeclarationHelper.FunctionDeclarations;
+                var requestBuilder = new ApiRequestBuilder()
+                        .WithSystemInstruction(_globalInstruction)
+                        .DisableAllSafetySettings()
+                        .WithTools(new ToolBuilder().AddFunctionDeclarations(FunctionDeclarationHelper.FunctionDeclarations))
+                        .SetFunctionCallingMode(FunctionCallingMode.AUTO);
 
-                var apiRequest = new ApiRequestBuilder()
-                    .WithSystemInstruction(_globalInstruction)
-                    .WithPrompt(userInput)
-                    .DisableAllSafetySettings()
-                    .WithTools(new ToolBuilder().AddFunctionDeclarations(functionDeclarations))
-                    .SetFunctionCallingMode(FunctionCallingMode.AUTO)
-                    .Build();
+                requestBuilder.WithPrompt(userInput);
 
-                var modelResponse = await _generator.GenerateContentAsync(apiRequest, Cache.DefaultModelAlias);
-                if (!string.IsNullOrEmpty(modelResponse.Content))
+                while (true)
                 {
-                    SetAgentMessage(modelResponse.Content);
-                }
+                    var modelResponse = await _generator.GenerateContentAsync(requestBuilder.Build(), Cache.DefaultModelAlias);
+                    var functionCalls = (modelResponse.FunctionCalls == null || modelResponse.FunctionCalls.Count == 0) ? [] : modelResponse.FunctionCalls;
 
-                var functionCalls = (modelResponse.FunctionCalls == null || modelResponse.FunctionCalls.Count == 0) ? [] : modelResponse.FunctionCalls;
-
-                if (string.IsNullOrEmpty(modelResponse.Content) && functionCalls.Count == 0)
-                {
-                    var failedResonse = JsonHelper.AsObject<ApiResponse>(_generator.ResponseAsRawString);
-                    var finishReason = failedResonse?.Candidates.FirstOrDefault()?.FinishReason;
-                    _generator.ResponseAsRawString.CopyToClipboard();
-
-                    if (!string.IsNullOrEmpty(finishReason))
+                    if (string.IsNullOrEmpty(modelResponse.Content) && functionCalls.Count == 0)
                     {
-                        SetAgentMessage($"AskDB refused to answer! The reason code name is [{finishReason.Replace('_', ' ')}](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerateContentResponse#FinishReason).");
-                    }
-                }
+                        var failedResonse = JsonHelper.AsObject<ApiResponse>(_generator.ResponseAsRawString);
+                        var finishReason = failedResonse?.Candidates.FirstOrDefault()?.FinishReason;
+                        _generator.ResponseAsRawString.CopyToClipboard();
 
-                var loopAttempt = 0;
-                while (functionCalls.Count > 0 && loopAttempt <= 10)
-                {
-                    loopAttempt++;
+                        if (!string.IsNullOrEmpty(finishReason))
+                        {
+                            SetAgentMessage($"AskDB refused to answer! The reason code name is [{finishReason.Replace('_', ' ')}](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerateContentResponse#FinishReason).");
+                        }
+
+                        break;
+                    }
+
+                    if (!string.IsNullOrEmpty(modelResponse.Content))
+                    {
+                        SetAgentMessage(modelResponse.Content);
+                    }
+
+                    if (functionCalls.Count == 0)
+                    {
+                        break;
+                    }
+
                     await Task.Delay(2345);
 
-                    try
-                    {
-                        var functionResponses = new List<FunctionResponse>();
+                    var functionResponses = new List<FunctionResponse>();
 
-                        foreach (var function in functionCalls)
+                    foreach (var function in functionCalls)
+                    {
+                        try
                         {
-                            try
+                            var functionResponse = await CallFunctionAsync(function);
+                            if (functionResponse != null)
                             {
-                                var functionResponse = await CallFunctionAsync(function);
-                                if (functionResponse != null)
+                                functionResponses.Add(functionResponse);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            var output = $"Error in function **{function.Name}**:\n\n```console\n{ex.Message}. {ex.InnerException?.Message}\n```";
+
+                            functionResponses.Add(new FunctionResponse
+                            {
+                                Name = function.Name,
+                                Response = new Response
                                 {
-                                    functionResponses.Add(functionResponse);
+                                    Output = $"{output}\n\nAction plan or user clarification or internet search is required.",
                                 }
-                            }
-                            catch (Exception ex)
-                            {
-                                var output = $"Error in function **{function.Name}**:\n\n```console\n{ex.Message}. {ex.InnerException?.Message}\n```";
+                            });
 
-                                functionResponses.Add(new FunctionResponse
-                                {
-                                    Name = function.Name,
-                                    Response = new Response
-                                    {
-                                        Output = $"{output}\n\nAction plan or user clarification or internet search is required.",
-                                    }
-                                });
-
-                                SetAgentMessage(output);
-                            }
-                            finally
-                            {
-                                await Task.Delay(543);
-                            }
+                            SetAgentMessage(output);
                         }
-
-                        var apiRequestWithFunctions = new ApiRequestBuilder()
-                            .WithSystemInstruction(_globalInstruction)
-                            .DisableAllSafetySettings()
-                            .WithTools(new ToolBuilder().AddFunctionDeclarations(functionDeclarations))
-                            .SetFunctionCallingMode(FunctionCallingMode.AUTO)
-                            .WithFunctionResponses(functionResponses)
-                            .WithPrompt(@"Please review the function responses and your action history against the user's initial request in order to take action: continue on function calling until the request is satified, or reply to the user immediately to provide the final answer or ask for user's clarification!")
-                            .Build();
-
-                        var modelResponseForFunction = await _generator.GenerateContentAsync(apiRequestWithFunctions, Cache.DefaultModelAlias);
-
-                        if (!string.IsNullOrEmpty(modelResponseForFunction.Content))
+                        finally
                         {
-                            SetAgentMessage(modelResponseForFunction.Content);
-                        }
-
-                        functionCalls = (modelResponseForFunction.FunctionCalls == null || modelResponseForFunction.FunctionCalls.Count == 0) ? [] : modelResponseForFunction.FunctionCalls;
-
-                        if (string.IsNullOrEmpty(modelResponseForFunction.Content) && functionCalls.Count == 0)
-                        {
-                            var failedResonse = JsonHelper.AsObject<ApiResponse>(_generator.ResponseAsRawString);
-                            var finishReason = failedResonse?.Candidates.FirstOrDefault()?.FinishReason;
-                            _generator.ResponseAsRawString.CopyToClipboard();
-
-                            if (!string.IsNullOrEmpty(finishReason))
-                            {
-                                SetAgentMessage($"AskDB refused to answer! The reason code name is [{finishReason.Replace('_', ' ')}](https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerateContentResponse#FinishReason).");
-                            }
+                            await Task.Delay(543);
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        SetAgentMessage($"Error: {ex.Message}. {ex.InnerException?.Message}");
-                        functionCalls = [];
-                    }
-                    finally
-                    {
-                        await Task.Delay(234);
-                    }
+
+                    requestBuilder
+                        .WithFunctionResponses(functionResponses)
+                        .WithPrompt(@"Please review the function responses and your action history against the user's initial request in order to take action: continue on function calling until the request is satisfied, or reply to the user immediately to provide the final answer or ask for user's clarification!");
                 }
 
-                if (loopAttempt < 10)
-                {
-                    await LoadAgentSuggestionsAsync("Based on the current context, please provide up to 5 **short** and **concise** suggestions as the next step in my viewpoint, for me to use as the quick reply in order to continue the task.");
-                }
-                else
-                {
-                    await LoadAgentSuggestionsAsync("You have tried with 10 actions but cannot satisfy the task, please provide up to 5 **short** and **concise** suggestions as the next step in my viewpoint, for me to use as the quick reply in order to continue the task.");
-                }
+                await LoadAgentSuggestionsAsync("Based on the current context, please provide up to 5 **short** and **concise** suggestions as the next step in my viewpoint, for me to use as the quick reply in order to continue the task.");
             }
             catch (Exception ex)
             {
                 ex.CopyToClipboard();
-                SetAgentMessage($"**Error:** {ex.Message}. {ex.InnerException?.Message}.\n\nThe reason detail has been copied to your clipboard.");
+                SetAgentMessage($"**Error:**\n\n```console\n{ex.Message}. {ex.InnerException?.Message}\n```\n\n.\n\n*The reason detail has been copied to your clipboard.*");
             }
             finally
             {
@@ -852,7 +810,8 @@ It **MUST** include at least:
                             if (dataTable != null && dataTable.Rows.Count > 0)
                             {
                                 var queryResultId = DateTime.Now.Ticks % 10000;
-                                var message = $"> *Additional Note: In case this query result (the table below) is used for data visualization, its ID is `{queryResultId}`. \n\n{dataTable.ToMarkdown()}";
+                                //var message = $"> *Additional Note: In case this query result (the table below) is used for data visualization, its ID is `{queryResultId}`. \n\n{dataTable.ToMarkdown()}";
+                                var message = $"The table below (query result) has been shown to the user, so do not show it to the user again but focus on its insights!\n\n{dataTable.ToMarkdown(1000)}";
 
                                 SetAgentMessage($"Let me execute this query to check the data:\n\n```sql\n{sqlQuery}\n```", dataTable, queryResultId);
                                 return FunctionCallingHelper.CreateResponse(name, message);
@@ -962,7 +921,7 @@ It **MUST** include at least:
                 case var name when name == FunctionDeclarationHelper.GetFunctionName(RequestForInternetSearchAsync):
                     {
                         var requirement = FunctionCallingHelper.GetParameterValue<string>(function, "requirement");
-                        SetAgentMessage($"Let me perform an in-depth internet search following this description:\n\n```markdown\n{requirement}\n```");
+                        SetAgentMessage($"##### Let me perform an in-depth internet search following this description:\n\n{requirement}");
                         var searchResult = await RequestForInternetSearchAsync(requirement!);
                         SetAgentMessage(searchResult);
                         return FunctionCallingHelper.CreateResponse(name, searchResult);
