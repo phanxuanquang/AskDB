@@ -14,6 +14,8 @@ namespace AskDB.App
         public static IHost Host { get; private set; }
         public static Window Window { get; private set; }
         public static AppDbContext LocalDb { get; private set; }
+        public static ElementTheme AppTheme { get; set; } = ElementTheme.Light;
+
 
         public App()
         {
