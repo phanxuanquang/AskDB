@@ -16,7 +16,10 @@
     </Page.Resources>
 
     <Grid MaxWidth="1000">
-        <StackPanel x:Name="MainPanel" Spacing="16" VerticalAlignment="Center"
+        <StackPanel 
+            x:Name="MainPanel" 
+            Spacing="16" 
+            VerticalAlignment="Center"
             Background="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}"
             CornerRadius="{StaticResource OverlayCornerRadius}"
             Padding="40">

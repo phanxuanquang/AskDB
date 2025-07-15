@@ -1,6 +1,4 @@
 ﻿using Microsoft.UI.Xaml.Controls;
-using Microsoft.Windows.AppNotifications;
-using Microsoft.Windows.AppNotifications.Builder;
 using System;
 using System.Threading.Tasks;
 
@@ -8,20 +6,6 @@ namespace AskDB.App.Helpers
 {
     public static class DialogHelper
     {
-        public static async Task ShowSuccessAsync(string message)
-        {
-            var errorDialog = new ContentDialog
-            {
-                Title = "Success",
-                Content = message.Trim(),
-                PrimaryButtonText = "OK",
-                XamlRoot = App.Window.Content.XamlRoot,
-                DefaultButton = ContentDialogButton.Primary
-            };
-
-            await errorDialog.ShowAsync();
-        }
-
         public static async Task ShowErrorAsync(string message, string title = "Error")
         {
             var errorDialog = new ContentDialog
@@ -49,17 +33,6 @@ namespace AskDB.App.Helpers
             };
 
             return await dialog.ShowAsync();
-        }
-
-        public static void ShowAppNotification(string title, string content)
-        {
-            var notification = new AppNotificationBuilder().AddText(title)
-                .AddText(content)
-                .SetAudioEvent(AppNotificationSoundEvent.SMS)
-                .SetTimeStamp(DateTime.Now)
-                .BuildNotification();
-
-            AppNotificationManager.Default.Show(notification);
         }
     }
 }

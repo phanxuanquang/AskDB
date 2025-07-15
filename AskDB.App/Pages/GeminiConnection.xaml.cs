@@ -1,14 +1,15 @@
-using AskDB.App.Helpers;
+﻿using AskDB.App.Helpers;
+using AskDB.App.Local_Controls;
 using AskDB.App.Pages;
 using AskDB.Commons.Helpers;
 using AskDB.Database;
 using GeminiDotNET;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Documents;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using Newtonsoft.Json.Linq;
 using System;
+using System.Threading.Tasks;
 using Page = Microsoft.UI.Xaml.Controls.Page;
 
 namespace AskDB.App
@@ -28,7 +29,6 @@ namespace AskDB.App
             base.OnNavigatedTo(e);
 
             SetLoading(false);
-            SetError(null);
 
             _geminiApiKey = Cache.ApiKey;
         }
@@ -39,18 +39,62 @@ namespace AskDB.App
             MainPanel.Visibility = VisibilityHelper.SetVisible(!isLoading);
         }
 
-        private void SetError(string? message)
+        private void NavigateAfterAuthentication()
         {
-            ErrorLabel.Visibility = VisibilityHelper.SetVisible(!string.IsNullOrEmpty(message));
-            ErrorLabel.Text = message ?? string.Empty;
+            if (Cache.HasUserEverConnectedToDatabase)
+            {
+                this.Frame.Navigate(typeof(ExistingDatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+            }
+            else
+            {
+                this.Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+            }
         }
 
-        private async void ContinueButton_Click(object sender, RoutedEventArgs e)
+        private async Task ShowInforBarAsync(string message)
         {
+            ErrorInfoBar.Title = message;
+            ErrorInfoBar.IsOpen = true;
+            await Task.Delay(2000);
+            ErrorInfoBar.IsOpen = false;
+        }
+
+        private async void AuthenWithApiKeyButton_Click(object sender, RoutedEventArgs e)
+        {
+            SetLoading(true, "Waiting for your authentication");
+
+            var geminiApiKeyInput = new GeminiApiKeyInputDialogContent
+            {
+                ApiKey = Cache.ApiKey,
+            };
+
+            var authenWithApiKeyDialog = new ContentDialog
+            {
+                Title = "Authenticate with your Gemini API Key",
+                Content = geminiApiKeyInput,
+                PrimaryButtonText = "Confirm",
+                CloseButtonText = "Cancel",
+                XamlRoot = App.Window.Content.XamlRoot,
+                DefaultButton = ContentDialogButton.Primary
+            };
+
+            var result = await authenWithApiKeyDialog.ShowAsync();
+
+            if (result != ContentDialogResult.Primary)
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(geminiApiKeyInput.ApiKey) || string.IsNullOrWhiteSpace(geminiApiKeyInput.ApiKey))
+            {
+                throw new InvalidOperationException("Please enter your Gemini API key");
+            }
+
+            _geminiApiKey = geminiApiKeyInput.ApiKey;
+
             try
             {
                 SetLoading(true, "Validating your API key");
-                SetError(null);
 
                 if (string.IsNullOrEmpty(_geminiApiKey) || string.IsNullOrWhiteSpace(_geminiApiKey))
                 {
@@ -69,7 +113,7 @@ namespace AskDB.App
                     var request = new ApiRequestBuilder()
                         .WithPrompt("Print out `Hello world`")
                         .DisableAllSafetySettings()
-                        .WithDefaultGenerationConfig(0.2f, 400)
+                        .WithDefaultGenerationConfig(0.2f, 4)
                         .Build();
 
                     await generator.GenerateContentAsync(request);
@@ -90,19 +134,12 @@ namespace AskDB.App
 
                 Cache.ApiKey = _geminiApiKey;
 
-                if (Cache.HasUserEverConnectedToDatabase)
-                {
-                    this.Frame.Navigate(typeof(PrivacyPolicy), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
-                }
-                else
-                {
-                    this.Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
-                }
+                NavigateAfterAuthentication();
             }
             catch (Exception ex)
             {
                 ex.CopyToClipboard();
-                await DialogHelper.ShowErrorAsync(ex.Message);
+                ShowInforBarAsync(ex.Message);
             }
             finally
             {
@@ -110,42 +147,34 @@ namespace AskDB.App
             }
         }
 
-        private async void LoginWithGoogleUrl_Click(Hyperlink sender, HyperlinkClickEventArgs args)
+        private async void LoginWithGoogleButton_Click(object sender, RoutedEventArgs e)
         {
             SetLoading(true, "Waiting for your authentication");
+
             try
             {
-                var accessToken = await GoogleOAuthHelper.GetAccessTokenAsync();
+                GoogleOAuthenticator.ClearCachedUserCredential();
+                var authenticator = new GoogleOAuthenticator();
+                await authenticator.StartAuthenticationAsync();
+
                 SetLoading(true, "Loading your usage tier");
-                var codeAssistProfileAsJson = await GoogleOAuthHelper.LoadCodeAssistAsync(accessToken);
-                var json = JObject.Parse(codeAssistProfileAsJson);
-                var currentTierId = (string)json["currentTier"]?["id"];
-                var cloudaicompanionProjectId = (string)json["cloudaicompanionProject"];
+                await authenticator.LoadCodeAssistAsync();
 
-                if (string.IsNullOrEmpty(currentTierId) || string.IsNullOrEmpty(cloudaicompanionProjectId))
-                {
-                    throw new InvalidOperationException("Cannot retrieve your Cloud AI Companion project ID or current tier ID. Please try again with another Google account.");
-                }
+                SetLoading(true, "Setting up your environment");
+                await authenticator.OnboardUserAsync();
 
-                if (currentTierId.Equals("legacy-tier", StringComparison.OrdinalIgnoreCase))
+                if (authenticator.CurrentTierId.Equals("free-tier", StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new InvalidOperationException("Your current tier is Legacy, which is not supported. Please upgrade your tier to continue or use another Google account.");
-                }
-
-                if (currentTierId.Equals("free-tier", StringComparison.OrdinalIgnoreCase))
-                {
-                    SetLoading(true, "Setting up your environment");
-                    await GoogleOAuthHelper.OnboardFreeUserAsync(accessToken, cloudaicompanionProjectId);
                     SetLoading(true, "Disabling data collection from Google");
-                    await GoogleOAuthHelper.DisableFreeTierDataCollection(accessToken, cloudaicompanionProjectId);
+                    await authenticator.DisableFreeTierDataCollection();
                 }
 
-                this.Frame.Navigate(typeof(PrivacyPolicy), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+                NavigateAfterAuthentication();
             }
             catch (Exception ex)
             {
                 ex.CopyToClipboard();
-                SetError(ex.Message);
+                ShowInforBarAsync(ex.Message);
             }
             finally
             {

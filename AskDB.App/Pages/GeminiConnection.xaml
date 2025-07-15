@@ -9,27 +9,43 @@
     mc:Ignorable="d"
     NavigationCacheMode="Required">
 
-    <Grid MaxWidth="1000">
+    <Grid >
+        <InfoBar x:Name="ErrorInfoBar" IsOpen="False" HorizontalAlignment="Right" VerticalAlignment="Top" IsClosable="False" Severity="Error" MaxWidth="500"/>
         <local:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        <StackPanel x:Name="MainPanel" Spacing="16" Padding="40" VerticalAlignment="Center" Background="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}" CornerRadius="{StaticResource OverlayCornerRadius}">
+        <StackPanel 
+            x:Name="MainPanel" 
+            Spacing="16" 
+            Padding="40" 
+            MaxWidth="1000"
+            VerticalAlignment="Center" 
+            Background="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}" 
+            CornerRadius="{StaticResource OverlayCornerRadius}">
             <TextBlock Text="Connect to Gemini" Style="{StaticResource TitleTextBlockStyle}"  FontWeight="Bold"/>
             <RichTextBlock LineHeight="{StaticResource SubtitleTextBlockFontSize}" >
-                <Paragraph>AskDB ultilizes Gemini as the AI engine for natural language processing. Please enter your API key from the
-                    <Hyperlink FontWeight="SemiBold" NavigateUri="https://aistudio.google.com/app/apikey">Google AI Studio</Hyperlink> to continue. 
-                In case your API key is valid but does not work, please log into another Google account and get or create a new API key.
+                <Paragraph>AskDB ultilizes Gemini as the AI engine for natural language processing. 
+                    Please choose one of the following methods to connect to Gemini, and make sure that you have read and understood
+                    <Hyperlink FontWeight="Medium" NavigateUri="https://github.com/phanxuanquang/AskDB/blob/master/Policy/Privacy%20Policy.md">AskDB's privacy policy</Hyperlink> before proceeding.
                 </Paragraph>
             </RichTextBlock>
             <StackPanel Spacing="4">
-                <PasswordBox PlaceholderText="AIzaSy..." Password="{x:Bind _geminiApiKey, Mode=TwoWay}"/>
-                <TextBlock x:Name="ErrorLabel" TextWrapping="WrapWholeWords" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorCriticalBrush}"/>
-            </StackPanel>
-            <StackPanel Spacing="6">
-                <Button HorizontalAlignment="Stretch" Content="Continue" Click="ContinueButton_Click" Grid.Column="2" MinWidth="150" Style="{StaticResource AccentButtonStyle}" Padding="8"/>
-                <RichTextBlock HorizontalAlignment="Center">
-                    <Paragraph>
-                        <Hyperlink FontWeight="Medium"  UnderlineStyle="None" Click="LoginWithGoogleUrl_Click">or click here to log in with your Google account</Hyperlink>
-                    </Paragraph>
-                </RichTextBlock>
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" HorizontalAlignment="Stretch" Click="LoginWithGoogleButton_Click">
+                        <StackPanel Padding="16" Spacing="12">
+                            <FontIcon Glyph="&#xE8FA;" FontSize="{StaticResource TitleTextBlockFontSize}"/>
+                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" FontWeight="SemiBold" Text="Login with your Google account"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Column="1" HorizontalAlignment="Stretch" Click="AuthenWithApiKeyButton_Click">
+                        <StackPanel Padding="16" Spacing="12">
+                            <FontIcon Glyph="&#xE8D7;" FontSize="{StaticResource TitleTextBlockFontSize}"/>
+                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" FontWeight="SemiBold" Text="Use your Gemini API Key"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
             </StackPanel>
         </StackPanel>
     </Grid>

@@ -136,6 +136,7 @@
         </ListView>
         <InfoBar 
             Grid.Row="0" 
+            MaxWidth="500"
             x:Name="MessageInfoBar" 
             IsOpen="False" 
             HorizontalAlignment="Right" 

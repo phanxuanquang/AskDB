@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="AskDB.App.Local_Controls.GeminiApiKeyInputDialogContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:AskDB.App.Local_Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <StackPanel Spacing="12">
+        <RichTextBlock LineHeight="{StaticResource SubtitleTextBlockFontSize}" >
+            <Paragraph>Please enter your API key from
+                <Hyperlink FontWeight="SemiBold" NavigateUri="https://aistudio.google.com/app/apikey">Google AI Studio</Hyperlink> to continue. 
+    In case your API key is valid but does not work, please log into another Google account and get or create a new API key.
+            </Paragraph>
+        </RichTextBlock>
+        <PasswordBox PlaceholderText="AIzaSy..." Password="{x:Bind ApiKey, Mode=TwoWay}" MaxLength="39"/>
+    </StackPanel>
+</UserControl>

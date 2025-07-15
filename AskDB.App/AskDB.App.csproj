@@ -96,10 +96,10 @@
     <None Remove="Images\Wide310x150Logo.scale-200.png" />
     <None Remove="Images\Wide310x150Logo.scale-400.png" />
     <None Remove="LoadingControl.xaml" />
+    <None Remove="Local Controls\GeminiApiKeyInputDialogContent.xaml" />
     <None Remove="MainPanel.xaml" />
     <None Remove="Pages\ChatWithDatabase.xaml" />
     <None Remove="Pages\ExistingDatabaseConnection.xaml" />
-    <None Remove="Pages\PrivacyPolicy.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -292,7 +292,7 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
-    <Page Update="Pages\PrivacyPolicy.xaml">
+    <Page Update="Local Controls\GeminiApiKeyInputDialogContent.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="Local Controls\Charts\CartesianChartVisualizer.xaml">

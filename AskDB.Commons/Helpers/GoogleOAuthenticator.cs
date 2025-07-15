@@ -2,6 +2,7 @@
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Auth.OAuth2.Responses;
+using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
@@ -10,7 +11,7 @@ using System.Text.Json;
 
 namespace AskDB.Commons.Helpers
 {
-    public static class GoogleOAuthHelper
+    public class GoogleOAuthenticator
     {
         // Refer to https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/code_assist/oauth2.ts
 
@@ -39,34 +40,50 @@ namespace AskDB.Commons.Helpers
         });
         #endregion
 
-        public static async Task<string> GetAccessTokenAsync()
+        private string _accessToken;
+        private DateTime _accessTokenExpirationTime = DateTime.Now;
+        public string GoogleCloudProjectId { get; private set; }
+        public string CurrentTierId { get; private set; }
+
+        public async Task<string> GetAccessTokenAsync()
+        {
+            if (string.IsNullOrEmpty(_accessToken) || _accessTokenExpirationTime < DateTime.Now)
+            {
+                await StartAuthenticationAsync();
+            }
+
+            return _accessToken;
+        }
+
+        public async Task StartAuthenticationAsync()
         {
             if (File.Exists(CredentialPath))
             {
-                try
+                var dto = await File.ReadAllTextAsync(CredentialPath);
+                var token = JsonSerializer.Deserialize<TokenResponse>(dto.AesDecrypt());
+                if (token == null)
                 {
-                    var dto = await File.ReadAllTextAsync(CredentialPath);
-                    var token = JsonSerializer.Deserialize<TokenResponse>(dto.AesDecrypt());
-                    if (token == null)
-                    {
-                        var creds = await AuthenticateWithWebAsync();
-                        return creds.Token.AccessToken;
-                    }
-
-                    var userCredential = new UserCredential(AuthenCodeFlow, "user", token);
-                    if (await userCredential.RefreshTokenAsync(CancellationToken.None))
-                    {
-                        return userCredential.Token.AccessToken;
-                    }
+                    var creds = await AuthenticateWithWebAsync();
+                    _accessToken = creds.Token.AccessToken;
+                    return;
                 }
-                catch (Exception ex)
+
+                var userCredential = new UserCredential(AuthenCodeFlow, "user", token);
+                if (await userCredential.RefreshTokenAsync(CancellationToken.None))
                 {
-                    Debug.WriteLine($"Error loading cached credentials: {ex.Message}");
+                    _accessToken = userCredential.Token.AccessToken;
+                    _accessTokenExpirationTime = userCredential.Token.ExpiresInSeconds.HasValue
+                        ? DateTime.Now.AddSeconds(userCredential.Token.ExpiresInSeconds.Value).AddMinutes(-5)
+                        : DateTime.MaxValue;
+                    return;
                 }
             }
 
             var authenCreds = await AuthenticateWithWebAsync();
-            return authenCreds.Token.AccessToken;
+            _accessToken = authenCreds.Token.AccessToken;
+            _accessTokenExpirationTime = authenCreds.Token.ExpiresInSeconds.HasValue
+                ? DateTime.Now.AddSeconds(authenCreds.Token.ExpiresInSeconds.Value).AddMinutes(-5)
+                : DateTime.MaxValue;
         }
 
         public static void ClearCachedUserCredential()
@@ -75,10 +92,20 @@ namespace AskDB.Commons.Helpers
             {
                 File.Delete(CredentialPath);
             }
+
+            if (Directory.Exists(GeminiDir))
+            {
+                Directory.Delete(GeminiDir);
+            }
         }
 
-        public static async Task<string> LoadCodeAssistAsync(string accessToken)
+        public async Task LoadCodeAssistAsync()
         {
+            if (string.IsNullOrEmpty(_accessToken))
+            {
+                throw new InvalidOperationException("You must authenticate before loading the Code Assist profile.");
+            }
+
             var payload = new
             {
                 metadata = new
@@ -92,7 +119,7 @@ namespace AskDB.Commons.Helpers
             var methodName = "loadCodeAssist";
 
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
 
             HttpResponseMessage? response;
 
@@ -107,33 +134,60 @@ namespace AskDB.Commons.Helpers
             }
 
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStringAsync();
+            var codeAssistProfileAsJson = await response.Content.ReadAsStringAsync();
+            var json = JObject.Parse(codeAssistProfileAsJson);
+            var currentTierId = (string)json["currentTier"]?["id"];
+            var cloudaicompanionProjectId = (string)json["cloudaicompanionProject"];
+
+            if (string.IsNullOrEmpty(currentTierId) || string.IsNullOrEmpty(cloudaicompanionProjectId))
+            {
+                throw new InvalidOperationException("Cannot retrieve your Cloud AI Companion project ID or current tier ID. Please try again with another Google account.");
+            }
+
+            if (currentTierId.Equals("legacy-tier", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Your current tier is Legacy, which is not supported. Please upgrade your tier to continue or use another Google account.");
+            }
+
+            CurrentTierId = currentTierId;
+            GoogleCloudProjectId = cloudaicompanionProjectId;
         }
 
-        public static async Task OnboardFreeUserAsync(string accessToken, string cloudaicompanionProjectId)
+        public async Task OnboardUserAsync()
         {
+            if (string.IsNullOrEmpty(GoogleCloudProjectId) || string.IsNullOrEmpty(CurrentTierId))
+            {
+                throw new InvalidOperationException("You must load the Code Assist profile before onboarding a free user.");
+            }
+
             var payload = new
             {
-                tierId = "free-tier",
-                cloudaicompanionProject = cloudaicompanionProjectId,
+                cloudaicompanionProject = GoogleCloudProjectId,
+                tierId = CurrentTierId,
             };
 
-            await CallGeminiApiAsync("onboardUser", accessToken, payload);
+            await CallGeminiApiAsync("onboardUser", _accessToken, payload);
         }
 
-        public static async Task DisableFreeTierDataCollection(string accessToken, string cloudaicompanionProjectId)
+        public async Task DisableFreeTierDataCollection()
         {
             var payload = new
             {
-                cloudaicompanionProject = cloudaicompanionProjectId,
+                cloudaicompanionProject = GoogleCloudProjectId,
                 freeTierDataCollectionOptin = false,
             };
 
-            await CallGeminiApiAsync("setCodeAssistGlobalUserSetting", accessToken, payload);
+            await CallGeminiApiAsync("setCodeAssistGlobalUserSetting", _accessToken, payload);
         }
 
-        public static async Task CallGeminiApiAsync(string methodName, string accessToken, object? payload = null)
+        #region Helpers
+        private static async Task CallGeminiApiAsync(string methodName, string accessToken, object? payload = null)
         {
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                throw new ArgumentException("Access token cannot be null or empty.", nameof(accessToken));
+            }
+
             using var client = new HttpClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
@@ -152,7 +206,6 @@ namespace AskDB.Commons.Helpers
             response.EnsureSuccessStatusCode();
         }
 
-        #region Helpers
         private static async Task<UserCredential> AuthenticateWithWebAsync()
         {
             var port = new Random().Next(1000, 20000);
@@ -221,7 +274,6 @@ namespace AskDB.Commons.Helpers
             if (selectAccount && !url.Contains("prompt=")) sb.Append("&prompt=select_account");
             return sb.ToString();
         }
-
         #endregion
     }
 
