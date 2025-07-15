@@ -1,8 +1,10 @@
 using AskDB.App.Helpers;
 using AskDB.App.Pages;
+using AskDB.Commons.Helpers;
 using AskDB.Database;
 using GeminiDotNET;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 using System;
@@ -89,12 +91,33 @@ namespace AskDB.App
 
                 if (Cache.HasUserEverConnectedToDatabase)
                 {
-                    this.Frame.Navigate(typeof(ExistingDatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+                    this.Frame.Navigate(typeof(PrivacyPolicy), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
                 }
                 else
                 {
                     this.Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
                 }
+            }
+            catch (Exception ex)
+            {
+                ex.CopyToClipboard();
+                SetError(ex.Message);
+            }
+            finally
+            {
+                SetLoading(false);
+            }
+        }
+
+        private async void LoginWithGoogleUrl_Click(Hyperlink sender, HyperlinkClickEventArgs args)
+        {
+            SetLoading(true);
+            try
+            {
+                var credentials = await GoogleOAuthHelper.GetUserCredentialAsync();
+                var accessToken = credentials.Token.AccessToken;
+
+                this.Frame.Navigate(typeof(PrivacyPolicy), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
             }
             catch (Exception ex)
             {

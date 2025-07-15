@@ -1,5 +1,6 @@
 ﻿using AskDB.Commons.Enums;
 using AskDB.Commons.Extensions;
+using AskDB.Commons.Helpers;
 
 namespace DatabaseInteractor.Helpers
 {
@@ -11,7 +12,7 @@ namespace DatabaseInteractor.Helpers
             try
             {
                 var url = $"{UrlPrefix}/Instructions/{instructionFileName}.md";
-                var content = await GetContentFromUrlAsync(url);
+                var content = await GithubOnlineContentHelper.GetContentFromUrlAsync(url);
 
                 return content
                     .Replace("{Language}", language)
@@ -30,19 +31,12 @@ namespace DatabaseInteractor.Helpers
             {
                 var database = databaseType.GetDescription();
                 var url = $"{UrlPrefix}/SQL Queries/{methodName}/{database}.sql";
-                return await GetContentFromUrlAsync(url);
+                return await GithubOnlineContentHelper.GetContentFromUrlAsync(url);
             }
             catch (HttpRequestException ex)
             {
                 throw new InvalidOperationException("Failed to fetch content from GitHub.", ex);
             }
-        }
-
-        private static async Task<string> GetContentFromUrlAsync(string url)
-        {
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0");
-            return await client.GetStringAsync(new Uri(url));
         }
     }
 }

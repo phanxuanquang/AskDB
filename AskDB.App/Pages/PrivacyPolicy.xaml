@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AskDB.App.Pages.PrivacyPolicy"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:AskDB.App.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls" xmlns:app="using:AskDB.App"
+    mc:Ignorable="d">
+
+    <Grid>
+        <app:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Grid x:Name="MainSpace" RowSpacing="12" Padding="16,0,16,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <ScrollViewer  
+                    Grid.Row="0" 
+                     Background="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}"
+                     CornerRadius="{StaticResource OverlayCornerRadius}"
+                     Padding="20,16" MaxWidth="1200">
+                <controls:MarkdownTextBlock 
+                    x:Name="PolicyContent"
+                    TextWrapping="WrapWholeWords" 
+                    ParagraphLineHeight="24"
+                    Background="Transparent"/>
+            </ScrollViewer>
+            <Button Grid.Row="1" HorizontalAlignment="Center" Style="{ThemeResource AccentButtonStyle}" Content="Agree and continue" Click="ContinueButton_Click"/>
+        </Grid>
+    </Grid>
+</Page>
+    

@@ -99,6 +99,7 @@
     <None Remove="MainPanel.xaml" />
     <None Remove="Pages\ChatWithDatabase.xaml" />
     <None Remove="Pages\ExistingDatabaseConnection.xaml" />
+    <None Remove="Pages\PrivacyPolicy.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -291,6 +292,9 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+    <Page Update="Pages\PrivacyPolicy.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Update="Local Controls\Charts\CartesianChartVisualizer.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Google.Apis.Auth" Version="1.70.0" />
+  </ItemGroup>
+
 </Project>
