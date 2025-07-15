@@ -15,6 +15,11 @@ namespace AskDB.App.Pages;
 /// </summary>
 public sealed partial class PrivacyPolicy : Page
 {
+    public PrivacyPolicy()
+    {
+        this.InitializeComponent();
+    }
+
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);

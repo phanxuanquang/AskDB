@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
+using Newtonsoft.Json.Linq;
 using System;
 using Page = Microsoft.UI.Xaml.Controls.Page;
 
@@ -32,9 +33,9 @@ namespace AskDB.App
             _geminiApiKey = Cache.ApiKey;
         }
 
-        private void SetLoading(bool isLoading)
+        private void SetLoading(bool isLoading, string? message = null)
         {
-            LoadingOverlay.SetLoading(null, isLoading, 72);
+            LoadingOverlay.SetLoading(message, isLoading, 72);
             MainPanel.Visibility = VisibilityHelper.SetVisible(!isLoading);
         }
 
@@ -48,7 +49,7 @@ namespace AskDB.App
         {
             try
             {
-                SetLoading(true);
+                SetLoading(true, "Validating your API key");
                 SetError(null);
 
                 if (string.IsNullOrEmpty(_geminiApiKey) || string.IsNullOrWhiteSpace(_geminiApiKey))
@@ -101,7 +102,7 @@ namespace AskDB.App
             catch (Exception ex)
             {
                 ex.CopyToClipboard();
-                SetError(ex.Message);
+                await DialogHelper.ShowErrorAsync(ex.Message);
             }
             finally
             {
@@ -111,11 +112,33 @@ namespace AskDB.App
 
         private async void LoginWithGoogleUrl_Click(Hyperlink sender, HyperlinkClickEventArgs args)
         {
-            SetLoading(true);
+            SetLoading(true, "Waiting for your authentication");
             try
             {
-                var credentials = await GoogleOAuthHelper.GetUserCredentialAsync();
-                var accessToken = credentials.Token.AccessToken;
+                var accessToken = await GoogleOAuthHelper.GetAccessTokenAsync();
+                SetLoading(true, "Loading your usage tier");
+                var codeAssistProfileAsJson = await GoogleOAuthHelper.LoadCodeAssistAsync(accessToken);
+                var json = JObject.Parse(codeAssistProfileAsJson);
+                var currentTierId = (string)json["currentTier"]?["id"];
+                var cloudaicompanionProjectId = (string)json["cloudaicompanionProject"];
+
+                if (string.IsNullOrEmpty(currentTierId) || string.IsNullOrEmpty(cloudaicompanionProjectId))
+                {
+                    throw new InvalidOperationException("Cannot retrieve your Cloud AI Companion project ID or current tier ID. Please try again with another Google account.");
+                }
+
+                if (currentTierId.Equals("legacy-tier", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("Your current tier is Legacy, which is not supported. Please upgrade your tier to continue or use another Google account.");
+                }
+
+                if (currentTierId.Equals("free-tier", StringComparison.OrdinalIgnoreCase))
+                {
+                    SetLoading(true, "Setting up your environment");
+                    await GoogleOAuthHelper.OnboardFreeUserAsync(accessToken, cloudaicompanionProjectId);
+                    SetLoading(true, "Disabling data collection from Google");
+                    await GoogleOAuthHelper.DisableFreeTierDataCollection(accessToken, cloudaicompanionProjectId);
+                }
 
                 this.Frame.Navigate(typeof(PrivacyPolicy), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
             }
