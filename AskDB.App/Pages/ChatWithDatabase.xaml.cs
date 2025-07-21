@@ -717,7 +717,7 @@ It **MUST** include at least:
 
                 while (true)
                 {
-                    var modelResponse = await _generator.GenerateContentAsync(requestBuilder.Build(), Cache.DefaultModelAlias);
+                    var modelResponse = await Cache.GeminiCodeAssistConnector.GenerateContentAsync(requestBuilder.Build(), Cache.DefaultModelAlias);
                     var functionCalls = (modelResponse.FunctionCalls == null || modelResponse.FunctionCalls.Count == 0) ? [] : modelResponse.FunctionCalls;
 
                     if (string.IsNullOrEmpty(modelResponse.Content) && functionCalls.Count == 0)
@@ -1100,7 +1100,9 @@ This is the list of table names in the database: {string.Join(", ", tableNames.S
                .WithPrompt("In order to start the conversation, please introduce to me about yourself, such as who you are, what you can do, what you can help me, or anything else that you think it may be relavant to my database and be useful to me; and some good practices for me to help you to do the task effectively. Take me as your friend or your teammate, avoid to use formal-like tone while talking to me; just use a natural, friendly tone with daily-life word when talking to me, like you are talking with your friends in the real life.")
                .Build();
 
-            var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
+            //var response = await _generator.GenerateContentAsync(requestForAgentSuggestions, ModelVersion.Gemini_20_Flash_Lite);
+
+            var response = await Cache.GeminiCodeAssistConnector.GenerateContentAsync(requestForAgentSuggestions, "gemini-2.5-flash");
 
             if (!string.IsNullOrEmpty(response.Content))
             {

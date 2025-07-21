@@ -153,8 +153,8 @@ namespace AskDB.App
 
             try
             {
-                GoogleOAuthenticator.ClearCachedUserCredential();
-                var authenticator = new GoogleOAuthenticator();
+                //GeminiCodeAssistConnector.ClearCachedUserCredential();
+                var authenticator = new GeminiCodeAssistConnector();
                 await authenticator.StartAuthenticationAsync();
 
                 SetLoading(true, "Loading your usage tier");
@@ -168,6 +168,8 @@ namespace AskDB.App
                     SetLoading(true, "Disabling data collection from Google");
                     await authenticator.DisableFreeTierDataCollection();
                 }
+
+                Cache.GeminiCodeAssistConnector = authenticator;
 
                 NavigateAfterAuthentication();
             }

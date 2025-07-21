@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Gemini.NET" Version="3.4.5.8" />
     <PackageReference Include="Google.Apis.Auth" Version="1.70.0" />
   </ItemGroup>
 

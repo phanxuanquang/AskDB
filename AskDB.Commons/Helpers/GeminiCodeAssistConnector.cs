@@ -1,17 +1,24 @@
 ﻿using AskDB.Commons.Extensions;
+using GeminiDotNET.ApiModels.ApiRequest;
+using GeminiDotNET.ClientModels;
+using GeminiDotNET.Extensions;
+using GeminiDotNET.Helpers;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Auth.OAuth2.Responses;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace AskDB.Commons.Helpers
 {
-    public class GoogleOAuthenticator
+    public class GeminiCodeAssistConnector
     {
         // Refer to https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/code_assist/oauth2.ts
 
@@ -40,50 +47,54 @@ namespace AskDB.Commons.Helpers
         });
         #endregion
 
-        private string _accessToken;
+        private UserCredential? _userCredential;
         private DateTime _accessTokenExpirationTime = DateTime.Now;
-        public string GoogleCloudProjectId { get; private set; }
+        private string _googleCloudProjectId;
         public string CurrentTierId { get; private set; }
 
         public async Task<string> GetAccessTokenAsync()
         {
-            if (string.IsNullOrEmpty(_accessToken) || _accessTokenExpirationTime < DateTime.Now)
+            if (_userCredential == null || _accessTokenExpirationTime < DateTime.Now)
             {
                 await StartAuthenticationAsync();
             }
 
-            return _accessToken;
+            return _userCredential!.Token.AccessToken;
         }
 
         public async Task StartAuthenticationAsync()
         {
+            TokenResponse? token = null;
+
             if (File.Exists(CredentialPath))
             {
-                var dto = await File.ReadAllTextAsync(CredentialPath);
-                var token = JsonSerializer.Deserialize<TokenResponse>(dto.AesDecrypt());
-                if (token == null)
-                {
-                    var creds = await AuthenticateWithWebAsync();
-                    _accessToken = creds.Token.AccessToken;
-                    return;
-                }
-
-                var userCredential = new UserCredential(AuthenCodeFlow, "user", token);
-                if (await userCredential.RefreshTokenAsync(CancellationToken.None))
-                {
-                    _accessToken = userCredential.Token.AccessToken;
-                    _accessTokenExpirationTime = userCredential.Token.ExpiresInSeconds.HasValue
-                        ? DateTime.Now.AddSeconds(userCredential.Token.ExpiresInSeconds.Value).AddMinutes(-5)
-                        : DateTime.MaxValue;
-                    return;
-                }
+                var encryptedContent = await File.ReadAllTextAsync(CredentialPath);
+                token = JsonSerializer.Deserialize<TokenResponse>(encryptedContent.AesDecrypt());
             }
 
-            var authenCreds = await AuthenticateWithWebAsync();
-            _accessToken = authenCreds.Token.AccessToken;
-            _accessTokenExpirationTime = authenCreds.Token.ExpiresInSeconds.HasValue
-                ? DateTime.Now.AddSeconds(authenCreds.Token.ExpiresInSeconds.Value).AddMinutes(-5)
-                : DateTime.MaxValue;
+            if (token == null)
+            {
+                _userCredential = await AuthenticateWithWebAsync();
+                _accessTokenExpirationTime = _userCredential.Token.ExpiresInSeconds.HasValue
+                    ? DateTime.Now.AddSeconds(_userCredential.Token.ExpiresInSeconds.Value).AddMinutes(-5)
+                    : DateTime.MaxValue;
+                return;
+            }
+
+            _userCredential = new UserCredential(AuthenCodeFlow, "user", token);
+
+            if (!await _userCredential.RefreshTokenAsync(CancellationToken.None))
+            {
+                _userCredential = await AuthenticateWithWebAsync();
+                _accessTokenExpirationTime = _userCredential.Token.ExpiresInSeconds.HasValue
+                    ? DateTime.Now.AddSeconds(_userCredential.Token.ExpiresInSeconds.Value).AddMinutes(-5)
+                    : DateTime.MaxValue;
+                return;
+            }
+
+            _accessTokenExpirationTime = _userCredential.Token.ExpiresInSeconds.HasValue
+                   ? DateTime.Now.AddSeconds(_userCredential.Token.ExpiresInSeconds.Value).AddMinutes(-5)
+                   : DateTime.MaxValue;
         }
 
         public static void ClearCachedUserCredential()
@@ -101,7 +112,7 @@ namespace AskDB.Commons.Helpers
 
         public async Task LoadCodeAssistAsync()
         {
-            if (string.IsNullOrEmpty(_accessToken))
+            if (_userCredential == null)
             {
                 throw new InvalidOperationException("You must authenticate before loading the Code Assist profile.");
             }
@@ -119,7 +130,7 @@ namespace AskDB.Commons.Helpers
             var methodName = "loadCodeAssist";
 
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _userCredential.Token.AccessToken);
 
             HttpResponseMessage? response;
 
@@ -150,46 +161,141 @@ namespace AskDB.Commons.Helpers
             }
 
             CurrentTierId = currentTierId;
-            GoogleCloudProjectId = cloudaicompanionProjectId;
+            _googleCloudProjectId = cloudaicompanionProjectId;
         }
 
         public async Task OnboardUserAsync()
         {
-            if (string.IsNullOrEmpty(GoogleCloudProjectId) || string.IsNullOrEmpty(CurrentTierId))
+            if (string.IsNullOrEmpty(_googleCloudProjectId) || string.IsNullOrEmpty(CurrentTierId))
             {
                 throw new InvalidOperationException("You must load the Code Assist profile before onboarding a free user.");
             }
 
             var payload = new
             {
-                cloudaicompanionProject = GoogleCloudProjectId,
+                cloudaicompanionProject = _googleCloudProjectId,
                 tierId = CurrentTierId,
             };
 
-            await CallGeminiApiAsync("onboardUser", _accessToken, payload);
+            await CallGeminiApiAsync("onboardUser", payload);
         }
 
         public async Task DisableFreeTierDataCollection()
         {
             var payload = new
             {
-                cloudaicompanionProject = GoogleCloudProjectId,
+                cloudaicompanionProject = _googleCloudProjectId,
                 freeTierDataCollectionOptin = false,
             };
 
-            await CallGeminiApiAsync("setCodeAssistGlobalUserSetting", _accessToken, payload);
+            await CallGeminiApiAsync("setCodeAssistGlobalUserSetting", payload);
+        }
+
+        public async Task<ModelResponse> GenerateContentAsync(ApiRequest request, string modelAlias)
+        {
+            using var client = new HttpClient();
+            var accessToken = await GetAccessTokenAsync();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("GeminiCLI/v22.17.0 (win32; x64)");
+
+            var payload = new
+            {
+                model = modelAlias,
+                project = _googleCloudProjectId,
+                request
+            };
+
+            var body = new StringContent(payload.AsString(), Encoding.UTF8, "application/json");
+            HttpResponseMessage responseMessage = await client.PostAsync($"{API_ENDPOINT_PREFIX}:generateContent", body);
+            string responseContent = await responseMessage.Content.ReadAsStringAsync();
+            var jObject = JObject.Parse(responseContent);
+
+            if (!responseMessage.IsSuccessStatusCode)
+            {
+                try
+                {
+                    var modelFailedResponse = jObject["error"]?.ToObject<GeminiDotNET.ApiModels.Response.Failed.ApiResponse>();
+
+                    throw new GeminiException(modelFailedResponse == null
+                            ? "Undefined"
+                            : $"{modelFailedResponse.Error.Status} ({modelFailedResponse.Error.Code}): {modelFailedResponse.Error.Message}",
+                        modelFailedResponse,
+                        new Exception(responseContent));
+                }
+                catch (Exception ex)
+                {
+                    var dto = new GeminiDotNET.ApiModels.Response.Failed.ApiResponse
+                    {
+                        Error = new GeminiDotNET.ApiModels.Response.Failed.Error
+                        {
+                            Code = (int)responseMessage.StatusCode,
+                            Message = $"{ex.Message}\n{ex.StackTrace}",
+                        }
+                    };
+
+                    throw new GeminiException(dto == null
+                            ? "Undefined"
+                            : $"{dto.Error.Status} ({dto.Error.Code}): {dto.Error.Message}",
+                        dto,
+                        new Exception(responseContent));
+                }
+            }
+
+            var modelSuccessResponse = jObject["response"]?.ToObject<GeminiDotNET.ApiModels.Response.Success.ApiResponse>();
+
+            var firstCandidate = modelSuccessResponse?.Candidates.FirstOrDefault();
+            var parts = firstCandidate?.Content?.Parts;
+            var groudingMetadata = firstCandidate?.GroundingMetadata;
+
+            var texts = modelSuccessResponse?.Candidates
+                .Select(c => c.Content)
+                .SelectMany(c => c.Parts)
+                .Select(p => p.Text)
+                .Where(t => !string.IsNullOrEmpty(t))
+                .ToList();
+
+            var modelResponse = new ModelResponse
+            {
+                Content = string.Join("\n\n", texts),
+                GroundingDetail = groudingMetadata != null
+                    ? new GroundingDetail
+                    {
+                        RenderedContentAsHtml = groudingMetadata?.SearchEntryPoint?.RenderedContent ?? null,
+                        SearchSuggestions = groudingMetadata?.WebSearchQueries,
+                        ReliableInformation = groudingMetadata?.GroundingSupports?
+                            .OrderByDescending(s => s.ConfidenceScores.Max())
+                            .Select(s => s.Segment.Text),
+                        Sources = groudingMetadata?.GroundingChunks?
+                            .Select(c => new GroundingSource
+                            {
+                                Domain = c.Web.Title,
+                                Url = c.Web.Uri,
+                            }),
+                    }
+                    : null,
+
+                FunctionCalls = parts != null && parts.Any(p => p.FunctionCall != null)
+                    ? [.. parts.Where(p => p.FunctionCall != null).Select(p => p.FunctionCall!)]
+                    : null,
+                FunctionResponses = parts != null && parts.Any(p => p.FunctionResponse != null)
+                    ? [.. parts.Where(p => p.FunctionResponse != null).Select(p => p.FunctionResponse!)]
+                    : null,
+            };
+
+            if (modelSuccessResponse != null && modelSuccessResponse.Candidates.Count > 0)
+            {
+                //SetChatHistory([.. modelSuccessResponse.Candidates.Select(c => c.Content)]);
+            }
+
+            return modelResponse;
         }
 
         #region Helpers
-        private static async Task CallGeminiApiAsync(string methodName, string accessToken, object? payload = null)
+        private async Task CallGeminiApiAsync(string methodName, object? payload = null)
         {
-            if (string.IsNullOrEmpty(accessToken))
-            {
-                throw new ArgumentException("Access token cannot be null or empty.", nameof(accessToken));
-            }
-
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _userCredential!.Token.AccessToken);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("GeminiCLI/v22.17.0 (win32; x64)");
 
             HttpResponseMessage? response;
 

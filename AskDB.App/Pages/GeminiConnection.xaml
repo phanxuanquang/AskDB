@@ -10,7 +10,7 @@
     NavigationCacheMode="Required">
 
     <Grid >
-        <InfoBar x:Name="ErrorInfoBar" IsOpen="False" HorizontalAlignment="Right" VerticalAlignment="Top" IsClosable="False" Severity="Error" MaxWidth="500"/>
+        <InfoBar x:Name="ErrorInfoBar" IsOpen="False" HorizontalAlignment="Right" VerticalAlignment="Top" IsClosable="False" Severity="Error"/>
         <local:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         <StackPanel 
             x:Name="MainPanel" 

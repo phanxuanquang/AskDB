@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AskDB.Commons.Helpers;
+using System;
 using System.Collections;
 using System.Text;
 using Windows.ApplicationModel.DataTransfer;
@@ -10,6 +11,7 @@ namespace AskDB.App.Helpers
         public static string ApiKey { get; set; }
 
         public static bool HasUserEverConnectedToDatabase { get; set; } = false;
+        public static GeminiCodeAssistConnector GeminiCodeAssistConnector;
 
         public const string DefaultModelAlias = "gemini-2.5-flash";
 
