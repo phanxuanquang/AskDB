@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AskDB.SemanticKernel.Factories;
+using System;
 using System.Collections;
 using System.Text;
 using Windows.ApplicationModel.DataTransfer;
@@ -12,6 +13,8 @@ namespace AskDB.App.Helpers
         public static bool HasUserEverConnectedToDatabase { get; set; } = false;
 
         public const string ReasoningModelAlias = "gemini-2.5-flash-preview-05-20";
+
+        public static KernelFactory KernelFactory { get;set; } = new KernelFactory();
 
         public static void CopyToClipboard(this string content)
         {

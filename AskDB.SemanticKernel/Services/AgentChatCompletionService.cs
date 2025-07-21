@@ -12,7 +12,7 @@ namespace AskDB.SemanticKernel.Services
         private readonly IChatCompletionService _chatCompletionService;
         private readonly int _maxMessageCount;
 
-        private ChatHistory _chatHistories { get; set; }
+        private ChatHistory _chatHistories;
 
         public AgentChatCompletionService(KernelFactory kernelFactory, int maxMessageCount = 200)
         {
@@ -80,6 +80,31 @@ namespace AskDB.SemanticKernel.Services
             _chatHistories.Add(response);
 
             return response;
+        }
+
+        public async Task HealthCheckAsync()
+        {
+            if (_chatCompletionService is null)
+            {
+                throw new InvalidOperationException("Chat completion service is not initialized.");
+            }
+            try
+            {
+                await _chatCompletionService.GetChatMessageContentAsync(
+                    [
+                        new ChatMessageContent
+                        {
+                            Role = AuthorRole.User,
+                            Content = "Healthcheck message, please say `Hello World`"
+                        }
+                    ],
+                    executionSettings: ServiceProvider.CreatePromptExecutionSettings(5, 0.2),
+                    kernel: Kernel);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Health check failed for the chat completion service.", ex);
+            }
         }
     }
 }

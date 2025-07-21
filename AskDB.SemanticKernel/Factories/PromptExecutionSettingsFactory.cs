@@ -12,7 +12,7 @@ namespace AskDB.SemanticKernel.Factories
 {
     public static class PromptExecutionSettingsFactory
     {
-        public static PromptExecutionSettings CreatePromptExecutionSettings(this AiServiceProvider serviceProvider)
+        public static PromptExecutionSettings CreatePromptExecutionSettings(this AiServiceProvider serviceProvider, int maxOutputToken = 2048, double temperature = 1)
         {
             var promptExecutionSettings = new PromptExecutionSettings
             {
@@ -21,7 +21,7 @@ namespace AskDB.SemanticKernel.Factories
                     {
                         AllowConcurrentInvocation = false,
                         AllowParallelCalls = false,
-                    }, 
+                    },
                     autoInvoke: true)
             };
 
@@ -31,13 +31,17 @@ namespace AskDB.SemanticKernel.Factories
                 {
                     ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions,
                     FunctionChoiceBehavior = promptExecutionSettings.FunctionChoiceBehavior,
+                    MaxTokens = maxOutputToken,
+                    Temperature = temperature
                 },
                 AiServiceProvider.Gemini => new GeminiPromptExecutionSettings
                 {
                     ToolCallBehavior = GeminiToolCallBehavior.AutoInvokeKernelFunctions,
                     FunctionChoiceBehavior = promptExecutionSettings.FunctionChoiceBehavior,
+                    MaxTokens = maxOutputToken,
+                    Temperature = temperature
                 },
-                AiServiceProvider.AzureOpenAI => AzureOpenAIPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings),
+                AiServiceProvider.AzureOpenAI => AzureOpenAIPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings, maxOutputToken),
                 AiServiceProvider.Ollama => OllamaPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings),
                 AiServiceProvider.ONNX => promptExecutionSettings as OnnxRuntimeGenAIPromptExecutionSettings,
                 _ => throw new NotImplementedException(),

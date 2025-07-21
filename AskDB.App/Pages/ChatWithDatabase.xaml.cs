@@ -1,11 +1,10 @@
 ﻿using AskDB.App.Helpers;
 using AskDB.App.View_Models;
 using AskDB.Commons.Extensions;
+using AskDB.SemanticKernel.Extensions;
 using AskDB.SemanticKernel.Factories;
-using AskDB.SemanticKernel.InvocationFilters;
 using AskDB.SemanticKernel.Plugins;
 using AskDB.SemanticKernel.Services;
-using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.UI.Controls;
 using DatabaseInteractor.Factories;
 using DatabaseInteractor.Helpers;
@@ -16,13 +15,9 @@ using GeminiDotNET.ApiModels.Enums;
 using GeminiDotNET.FunctionCallings.Attributes;
 using GeminiDotNET.Helpers;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
-using Microsoft.SemanticKernel.Planning;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
@@ -31,18 +26,13 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
-using Windows.Data.Pdf;
-using Windows.Networking.NetworkOperators;
 using Windows.Storage.Pickers;
-using Windows.Storage.Streams;
 using Windows.System;
 using WinRT.Interop;
-using static Dapper.SqlMapper;
-using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace AskDB.App.Pages
 {
-    public sealed partial class ChatWithDatabase : Page, IFunctionInvocationFilter, IAutoFunctionInvocationFilter
+    public sealed partial class ChatWithDatabase : Page, IFunctionInvocationFilter
     {
         private readonly ObservableCollection<ChatContent> Messages = [];
         private readonly ObservableCollection<AgentSuggestion> AgentSuggestions = [];
@@ -52,12 +42,14 @@ namespace AskDB.App.Pages
         private string _globalInstruction;
         private string _actionPlanInstruction;
 
-        private KernelFactory _kernelFactory;
         private AgentChatCompletionService _chatCompletionService;
+
+        private readonly Microsoft.UI.Dispatching.DispatcherQueue _dispatcherQueue;
 
         public ChatWithDatabase()
         {
             this.InitializeComponent();
+            _dispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         }
 
         #region Function Declarations
@@ -340,18 +332,12 @@ Use this function to retrieve **critical, missing context** from the internet wh
 
                 ChangeTheConversationLanguage("English");
 
-                _kernelFactory = new KernelFactory()
-                    .UseGoogleGeminiProvider(Cache.ApiKey, "gemini-2.0-flash")
-                    .WithPlugin(new DatabaseInteractionPlugin(_databaseInteractor))
-                    .WithAutoFunctionInvocationFilter(this)
-                    .WithFunctionInvocationFilter(this);
-
-                _chatCompletionService = new AgentChatCompletionService(_kernelFactory)
+                _chatCompletionService = new AgentChatCompletionService(Cache.KernelFactory
+                        .WithPlugin(new DatabaseInteractionPlugin(_databaseInteractor))
+                        .WithFunctionInvocationFilter(this))
                     .WithSystemInstruction(_globalInstruction);
 
                 await LoadTableNamesAsync();
-
-                await HandleUserInputAsync("search for tables that contain the word 'customer' in their name, then show me the table structure of the first 3 tables found.");
             }
             catch (Exception ex)
             {
@@ -494,7 +480,10 @@ Use this function to retrieve **critical, missing context** from the internet wh
                 Data = isDataTableEmpty ? null : dataTable
             };
 
-            Messages.Add(ChatContent);
+            _dispatcherQueue.TryEnqueue(() =>
+            {
+                Messages.Add(ChatContent);
+            });
         }
         #endregion
 
@@ -508,18 +497,9 @@ Use this function to retrieve **critical, missing context** from the internet wh
                 AgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(false);
                 AgentSuggestions.Clear();
 
-                while (true)
-                {
-                    var result = await _chatCompletionService.SendMessageAsync(userMessage, _chatCompletionService.ServiceProvider.CreatePromptExecutionSettings());
+                var result = await _chatCompletionService.SendMessageAsync(userMessage, _chatCompletionService.ServiceProvider.CreatePromptExecutionSettings());
 
-                    if (!string.IsNullOrEmpty(result.Content))
-                    {
-                        SetAgentMessage(result.Content);
-                        break;
-                    }
-
-                    SetAgentMessage("**Error:** No response from the agent. Please try again later.");
-                }
+                SetAgentMessage(result.Content);
 
             }
             catch (Exception ex)
@@ -621,134 +601,111 @@ Use this function to retrieve **critical, missing context** from the internet wh
             }
         }
 
+        public async Task CallDatabaseInteractionFunctionAsync(FunctionInvocationContext context)
+        {
+            switch (context.Function.Name)
+            {
+                case nameof(DatabaseInteractionPlugin.SearchTablesByName):
+                    {
+                        var keyword = context.GetFunctionArgument<string>("keyword");
+                        var tableNames = await _databaseInteractor.SearchTablesByNameAsync(keyword);
+                        if (tableNames.Count > 0)
+                        {
+                            SetAgentMessage($"Found {tableNames.Count} tables matching `{keyword}`: {string.Join(", ", tableNames.Select(name => $"`{name}`"))}");
+                        }
+                        else
+                        {
+                            SetAgentMessage($"No tables found matching `{keyword}`.");
+                        }
+                        break;
+                    }
+                case nameof(DatabaseInteractionPlugin.GetUserPermissions):
+                    {
+                        var permissions = await _databaseInteractor.GetUserPermissionsAsync();
+                        if (permissions.Count > 0)
+                        {
+                            SetAgentMessage($"You have the following permissions: {string.Join(", ", permissions)}");
+                        }
+                        else
+                        {
+                            SetAgentMessage("You have no permissions in this database.");
+                        }
+                        break;
+                    }
+                case nameof(DatabaseInteractionPlugin.ExecuteQuery):
+                    {
+                        var sqlQuery = context.GetFunctionArgument<string>("sqlQuery");
+                        if (string.IsNullOrEmpty(sqlQuery))
+                        {
+                            SetAgentMessage("No SQL query provided.");
+                            break;
+                        }
+                        try
+                        {
+                            var resultDataTable = await _databaseInteractor.ExecuteQueryAsync(sqlQuery);
+                            if (resultDataTable.Rows.Count > 0)
+                            {
+                                SetAgentMessage(null, resultDataTable);
+                            }
+                            else
+                            {
+                                SetAgentMessage("Query executed successfully.");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            SetAgentMessage($"**Error:** {ex.Message}");
+                        }
+                        break;
+                    }
+                case nameof(DatabaseInteractionPlugin.ExecuteNonQuery):
+                    {
+                        var sqlCommand = context.GetFunctionArgument<string>("sqlCommand");
+                        if (string.IsNullOrEmpty(sqlCommand))
+                        {
+                            SetAgentMessage("No SQL command provided.");
+                            break;
+                        }
+                        try
+                        {
+                            await _databaseInteractor.ExecuteNonQueryAsync(sqlCommand);
+                            SetAgentMessage("SQL command executed successfully.");
+                        }
+                        catch (Exception ex)
+                        {
+                            SetAgentMessage($"**Error:** {ex.Message}");
+                        }
+                        break;
+                    }
+                case nameof(DatabaseInteractionPlugin.GetTableStructureDetail):
+                    {
+                        var tableName = context.GetFunctionArgument<string>("table") ?? string.Empty;
+                        var schemaName = context.GetFunctionArgument<string>("schema");
+                        var tableStructure = await _databaseInteractor.GetTableStructureDetailAsync(schemaName, tableName);
+                        if (tableStructure.Rows.Count > 0)
+                        {
+                            SetAgentMessage(null, tableStructure);
+                        }
+                        else
+                        {
+                            SetAgentMessage($"No structure found for table '{tableName}'.");
+                        }
+                        break;
+                    }
+                default: break;
+            }
+        }
+
         public async Task OnFunctionInvocationAsync(FunctionInvocationContext context, Func<FunctionInvocationContext, Task> next)
         {
-            //if (context.Function.PluginName == nameof(DatabaseInteractionPlugin) && context.Function.Name == nameof(DatabaseInteractionPlugin.GetTableStructureDetailAsync))
-            //{
-            //    var schemaName = context.Arguments["schema"]?.ToString() ?? string.Empty;
-            //    var tableName = context.Arguments["table"]?.ToString() ?? string.Empty;
-            //    var tableStructure = await _databaseInteractor.GetTableStructureDetailAsync(schemaName, tableName);
-            //    if (tableStructure.Rows.Count > 0)
-            //    {
-            //        SetAgentMessage(null, tableStructure);
-            //    }
-            //    else
-            //    {
-            //        SetAgentMessage($"No structure found for table '{tableName}'.");
-            //    }
-            //    return;
-            //}
-
-            await next(context);
-        }
-
-        public async Task CallFunctionAsync(FunctionInvocationContext context)
-        {
-            if (context.Function.Name == nameof(DatabaseInteractionPlugin.SearchTablesByNameAsync))
+            switch (context.Function.PluginName)
             {
-                var keyword = context.Arguments["keyword"]?.ToString() ?? string.Empty;
-                var maxResult = context.Arguments["maxResult"] as int? ?? 20000;
-                var tableNames = await _databaseInteractor.SearchTablesByNameAsync(keyword, maxResult);
-                if (tableNames.Count > 0)
-                {
-                    SetAgentMessage($"Found {tableNames.Count} tables matching `{keyword}`: {string.Join(", ", tableNames.Select(name => $"`{name}`"))}");
-                }
-                else
-                {
-                    SetAgentMessage($"No tables found matching `{keyword}`.");
-                }
-            }
-            else if (context.Function.Name == nameof(DatabaseInteractionPlugin.GetUserPermissionsAsync))
-            {
-                var permissions = await _databaseInteractor.GetUserPermissionsAsync();
-                if (permissions.Count > 0)
-                {
-                    SetAgentMessage($"You have the following permissions: {string.Join(", ", permissions)}");
-                }
-                else
-                {
-                    SetAgentMessage("You have no permissions in this database.");
-                }
-            }
-            else if (context.Function.Name == nameof(DatabaseInteractionPlugin.ExecuteQueryAsync))
-            {
-                var sqlQuery = context.Arguments["sqlQuery"]?.ToString() ?? string.Empty;
-                if (string.IsNullOrEmpty(sqlQuery))
-                {
-                    SetAgentMessage("No SQL query provided.");
-                    return;
-                }
-                try
-                {
-                    var resultDataTable = await _databaseInteractor.ExecuteQueryAsync(sqlQuery);
-                    if (resultDataTable.Rows.Count > 0)
-                    {
-                        SetAgentMessage(null, resultDataTable);
-                    }
-                    else
-                    {
-                        SetAgentMessage("Query executed successfully.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    SetAgentMessage($"**Error:** {ex.Message}");
-                }
-            }
-            else if (context.Function.Name == nameof(DatabaseInteractionPlugin.ExecuteNonQueryAsync))
-            {
-                var sqlCommand = context.Arguments["sqlCommand"]?.ToString() ?? string.Empty;
-                if (string.IsNullOrEmpty(sqlCommand))
-                {
-                    SetAgentMessage("No SQL command provided.");
-                    return;
-                }
-                try
-                {
-                    await _databaseInteractor.ExecuteNonQueryAsync(sqlCommand);
-                    SetAgentMessage("SQL command executed successfully.");
-                }
-                catch (Exception ex)
-                {
-                    SetAgentMessage($"**Error:** {ex.Message}");
-                }
-            }
-            else if (context.Function.Name == nameof(DatabaseInteractionPlugin.GetTableStructureDetailAsync))
-            {
-                var schemaName = context.Arguments["schema"]?.ToString() ?? string.Empty;
-                var tableName = context.Arguments["table"]?.ToString() ?? string.Empty;
-                var tableStructure = await _databaseInteractor.GetTableStructureDetailAsync(schemaName, tableName);
-                if (tableStructure.Rows.Count > 0)
-                {
-                    SetAgentMessage(null, tableStructure);
-                }
-                else
-                {
-                    SetAgentMessage($"No structure found for table '{tableName}'.");
-                }
-            }
-            else
-            {
-                // Handle other function invocations if needed
-            }
-        }
-
-        public async Task OnAutoFunctionInvocationAsync(AutoFunctionInvocationContext context, Func<AutoFunctionInvocationContext, Task> next)
-        {
-            if (context.Function.PluginName == nameof(DatabaseInteractionPlugin) && context.Function.Name == nameof(DatabaseInteractionPlugin.GetTableStructureDetailAsync))
-            {
-                var schemaName = context.Arguments["schema"]?.ToString() ?? string.Empty;
-                var tableName = context.Arguments["table"]?.ToString() ?? string.Empty;
-                var tableStructure = await _databaseInteractor.GetTableStructureDetailAsync(schemaName, tableName);
-                if (tableStructure.Rows.Count > 0)
-                {
-                    SetAgentMessage(null, tableStructure);
-                }
-                else
-                {
-                    SetAgentMessage($"No structure found for table '{tableName}'.");
-                }
-                return;
+                case nameof(DatabaseInteractionPlugin):
+                    await CallDatabaseInteractionFunctionAsync(context);
+                    break;
+                default:
+                    // For other plugins, just continue to the next step
+                    break;
             }
 
             await next(context);

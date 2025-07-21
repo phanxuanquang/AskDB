@@ -1,7 +1,11 @@
 using AskDB.App.Helpers;
 using AskDB.App.Pages;
 using AskDB.Database;
+using AskDB.SemanticKernel.Factories;
+using AskDB.SemanticKernel.Plugins;
+using AskDB.SemanticKernel.Services;
 using GeminiDotNET;
+using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
@@ -54,22 +58,13 @@ namespace AskDB.App
                     throw new InvalidOperationException("Please enter your Gemini API key");
                 }
 
-                if (Cache.ApiKey == _geminiApiKey)
-                {
-                    throw new InvalidOperationException("You are already connected to Gemini with this API key.");
-                }
-
-                var generator = new Generator(_geminiApiKey);
-
                 try
                 {
-                    var request = new ApiRequestBuilder()
-                        .WithPrompt("Print out `Hello world`")
-                        .DisableAllSafetySettings()
-                        .WithDefaultGenerationConfig(0.2f, 400)
-                        .Build();
+                    var chatCompletionService = new AgentChatCompletionService(new KernelFactory().UseGoogleGeminiProvider(_geminiApiKey, "gemini-2.0-flash-lite"));
 
-                    await generator.GenerateContentAsync(request);
+                    await chatCompletionService.HealthCheckAsync();
+
+                    Cache.KernelFactory.UseGoogleGeminiProvider(_geminiApiKey, Cache.ReasoningModelAlias);
                 }
                 catch (Exception ex)
                 {
