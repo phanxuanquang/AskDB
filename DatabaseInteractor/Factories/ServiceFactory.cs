@@ -10,7 +10,7 @@ namespace DatabaseInteractor.Factories
 {
     public static class ServiceFactory
     {
-        public static DbConnection CreateConnection(DatabaseType dbType, string connectionString)
+        public static DbConnection CreateConnection(this DatabaseType dbType, string connectionString)
         {
             if (string.IsNullOrEmpty(connectionString)) throw new ArgumentNullException(nameof(connectionString));
 
@@ -27,7 +27,7 @@ namespace DatabaseInteractor.Factories
             };
         }
 
-        public static DatabaseInteractionService CreateInteractionService(DatabaseType dbType, string connectionString)
+        public static DatabaseInteractionService CreateInteractionService(this DatabaseType dbType, string connectionString)
         {
             if (string.IsNullOrEmpty(connectionString)) throw new ArgumentNullException(nameof(connectionString));
 

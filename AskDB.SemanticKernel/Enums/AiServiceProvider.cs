@@ -1,22 +1,22 @@
-﻿using System.ComponentModel;
+﻿using AskDB.Commons.Attributes;
 
 namespace AskDB.SemanticKernel.Enums
 {
     public enum AiServiceProvider
     {
-        [Description("OpenAI")]
+        [FriendlyName("OpenAI")]
         OpenAI,
 
-        [Description("Azure OpenAI")]
+        [FriendlyName("Azure OpenAI")]
         AzureOpenAI,
 
-        [Description("Gemini")]
+        [FriendlyName("Gemini")]
         Gemini,
 
-        [Description("ONNX")]
+        [FriendlyName("ONNX")]
         ONNX,
 
-        [Description("Ollma")]
+        [FriendlyName("Ollama")]
         Ollama,
     }
 }

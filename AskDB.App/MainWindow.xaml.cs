@@ -49,9 +49,11 @@ namespace AskDB.App
                 return;
             }
 
+
             if (Cache.HasUserEverConnectedToDatabase)
             {
-                MainFrame.Navigate(typeof(ExistingDatabaseConnection), null, new DrillInNavigationTransitionInfo());
+                //MainFrame.Navigate(typeof(ExistingDatabaseConnection), null, new DrillInNavigationTransitionInfo());
+                MainFrame.Navigate(typeof(AiServiceConnection), null, new DrillInNavigationTransitionInfo());
             }
             else
             {

@@ -96,6 +96,7 @@
     <None Remove="Images\Wide310x150Logo.scale-200.png" />
     <None Remove="Images\Wide310x150Logo.scale-400.png" />
     <None Remove="LoadingControl.xaml" />
+    <None Remove="Local Controls\AIProviderConnections\StandardAIProviderConnection.xaml" />
     <None Remove="Local Controls\GeminiApiKeyInputDialogContent.xaml" />
     <None Remove="MainPanel.xaml" />
     <None Remove="Pages\AiServiceConnection.xaml" />
@@ -286,6 +287,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AskDB.Database\AskDB.Database.csproj" />
+    <ProjectReference Include="..\AskDB.SemanticKernel\AskDB.SemanticKernel.csproj" />
     <ProjectReference Include="..\DatabaseInteractor\DatabaseInteractor.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -293,6 +295,9 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+    <Page Update="Local Controls\AIProviderConnections\StandardAIProviderConnection.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Update="Pages\AiServiceConnection.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>

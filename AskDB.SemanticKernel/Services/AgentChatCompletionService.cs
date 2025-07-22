@@ -2,6 +2,7 @@
 using AskDB.SemanticKernel.Factories;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using System.Text.Json;
 
 namespace AskDB.SemanticKernel.Services
 {
@@ -53,7 +54,7 @@ namespace AskDB.SemanticKernel.Services
             return this;
         }
 
-        public async Task<ChatMessageContent> SendMessageAsync(string message, PromptExecutionSettings executionSettings)
+        public async Task<ChatMessageContent> SendMessageAsync(string message, double temperature = 1, int maxOutputToken = 2048)
         {
             if (string.IsNullOrWhiteSpace(message))
             {
@@ -74,12 +75,41 @@ namespace AskDB.SemanticKernel.Services
 
             var response = await _chatCompletionService.GetChatMessageContentAsync(
                 _chatHistories,
-                executionSettings: executionSettings,
+                executionSettings: ServiceProvider.CreatePromptExecutionSettingsWithFunctionCalling(maxOutputToken, temperature),
                 kernel: Kernel);
 
             _chatHistories.Add(response);
 
             return response;
+        }
+
+        public async Task<T> SendMessageAsync<T>(string message, double temperature = 1, int maxOutputToken = 2048)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                throw new ArgumentException("Message cannot be null or empty.", nameof(message));
+            }
+
+            _chatHistories.AddUserMessage(message.Trim());
+
+            if (_chatHistories.Count > _maxMessageCount)
+            {
+                var reducer = new ChatHistoryTruncationReducer(targetCount: _maxMessageCount);
+                var reducedMessages = await reducer.ReduceAsync(_chatHistories);
+                if (reducedMessages is not null)
+                {
+                    _chatHistories = [.. reducedMessages];
+                }
+            }
+
+            var response = await _chatCompletionService.GetChatMessageContentAsync(
+                _chatHistories,
+                executionSettings: ServiceProvider.CreatePromptExecutionSettings(maxOutputToken, temperature).CreatePromptExecutionSettingsForJsonOutput<T>(ServiceProvider),
+                kernel: Kernel);
+
+            _chatHistories.Add(response);
+
+            return JsonSerializer.Deserialize<T>(response.ToString());
         }
 
         public async Task HealthCheckAsync()
@@ -98,12 +128,12 @@ namespace AskDB.SemanticKernel.Services
                             Content = "Healthcheck message, please say `Hello World`"
                         }
                     ],
-                    executionSettings: ServiceProvider.CreatePromptExecutionSettings(5, 0.2),
+                    executionSettings: ServiceProvider.CreatePromptExecutionSettingsWithFunctionCalling(5, 0.2),
                     kernel: Kernel);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Health check failed for the chat completion service.", ex);
+                throw new InvalidOperationException(ex.Message, ex.InnerException);
             }
         }
     }

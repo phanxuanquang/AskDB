@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="AskDB.App.Local_Controls.AIProviderConnections.StandardAIProviderConnection"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:AskDB.App.Local_Controls.AIProviderConnections"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    mc:Ignorable="d"
+    Width="500">
+
+    <StackPanel Spacing="16">
+        <StackPanel 
+            Spacing="8" 
+            Padding="12"
+            CornerRadius="{StaticResource ControlCornerRadius}" 
+            Background="{ThemeResource SystemFillColorCautionBackgroundBrush}" >
+            <TextBlock 
+                Style="{StaticResource CaptionTextBlockStyle}" 
+                HorizontalTextAlignment="Justify"
+                Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                TextWrapping="WrapWholeWords"
+                Text="The selected AI service provider will use these credentials to authenticate and interact with the AI model."/>
+            <TextBlock 
+                Style="{StaticResource CaptionTextBlockStyle}" 
+                HorizontalTextAlignment="Justify"
+                Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                TextWrapping="WrapWholeWords"
+                Text="The selected model may affect the performance and capabilities of the AI service as well as your billing. Make sure to choose a model that fits your needs and budget."/>
+            <TextBlock 
+                Style="{StaticResource CaptionTextBlockStyle}" 
+                HorizontalTextAlignment="Justify"
+                Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                TextWrapping="WrapWholeWords"
+                Text="It is highly recommended to refer to the model pricing of service provider for further details about the usage and costs associated with each model."/>
+        </StackPanel>
+        <PasswordBox
+            PlaceholderText="Enter your API key here"
+            HorizontalAlignment="Stretch"
+            PasswordRevealMode="Peek" 
+            Password="{x:Bind ApiKey, Mode=TwoWay}">
+            <PasswordBox.Header>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <FontIcon Glyph="&#xEC19;" FontSize="{StaticResource BodyTextBlockFontSize}"/>
+                    <TextBlock Text="API Key" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"/>
+                </StackPanel>
+            </PasswordBox.Header>
+        </PasswordBox>
+        <AutoSuggestBox
+            PlaceholderText="Enter your model codename here"
+            HorizontalAlignment="Stretch"
+            Text="{x:Bind ModelId, Mode=TwoWay}" >
+            <AutoSuggestBox.Header>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <FontIcon Glyph="&#xE99A;" FontSize="{StaticResource BodyTextBlockFontSize}"/>
+                    <TextBlock Text="Model Codename" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"/>
+                </StackPanel>
+            </AutoSuggestBox.Header>
+        </AutoSuggestBox>
+    </StackPanel>
+</UserControl>

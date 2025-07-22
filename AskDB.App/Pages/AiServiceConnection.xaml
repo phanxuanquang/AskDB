@@ -5,20 +5,54 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:AskDB.App.Pages"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:enums="using:AskDB.SemanticKernel.Enums" xmlns:converters="using:AskDB.App.Converters" xmlns:view_models="using:AskDB.App.View_Models"
     mc:Ignorable="d">
 
-    <Grid>
+    <Page.Resources>
+        <converters:EnumToDisplayName x:Key="EnumToDisplayName"/>
+    </Page.Resources>
 
-        <StackPanel
-             x:Name="MainPanel" 
-             Spacing="16" 
-             Padding="40" 
-             MaxWidth="1000"
-             VerticalAlignment="Center" 
-             Background="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}" 
-             CornerRadius="{StaticResource OverlayCornerRadius}">
-            
+    <StackPanel 
+        Spacing="18"
+        MaxWidth="1000"
+        Padding="40"
+        VerticalAlignment="Center" 
+        Background="{ThemeResource SolidBackgroundFillColorQuarternaryBrush}" 
+        CornerRadius="{StaticResource OverlayCornerRadius}">
+        <StackPanel Spacing="4">
+            <TextBlock Text="Connect to your AI provider" Style="{StaticResource TitleTextBlockStyle}"  FontWeight="Bold"/>
+            <RichTextBlock LineHeight="{StaticResource SubtitleTextBlockFontSize}" >
+                <Paragraph>AskDB ultilizes large language model as the core AI engine for natural language processing purposes. Please choose one of the following providers to connect, and make sure that you have read and understood
+                    <Hyperlink FontWeight="SemiBold" NavigateUri="https://github.com/phanxuanquang/AskDB/blob/master/Policy/Privacy%20Policy.md">AskDB's privacy policy</Hyperlink> before proceeding.
+                </Paragraph>
+            </RichTextBlock>
         </StackPanel>
-    </Grid>
+        
+        <ItemsView 
+            SelectionMode="None" 
+            ItemsSource="{x:Bind SupportedProviders}" 
+            IsItemInvokedEnabled="True"
+            HorizontalAlignment="Center"
+            HorizontalContentAlignment="Center"
+            ItemInvoked="ItemsView_ItemInvoked">
+            <ItemsView.Layout>
+                <LinedFlowLayout LineSpacing="8" MinItemSpacing="8"/>
+            </ItemsView.Layout>
+            <ItemsView.ItemTemplate>
+                <DataTemplate x:DataType="view_models:AiServiceConnectionItem">
+                    <ItemContainer>
+                        <StackPanel 
+                            Padding="12" 
+                            MinWidth="150" 
+                            Spacing="12" 
+                            Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
+                            CornerRadius="{StaticResource OverlayCornerRadius}">
+                            <Image Stretch="Fill" Height="{StaticResource TitleLargeTextBlockFontSize}" Width="{StaticResource TitleLargeTextBlockFontSize}" Source="/Images/icon.png" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{x:Bind ServiceProvider, Mode=OneWay, Converter={StaticResource EnumToDisplayName}}" HorizontalAlignment="Center" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                        </StackPanel>
+                    </ItemContainer>
+                </DataTemplate>
+            </ItemsView.ItemTemplate>
+        </ItemsView>
+    </StackPanel>
 </Page>

@@ -1,4 +1,5 @@
 ﻿using AskDB.Commons.Helpers;
+using AskDB.SemanticKernel.Factories;
 using System;
 using System.Collections;
 using System.Text;
@@ -12,6 +13,8 @@ namespace AskDB.App.Helpers
 
         public static bool HasUserEverConnectedToDatabase { get; set; } = false;
         public static GeminiCodeAssistConnector GeminiCodeAssistConnector;
+
+        public static KernelFactory? KernelFactory { get; set; }
 
         public const string DefaultModelAlias = "gemini-2.5-flash";
 

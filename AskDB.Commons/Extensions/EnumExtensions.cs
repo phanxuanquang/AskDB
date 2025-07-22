@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using AskDB.Commons.Attributes;
+using System.ComponentModel;
 
 namespace AskDB.Commons.Extensions
 {
@@ -22,6 +23,12 @@ namespace AskDB.Commons.Extensions
         {
             var attr = enumValue.GetAttributeValue<DescriptionAttribute>();
             return attr?.Description ?? enumValue.ToString();
+        }
+
+        public static string GetFriendlyName(this Enum enumValue)
+        {
+            var attr = enumValue.GetAttributeValue<FriendlyNameAttribute>();
+            return attr?.FriendlyName ?? enumValue.ToString();
         }
     }
 }
