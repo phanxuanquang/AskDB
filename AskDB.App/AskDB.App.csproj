@@ -304,9 +304,6 @@
     <Page Update="Local Controls\GeminiApiKeyInputDialogContent.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Update="Local Controls\Charts\CartesianChartVisualizer.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Pages\ExistingDatabaseConnection.xaml">

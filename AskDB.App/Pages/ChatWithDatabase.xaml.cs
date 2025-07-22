@@ -1,14 +1,12 @@
 ﻿using AskDB.App.Helpers;
+using AskDB.App.SemanticKernelPlugins;
 using AskDB.App.View_Models;
 using AskDB.Commons.Extensions;
-using AskDB.SemanticKernel.Extensions;
-using AskDB.SemanticKernel.Plugins;
 using AskDB.SemanticKernel.Services;
 using CommunityToolkit.WinUI.UI.Controls;
 using DatabaseInteractor.Factories;
 using DatabaseInteractor.Helpers;
 using DatabaseInteractor.Services;
-using GeminiDotNET.Helpers;
 using Microsoft.SemanticKernel;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -31,16 +29,16 @@ using WinRT.Interop;
 
 namespace AskDB.App.Pages
 {
-    public sealed partial class ChatWithDatabase : Page, INotifyPropertyChanged, IFunctionInvocationFilter
+    public partial class ChatWithDatabase : Page, INotifyPropertyChanged, IFunctionInvocationFilter
     {
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         private readonly ObservableCollection<ChatMessage> Messages = [];
-        private readonly ObservableCollection<AgentSuggestion> AgentSuggestions = [];
+        private readonly ObservableCollection<string> AgentSuggestions = [];
         private readonly Microsoft.UI.Dispatching.DispatcherQueue _dispatcherQueue;
 
         private DatabaseInteractionService _databaseInteractor;
@@ -95,11 +93,11 @@ namespace AskDB.App.Pages
                 _globalInstruction = _globalInstruction.Replace("{Language}", "English");
 
                 _chatCompletionService = new AgentChatCompletionService(Cache.KernelFactory
-                        .WithPlugin(new DatabaseInteractionPlugin(_databaseInteractor))
+                        .WithPlugin(new DatabaseInteractionPlugin(_databaseInteractor, this))
                         .WithFunctionInvocationFilter(this))
                     .WithSystemInstruction(_globalInstruction);
 
-                await LoadTableNamesAsync();
+                await ResetConversationAsync();
             }
             catch (Exception ex)
             {
@@ -265,19 +263,12 @@ namespace AskDB.App.Pages
         }
         private async void SuggestionItemView_ItemInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
         {
-            if (args.InvokedItem is not AgentSuggestion suggestion)
+            if (args.InvokedItem is not string suggestion)
             {
                 return;
             }
 
-            var userInput = suggestion.UserResponseSuggestion;
-
-            if (string.IsNullOrEmpty(userInput))
-            {
-                return;
-            }
-
-            await HandleUserInputAsync(userInput);
+            await HandleUserInputAsync(suggestion);
         }
         private async void MarkdownTextBlock_LinkClicked(object sender, LinkClickedEventArgs e)
         {
@@ -287,16 +278,7 @@ namespace AskDB.App.Pages
 
         public async Task OnFunctionInvocationAsync(FunctionInvocationContext context, Func<FunctionInvocationContext, Task> next)
         {
-            switch (context.Function.PluginName)
-            {
-                case nameof(DatabaseInteractionPlugin):
-                    await CallDatabaseInteractionFunctionAsync(context);
-                    break;
-                default:
-                    // For other plugins, just continue to the next step
-                    break;
-            }
-
+            await Task.Delay(1234);
             await next(context);
         }
         #endregion
@@ -317,7 +299,7 @@ namespace AskDB.App.Pages
 
             Messages.Add(chatMessage);
         }
-        private void SetAgentMessage(string? message, DataTable? dataTable = null, long? queryResultId = null)
+        public void SetAgentMessage(string? message, DataTable? dataTable = null)
         {
             var isDataTableEmpty = dataTable == null || dataTable.Rows.Count == 0;
 
@@ -326,8 +308,7 @@ namespace AskDB.App.Pages
                 Message = message,
                 IsFromUser = false,
                 IsFromAgent = true,
-                Data = isDataTableEmpty ? null : dataTable,
-                QueryResultId = queryResultId
+                Data = isDataTableEmpty ? null : dataTable
             };
 
             _dispatcherQueue.TryEnqueue(() =>
@@ -351,7 +332,7 @@ namespace AskDB.App.Pages
 
                 SetAgentMessage(result.Content);
 
-                await LoadAgentSuggestionsAsync("Based on the current context, please provide up to 5 **short** and **concise** suggestions as the next step in my viewpoint, for me to use as the quick reply in order to continue the task.");
+                await LoadAgentSuggestionsAsync("Based on the current context, please provide up to 4 **short** and **concise** suggestions as the next step in my viewpoint, for me to use as the quick reply in order to continue the task.");
             }
             catch (Exception ex)
             {
@@ -398,25 +379,21 @@ namespace AskDB.App.Pages
             return [];
         }
 
-        public class UserResponseSuggestion
-        {
-            public List<string> UserResponseSuggestions { get; set; }
-        }
-
         private async Task LoadAgentSuggestionsAsync(string prompt)
         {
             AgentSuggestions.Clear();
 
             try
             {
-                var response = await _chatCompletionService.SendMessageAsync<UserResponseSuggestion>(prompt);
+                var chatCompletionService = new AgentChatCompletionService(Cache.KernelFactory!)
+                    .WithSystemInstruction(_globalInstruction)
+                    .WithChatHistories(_chatCompletionService.ChatHistories);
 
-                foreach (var item in response.UserResponseSuggestions)
+                var response = await chatCompletionService.SendMessageAsync<List<string>>(prompt);
+
+                foreach (var item in response)
                 {
-                    AgentSuggestions.Add(new AgentSuggestion
-                    {
-                        UserResponseSuggestion = item
-                    });
+                    AgentSuggestions.Add(item);
                 }
 
                 AgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(true);
@@ -437,99 +414,19 @@ namespace AskDB.App.Pages
 
             if (tableNames.Count > 0)
             {
-                await LoadAgentSuggestionsAsync($@"Based on the list of table names provided below, suggest me with 5 concise and interesting ideas from my viewpoint that I might ask to start the conversation.
+                await LoadAgentSuggestionsAsync($@"Based on the list of table names provided below, suggest me with 4 concise and interesting ideas from my viewpoint that I might ask to start the conversation.
 The suggested ideas should be phrased as questions or commands in natural language, assuming I am not technical but want to understand and explore the data for analysis purpose or predictional purpose.
 Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table structure, etc.
 Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, concise, specific, user-friendly, and **MUST NOT** be relevant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
 
-This is the list of table names in the database: {string.Join(", ", tableNames.Select(x => $"`{x}`"))}");
+This is the list of table names in the database: {string.Join(", ", tableNames.Take(10).Select(x => $"`{x}`"))}");
             }
 
-            var response = await _chatCompletionService.SendMessageAsync("In order to start the conversation, please introduce to me about yourself, such as who you are, what you can do, what you can help me, or anything else that you think it may be relavant to my database and be useful to me; and some good practices for me to help you to do the task effectively. Take me as your friend or your teammate, avoid to use formal-like tone while talking to me; just use a natural, friendly tone with daily-life word when talking to me, like you are talking with your friends in the real life.");
+            var response = await _chatCompletionService.SendMessageAsync(@"To start the conversation, please introduce to me about yourself very *briefly* and *concisely*, such as who you are, what you can do, what you can help me, or anything else that you think it may be relevant to my database and be useful to me; and some good practices for me to help you to do the task effectively. 
+Treat me as your teammate, avoid using a formal-like tone while talking to me; just use a natural, friendly tone with daily-life words when talking to me, like you are talking with your friends in real life.");
 
             SetAgentMessage(response.ToString());
         }
 
-        public async Task CallDatabaseInteractionFunctionAsync(FunctionInvocationContext context)
-        {
-            switch (context.Function.Name)
-            {
-                case nameof(DatabaseInteractionPlugin.SearchTablesByName):
-                    {
-                        var keyword = context.GetFunctionArgument<string>("keyword");
-                        var tableNames = await _databaseInteractor.SearchTablesByNameAsync(keyword);
-                        if (tableNames.Count > 0)
-                        {
-                            SetAgentMessage($"Found {tableNames.Count} tables matching `{keyword}`: {string.Join(", ", tableNames.Select(name => $"`{name}`"))}");
-                        }
-                        else
-                        {
-                            SetAgentMessage($"No tables found matching `{keyword}`.");
-                        }
-                        break;
-                    }
-                case nameof(DatabaseInteractionPlugin.GetUserPermissions):
-                    {
-                        var permissions = await _databaseInteractor.GetUserPermissionsAsync();
-                        if (permissions.Count > 0)
-                        {
-                            SetAgentMessage($"You have the following permissions: {string.Join(", ", permissions)}");
-                        }
-                        else
-                        {
-                            SetAgentMessage("You have no permissions in this database.");
-                        }
-                        break;
-                    }
-                case nameof(DatabaseInteractionPlugin.ExecuteQuery):
-                    {
-                        var sqlQuery = context.GetFunctionArgument<string>("sqlQuery");
-                        if (string.IsNullOrEmpty(sqlQuery))
-                        {
-                            SetAgentMessage("No SQL query provided.");
-                            break;
-                        }
-                        try
-                        {
-                            var dataTable = await _databaseInteractor.ExecuteQueryAsync(sqlQuery);
-                            if (dataTable != null && dataTable.Rows.Count > 0)
-                            {
-                                SetAgentMessage($"Let me execute this query to check the data:\n\n```sql\n{sqlQuery}\n```", dataTable);
-                            }
-                            else
-                            {
-                                SetAgentMessage("No data found for the query.");
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            SetAgentMessage($"Error while executing your query.\n\n```sql\n{sqlQuery}\n```\n\n```console\n{ex.Message}\n```");
-                        }
-                        break;
-                    }
-                case nameof(DatabaseInteractionPlugin.ExecuteNonQuery):
-                    {
-                        var sqlCommand = context.GetFunctionArgument<string>("sqlCommand");
-                        SetAgentMessage($"Let me execute the command:\n\n```sql\n{sqlCommand}\n```");
-                        break;
-                    }
-                case nameof(DatabaseInteractionPlugin.GetTableStructureDetail):
-                    {
-                        var tableName = context.GetFunctionArgument<string>("table") ?? string.Empty;
-                        var schemaName = context.GetFunctionArgument<string>("schema");
-                        var tableStructure = await _databaseInteractor.GetTableStructureDetailAsync(schemaName, tableName);
-                        if (tableStructure.Rows.Count > 0)
-                        {
-                            SetAgentMessage(null, tableStructure);
-                        }
-                        else
-                        {
-                            SetAgentMessage($"No structure found for table '{tableName}'.");
-                        }
-                        break;
-                    }
-                default: break;
-            }
-        }
     }
 }

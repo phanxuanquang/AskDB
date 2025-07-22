@@ -1,11 +1,16 @@
-﻿using AskDB.Commons.Extensions;
+﻿using AskDB.App.Pages;
+using AskDB.Commons.Extensions;
 using DatabaseInteractor.Services;
 using Microsoft.SemanticKernel;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
+using System.Threading.Tasks;
 
-namespace AskDB.SemanticKernel.Plugins
+namespace AskDB.App.SemanticKernelPlugins
 {
-    public class DatabaseInteractionPlugin(DatabaseInteractionService databaseInteractionService)
+    public class DatabaseInteractionPlugin(DatabaseInteractionService databaseInteractionService, ChatWithDatabase chatWithDatabasePage)
     {
         [KernelFunction]
         [Description(@"Execute a **read-only SQL query** against the current database and return the result as a structured dataset (rows and columns).
@@ -93,9 +98,27 @@ Use as part of a multi-step logic chain:
             [Description("The SQL query to execute. It should be a valid SQL command that returns data, such as a `SELECT` statement.")]
             string sqlQuery)
         {
-            var data = await databaseInteractionService.ExecuteQueryAsync(sqlQuery);
 
-            return data.ToMarkdown();
+            try
+            {
+                var dataTable = await databaseInteractionService.ExecuteQueryAsync(sqlQuery!);
+                if (dataTable != null && dataTable.Rows.Count > 0)
+                {
+                    chatWithDatabasePage.SetAgentMessage($"Let me execute this query to check the data:\n\n```sql\n{sqlQuery}\n```", dataTable);
+                    return dataTable.ToMarkdown();
+                }
+                else
+                {
+                    var noDataMessage = "No data found for the query.";
+                    chatWithDatabasePage.SetAgentMessage(noDataMessage);
+                    return noDataMessage;
+                }
+            }
+            catch (Exception ex)
+            {
+                chatWithDatabasePage.SetAgentMessage($"Error while executing the query:\n\n```sql\n{sqlQuery}\n```\n\n**Error:**\n\n```console\n{ex.Message}\n```");
+                return $"**Error:** {ex.Message}";
+            }
         }
 
         [KernelFunction]
@@ -115,11 +138,21 @@ This includes, but is not limited to:
 - Prefer to use `get_table_structure` function to check and understand the structure of the relevant tables before executing if you are unsure about the query or its impact.
 - Prefer to use `execute_query` function to check the data of the impacted tables before executing if you are unsure about the query or its impact.
 - **DO NOT** use this function for SELECT statements or other read-only queries that are expected to return data")]
-        public async Task ExecuteNonQuery(
+        public async Task<string> ExecuteNonQuery(
             [Description("The complete, syntactically correct SQL command or SQL scripts (e.g., INSERT, UPDATE, DELETE, CREATE, ALTER) to be executed. Ensure the query is specific to the user-confirmed action plan.")]
             string sqlCommand)
         {
-            await databaseInteractionService.ExecuteNonQueryAsync(sqlCommand);
+            try
+            {
+                await databaseInteractionService.ExecuteNonQueryAsync(sqlCommand);
+                chatWithDatabasePage.SetAgentMessage($"Executed the following command successfully:\n\n```sql\n{sqlCommand}\n```");
+                return "Executed successfully";
+            }
+            catch (Exception ex)
+            {
+                chatWithDatabasePage.SetAgentMessage($"Error while executing your command.\n\n```console\n{ex.Message}\n```");
+                return $"**Error:** {ex.Message}";
+            }
         }
 
         [KernelFunction]
@@ -132,7 +165,14 @@ This information can be crucial for:
 - Informing the user about their current capabilities within the database if they inquire or if it's relevant to a problem.")]
         public async Task<List<string>> GetUserPermissions()
         {
-            return await databaseInteractionService.GetUserPermissionsAsync();
+            var permissions = await databaseInteractionService.GetUserPermissionsAsync();
+            var resultMessage = permissions.Count > 0
+                ? $"You have the following permissions: {string.Join(", ", permissions)}"
+                : "You have no permissions in this database.";
+
+            chatWithDatabasePage.SetAgentMessage(resultMessage);
+
+            return permissions;
         }
 
         [KernelFunction]
@@ -201,7 +241,22 @@ This function is **CRITICAL** in the following use cases:
             [Description("A keyword to filter the table names. If an empty string is provided, all accessible table names with their associated schema are returned.")]
             string? keyword)
         {
-            return await databaseInteractionService.SearchTablesByNameAsync(keyword);
+            try
+            {
+                var tableNames = await databaseInteractionService.SearchTablesByNameAsync(keyword);
+                var resultMessage = tableNames.Count > 0
+                    ? $"Found {tableNames.Count} tables matching `{keyword}`: {string.Join(", ", tableNames.Select(name => $"`{name}`"))}"
+                    : $"No tables found matching `{keyword}`.";
+
+                chatWithDatabasePage.SetAgentMessage(resultMessage);
+
+                return tableNames;
+            }
+            catch (Exception ex)
+            {
+                chatWithDatabasePage.SetAgentMessage($"Error while searching for tables with keyword `{keyword}`:\n\n**Error:**\n\n```console\n{ex.Message}\n```");
+                return [$"**Error:** {ex.Message}"];
+            }
         }
 
         [KernelFunction]
@@ -275,9 +330,33 @@ If the user doesn’t specify a schema or the schema is unclear:
             [Description("The name of the schema containing the table. This is often case-sensitive depending on the database. **Be noted** that schema parameter is *only* supported for SQL Server and PostgreSQL database, otherwise, leave it empty or null value. In addition, if the schema name is not explicitly provided by the user or clear from context, just ignore it.")]
             string? schema = "")
         {
-            var data = await databaseInteractionService.GetTableStructureDetailAsync(schema, table);
-
-            return data.ToMarkdown();
+            try
+            {
+                var tableStructure = await databaseInteractionService.GetTableStructureDetailAsync(schema, table);
+                if (tableStructure.Rows.Count > 0)
+                {
+                    if (!string.IsNullOrEmpty(schema))
+                    {
+                        chatWithDatabasePage.SetAgentMessage($"Let me check the structure of the `{schema}.{table}` table", tableStructure);
+                    }
+                    else
+                    {
+                        chatWithDatabasePage.SetAgentMessage($"Let me check the structure of the `{table}` table", tableStructure);
+                    }
+                    return tableStructure.ToMarkdown();
+                }
+                else
+                {
+                    var notFoundMessage = $"No structure found for table `{schema}.{table}`.";
+                    chatWithDatabasePage.SetAgentMessage(notFoundMessage);
+                    return notFoundMessage;
+                }
+            }
+            catch (Exception ex)
+            {
+                chatWithDatabasePage.SetAgentMessage($"Error while retrieving structure for table `{table}`:\n\n**Error:**\n\n```console\n{ex.Message}\n```");
+                return $"**Error:** {ex.Message}";
+            }
         }
     }
 }

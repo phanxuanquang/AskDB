@@ -20,4 +20,8 @@
     <ProjectReference Include="..\DatabaseInteractor\DatabaseInteractor.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Plugins\" />
+  </ItemGroup>
+
 </Project>

@@ -13,27 +13,16 @@ namespace AskDB.SemanticKernel.Services
         private readonly IChatCompletionService _chatCompletionService;
         private readonly int _maxMessageCount;
 
-        private ChatHistory _chatHistories;
+        public ChatHistory ChatHistories { get; private set; }
 
         public AgentChatCompletionService(KernelFactory kernelFactory, int maxMessageCount = 200)
         {
             Kernel = kernelFactory.Build();
             ServiceProvider = kernelFactory.ServiceProvider;
             _chatCompletionService = Kernel.GetRequiredService<IChatCompletionService>();
-            _chatHistories = [];
+            ChatHistories = [];
             _maxMessageCount = maxMessageCount;
         }
-
-        public void AddChatHistory(ChatMessageContent chatMessageContent)
-        {
-            _chatHistories.Add(chatMessageContent);
-        }
-
-        public void AddFunctionCallingResponse(FunctionResultContent functionResultContent)
-        {
-            _chatHistories.Add(functionResultContent.ToChatMessage());
-        }
-
         public AgentChatCompletionService WithSystemInstruction(string systemInstruction)
         {
             if (string.IsNullOrWhiteSpace(systemInstruction))
@@ -41,9 +30,9 @@ namespace AskDB.SemanticKernel.Services
                 throw new ArgumentException("System instruction cannot be null or empty.", nameof(systemInstruction));
             }
 
-            _chatHistories.Clear();
+            ChatHistories.Clear();
 
-            _chatHistories.Add(
+            ChatHistories.Add(
                 new()
                 {
                     Role = AuthorRole.System,
@@ -53,6 +42,20 @@ namespace AskDB.SemanticKernel.Services
 
             return this;
         }
+        public AgentChatCompletionService WithChatHistories(ChatHistory chatHistories)
+        {
+            if (chatHistories.Count > 0)
+            {
+                ChatHistories = chatHistories;
+            }
+
+            return this;
+        }
+
+        public void AddFunctionCallingResponse(FunctionResultContent functionResultContent)
+        {
+            ChatHistories.Add(functionResultContent.ToChatMessage());
+        }
 
         public async Task<ChatMessageContent> SendMessageAsync(string message, double temperature = 1, int maxOutputToken = 2048)
         {
@@ -61,24 +64,24 @@ namespace AskDB.SemanticKernel.Services
                 throw new ArgumentException("Message cannot be null or empty.", nameof(message));
             }
 
-            _chatHistories.AddUserMessage(message.Trim());
+            ChatHistories.AddUserMessage(message.Trim());
 
-            if (_chatHistories.Count > _maxMessageCount)
+            if (ChatHistories.Count > _maxMessageCount)
             {
                 var reducer = new ChatHistoryTruncationReducer(targetCount: _maxMessageCount);
-                var reducedMessages = await reducer.ReduceAsync(_chatHistories);
+                var reducedMessages = await reducer.ReduceAsync(ChatHistories);
                 if (reducedMessages is not null)
                 {
-                    _chatHistories = [.. reducedMessages];
+                    ChatHistories = [.. reducedMessages];
                 }
             }
 
             var response = await _chatCompletionService.GetChatMessageContentAsync(
-                _chatHistories,
+                ChatHistories,
                 executionSettings: ServiceProvider.CreatePromptExecutionSettingsWithFunctionCalling(maxOutputToken, temperature),
                 kernel: Kernel);
 
-            _chatHistories.Add(response);
+            ChatHistories.Add(response);
 
             return response;
         }
@@ -90,24 +93,24 @@ namespace AskDB.SemanticKernel.Services
                 throw new ArgumentException("Message cannot be null or empty.", nameof(message));
             }
 
-            _chatHistories.AddUserMessage(message.Trim());
+            ChatHistories.AddUserMessage(message.Trim());
 
-            if (_chatHistories.Count > _maxMessageCount)
+            if (ChatHistories.Count > _maxMessageCount)
             {
                 var reducer = new ChatHistoryTruncationReducer(targetCount: _maxMessageCount);
-                var reducedMessages = await reducer.ReduceAsync(_chatHistories);
+                var reducedMessages = await reducer.ReduceAsync(ChatHistories);
                 if (reducedMessages is not null)
                 {
-                    _chatHistories = [.. reducedMessages];
+                    ChatHistories = [.. reducedMessages];
                 }
             }
 
             var response = await _chatCompletionService.GetChatMessageContentAsync(
-                _chatHistories,
+                ChatHistories,
                 executionSettings: ServiceProvider.CreatePromptExecutionSettings(maxOutputToken, temperature).CreatePromptExecutionSettingsForJsonOutput<T>(ServiceProvider),
                 kernel: Kernel);
 
-            _chatHistories.Add(response);
+            ChatHistories.Add(response);
 
             return JsonSerializer.Deserialize<T>(response.ToString());
         }

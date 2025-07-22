@@ -11,13 +11,11 @@
     xmlns:view_models="using:AskDB.App.View_Models" 
     xmlns:animations="using:CommunityToolkit.WinUI.Animations" 
     xmlns:converters="using:AskDB.App.Converters" 
-    xmlns:charts="using:AskDB.App.Local_Controls.Charts"
     mc:Ignorable="d">
 
     <Page.Resources>
         <converters:BoolToHorizontalAlignment x:Key="BoolToHorizontalAlignment"/>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <converters:DataVisualizationInfoToChartVisualizationInfoConverter x:Key="DataVisualizationInfoToChartVisualizationInfoConverter"/>
         <converters:DataTableToObservableCollectionConverter x:Key="DataTableToObservableCollectionConverter"/>
         <converters:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVisibilityConverter"/>
         <converters:BoolToNegativeBoolConverter x:Key="BoolToNegativeBoolConverter"/>
@@ -74,10 +72,6 @@
                              AlternatingRowBackground="{ThemeResource ControlAltFillColorTertiaryBrush}"
                              Visibility="{x:Bind Data, Converter={StaticResource NullOrEmptyToVisibilityConverter}, Mode=OneWay}"
                              ItemsSource="{x:Bind Data, Converter={StaticResource DataTableToObservableCollectionConverter}, Mode=OneWay}"/>
-                        <charts:ChartVisualizer 
-                            Visibility="{x:Bind IsChart, Converter={StaticResource BoolToVisibilityConverter}, Mode=OneWay}" 
-                            VisualizationInfo="{x:Bind DataVisualizationInfo, Converter={StaticResource DataVisualizationInfoToChartVisualizationInfoConverter}, Mode=OneWay}"
-                            Width="800"/>
                     </StackPanel>
                    
                     <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Left">
@@ -136,7 +130,6 @@
         </ListView>
         <InfoBar 
             Grid.Row="0" 
-            MaxWidth="500"
             x:Name="MessageInfoBar" 
             IsOpen="False" 
             HorizontalAlignment="Right" 
@@ -156,10 +149,10 @@
                 <LinedFlowLayout LineSpacing="4" MinItemSpacing="4"/>
             </ItemsView.Layout>
             <ItemsView.ItemTemplate>
-                <DataTemplate x:DataType="view_models:AgentSuggestion">
+                <DataTemplate x:DataType="x:String">
                     <ItemContainer>
                         <HyperlinkButton>
-                            <TextBlock Text="{x:Bind UserResponseSuggestion, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}"/>
+                            <TextBlock Text="{x:Bind ToString(), Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}"/>
                         </HyperlinkButton>
                     </ItemContainer>
                 </DataTemplate>
