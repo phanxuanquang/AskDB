@@ -98,6 +98,7 @@
     <None Remove="LoadingControl.xaml" />
     <None Remove="Local Controls\GeminiApiKeyInputDialogContent.xaml" />
     <None Remove="MainPanel.xaml" />
+    <None Remove="Pages\AiServiceConnection.xaml" />
     <None Remove="Pages\ChatWithDatabase.xaml" />
     <None Remove="Pages\ExistingDatabaseConnection.xaml" />
   </ItemGroup>
@@ -292,6 +293,9 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+    <Page Update="Pages\AiServiceConnection.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Update="Local Controls\GeminiApiKeyInputDialogContent.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>

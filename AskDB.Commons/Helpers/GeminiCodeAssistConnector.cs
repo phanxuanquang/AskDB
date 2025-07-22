@@ -6,14 +6,11 @@ using GeminiDotNET.Helpers;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Auth.OAuth2.Responses;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
-using System.Reflection;
 using System.Text;
-using System.Text.Json;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace AskDB.Commons.Helpers
