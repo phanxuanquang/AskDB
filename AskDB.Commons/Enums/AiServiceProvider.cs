@@ -4,16 +4,16 @@ namespace AskDB.Commons.Enums
 {
     public enum AiServiceProvider
     {
-        [DefaultModel("gpt-3.5-turbo")]
         [FriendlyName("OpenAI")]
+        [DefaultModel("gpt-3.5-turbo")]
         OpenAI,
 
-        [DefaultModel("gpt-35-turbo")]
         [FriendlyName("Azure OpenAI")]
+        [DefaultModel("gpt-35-turbo")]
         AzureOpenAI,
 
-        [DefaultModel("gemini-2.5-flash")]
         [FriendlyName("Gemini")]
+        [DefaultModel("gemini-2.5-flash")]
         Gemini,
 
         [FriendlyName("ONNX")]

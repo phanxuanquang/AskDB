@@ -18,6 +18,12 @@ namespace AskDB.SemanticKernel.Factories
 
         public KernelFactory WithPlugin(object plugin)
         {
+            var isPluginAdded = _kernelBuilder.Plugins.Services.Any(s => s.ImplementationType == plugin.GetType());
+            if (isPluginAdded)
+            {
+                return this;
+            }
+
             _kernelBuilder.Plugins.AddFromObject(plugin);
             return this;
         }

@@ -57,7 +57,7 @@ namespace AskDB.SemanticKernel.Services
             ChatHistories.Add(functionResultContent.ToChatMessage());
         }
 
-        public async Task<ChatMessageContent> SendMessageAsync(string message, double temperature = 1, int maxOutputToken = 2048)
+        public async Task<ChatMessageContent> SendMessageAsync(string message, double temperature = 1, int maxOutputToken = int.MaxValue)
         {
             if (string.IsNullOrWhiteSpace(message))
             {
@@ -86,7 +86,7 @@ namespace AskDB.SemanticKernel.Services
             return response;
         }
 
-        public async Task<T> SendMessageAsync<T>(string message, double temperature = 1, int maxOutputToken = 2048)
+        public async Task<T> SendMessageAsync<T>(string message, double temperature = 1, int maxOutputToken = int.MaxValue)
         {
             if (string.IsNullOrWhiteSpace(message))
             {

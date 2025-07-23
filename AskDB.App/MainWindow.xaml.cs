@@ -1,5 +1,9 @@
 ﻿using AskDB.App.Helpers;
 using AskDB.App.Pages;
+using AskDB.Commons.Enums;
+using AskDB.Commons.Extensions;
+using AskDB.SemanticKernel.Factories;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -49,6 +53,16 @@ namespace AskDB.App
                 return;
             }
 
+            var modelId = Cache.StandardAiServiceProviderCredential.ServiceProvider.GetDefaultModel()!;
+            var apiKey = Cache.StandardAiServiceProviderCredential.ApiKey;
+
+            Cache.KernelFactory = Cache.StandardAiServiceProviderCredential.ServiceProvider switch
+            {
+                AiServiceProvider.Gemini => new KernelFactory().UseGoogleGeminiProvider(apiKey, modelId),
+                AiServiceProvider.OpenAI => new KernelFactory().UseOpenAiProvider(apiKey, modelId),
+                AiServiceProvider.Mistral => new KernelFactory().UseMistralProvider(apiKey, modelId),
+                _ => throw new NotSupportedException("The specified AI service provider is not supported.")
+            };
 
             if (Cache.HasUserEverConnectedToDatabase)
             {

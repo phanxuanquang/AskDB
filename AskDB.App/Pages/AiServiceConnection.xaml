@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:AskDB.App.Pages"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:enums="using:AskDB.SemanticKernel.Enums" xmlns:converters="using:AskDB.App.Converters" xmlns:view_models="using:AskDB.App.View_Models"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:enums="using:AskDB.SemanticKernel.Enums" xmlns:converters="using:AskDB.App.Converters" xmlns:view_models="using:AskDB.App.View_Models" xmlns:app="using:AskDB.App"
     mc:Ignorable="d">
 
     <Page.Resources>
@@ -29,6 +29,7 @@
         </StackPanel>
         
         <ItemsView 
+            x:Name="MainPanel"
             SelectionMode="None" 
             ItemsSource="{x:Bind SupportedProviders}" 
             IsItemInvokedEnabled="True"
@@ -54,5 +55,6 @@
                 </DataTemplate>
             </ItemsView.ItemTemplate>
         </ItemsView>
+        <app:LoadingControl x:Name="LoadingOverlay" HorizontalAlignment="Center" VerticalAlignment="Center"/>
     </StackPanel>
 </Page>

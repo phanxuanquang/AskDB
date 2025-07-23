@@ -186,6 +186,8 @@ namespace AskDB.App
                     }
                 }
 
+                Cache.HasUserEverConnectedToDatabase = true;
+
                 Frame.Navigate(
                     typeof(ChatWithDatabase),
                     new DatabaseConnectionInfo

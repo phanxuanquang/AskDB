@@ -46,16 +46,5 @@
                 </StackPanel>
             </PasswordBox.Header>
         </PasswordBox>
-        <AutoSuggestBox
-            PlaceholderText="Enter your model codename here"
-            HorizontalAlignment="Stretch"
-            Text="{x:Bind ModelId, Mode=TwoWay}" >
-            <AutoSuggestBox.Header>
-                <StackPanel Orientation="Horizontal" Spacing="4">
-                    <FontIcon Glyph="&#xE99A;" FontSize="{StaticResource BodyTextBlockFontSize}"/>
-                    <TextBlock Text="Model Codename" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"/>
-                </StackPanel>
-            </AutoSuggestBox.Header>
-        </AutoSuggestBox>
     </StackPanel>
 </UserControl>

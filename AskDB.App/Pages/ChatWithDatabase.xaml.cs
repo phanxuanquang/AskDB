@@ -328,9 +328,9 @@ namespace AskDB.App.Pages
                 AgentSuggestionsItemView.Visibility = VisibilityHelper.SetVisible(false);
                 AgentSuggestions.Clear();
 
-                var result = await _chatCompletionService.SendMessageAsync(userInput);
+                var result = await _chatCompletionService.SendMessageAsync(userInput, 0.7);
 
-                SetAgentMessage(result.Content);
+                SetAgentMessage(result.ToString());
 
                 await LoadAgentSuggestionsAsync("Based on the current context, please provide up to 4 **short** and **concise** suggestions as the next step in my viewpoint, for me to use as the quick reply in order to continue the task.");
             }
@@ -350,7 +350,7 @@ namespace AskDB.App.Pages
             MessageInfoBar.Title = message;
             MessageInfoBar.IsOpen = true;
             MessageInfoBar.Severity = isSuccess ? InfoBarSeverity.Success : InfoBarSeverity.Error;
-            await Task.Delay(750);
+            await Task.Delay(1200);
             MessageInfoBar.IsOpen = false;
         }
 

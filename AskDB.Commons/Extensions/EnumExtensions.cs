@@ -31,11 +31,5 @@ namespace AskDB.Commons.Extensions
             var attr = enumValue.GetAttributeValue<FriendlyNameAttribute>();
             return attr?.FriendlyName ?? enumValue.ToString();
         }
-
-        public static string? GetDefaultModel(this AiServiceProvider enumValue)
-        {
-            var attr = enumValue.GetAttributeValue<DefaultModelAttribute>();
-            return attr?.DefaultModel;
-        }
     }
 }

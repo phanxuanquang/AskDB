@@ -8,7 +8,6 @@ namespace AskDB.App.Local_Controls.AIProviderConnections
     public sealed partial class StandardAIProviderConnection : UserControl, INotifyPropertyChanged
     {
         private string _apiKey;
-        private string _modelId;
 
         public string ApiKey
         {
@@ -18,19 +17,6 @@ namespace AskDB.App.Local_Controls.AIProviderConnections
                 if (_apiKey != value)
                 {
                     _apiKey = value.Trim();
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public string ModelId
-        {
-            get => _modelId;
-            set
-            {
-                if (_modelId != value)
-                {
-                    _modelId = value.Trim();
                     OnPropertyChanged();
                 }
             }
