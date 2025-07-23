@@ -1,4 +1,4 @@
-﻿using AskDB.SemanticKernel.Enums;
+﻿using AskDB.Commons.Enums;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 
@@ -49,25 +49,46 @@ namespace AskDB.SemanticKernel.Factories
             return _kernelBuilder.Build();
         }
 
-        #region AI Service Providers
-        public KernelFactory UseOpenAiProvider(string apiKey, string modelId)
-        {
-            ServiceProvider = AiServiceProvider.OpenAI;
-            _kernelBuilder.AddOpenAIChatCompletion(modelId: modelId, apiKey: apiKey);
-            return this;
-        }
+        #region AI Service Providers   
 
         public KernelFactory UseAzureOpenAiProvider(string apiKey, string endpoint, string deploymentName)
         {
             ServiceProvider = AiServiceProvider.AzureOpenAI;
-            _kernelBuilder.AddAzureOpenAIChatCompletion(deploymentName: deploymentName, endpoint: endpoint, apiKey: apiKey);
+            _kernelBuilder.AddAzureOpenAIChatCompletion(deploymentName, endpoint, apiKey);
+            return this;
+        }
+
+        public KernelFactory UseOpenAiProvider(string apiKey, string modelId)
+        {
+            ServiceProvider = AiServiceProvider.OpenAI;
+            _kernelBuilder.AddOpenAIChatCompletion(modelId, apiKey);
+            return this;
+        }
+
+        public KernelFactory UseMistralProvider(string apiKey, string modelId)
+        {
+            ServiceProvider = AiServiceProvider.Mistral;
+            _kernelBuilder.AddMistralChatCompletion(modelId, apiKey);
             return this;
         }
 
         public KernelFactory UseGoogleGeminiProvider(string apiKey, string modelId)
         {
             ServiceProvider = AiServiceProvider.Gemini;
-            _kernelBuilder.AddGoogleAIGeminiChatCompletion(modelId: modelId, apiKey: apiKey);
+            _kernelBuilder.AddGoogleAIGeminiChatCompletion(modelId, apiKey);
+            return this;
+        }
+        public KernelFactory UseOllamaProvider(string endpoint, string modelId)
+        {
+            ServiceProvider = AiServiceProvider.Ollama;
+            _kernelBuilder.AddOllamaChatCompletion(modelId, new Uri(endpoint));
+            return this;
+        }
+
+        public KernelFactory UseOnnxProvider(string modelPath, string modelId)
+        {
+            ServiceProvider = AiServiceProvider.ONNX;
+            _kernelBuilder.AddOnnxRuntimeGenAIChatCompletion(modelId, modelPath);
             return this;
         }
         #endregion

@@ -1,4 +1,4 @@
-﻿using AskDB.SemanticKernel.Enums;
+﻿using AskDB.Commons.Enums;
 using AskDB.SemanticKernel.Factories;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;

@@ -1,5 +1,7 @@
 ﻿using AskDB.App.Helpers;
 using AskDB.Database;
+using AskDB.SemanticKernel.Helpers;
+using AskDB.SemanticKernel.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -15,7 +17,6 @@ namespace AskDB.App
         public static Window Window { get; private set; }
         public static AppDbContext LocalDb { get; private set; }
         public static ElementTheme AppTheme { get; set; } = ElementTheme.Light;
-
 
         public App()
         {
@@ -45,7 +46,6 @@ namespace AskDB.App
         private static async Task InitializeAsync()
         {
             string dbPath = AppDbContext.DbPath;
-
             if (!File.Exists(dbPath))
             {
                 var directoryPath = Path.GetDirectoryName(dbPath);
@@ -58,13 +58,13 @@ namespace AskDB.App
                 await LocalDb.Database.EnsureCreatedAsync().ConfigureAwait(false);
             }
 
-            Task<string?> apiKeyTask = LocalDb.GetApiKeyAsync();
+            Task<StandardAiServiceProviderCredential?> credentialTask = AiServiceProviderCredentialManager.LoadCredentialAsync();
             Task<bool> hasUserTask = LocalDb.IsDatabaseCredentialOrConnectionStringExistsAsync();
 
-            await Task.WhenAll(apiKeyTask, hasUserTask).ConfigureAwait(false);
+            await Task.WhenAll(credentialTask, hasUserTask).ConfigureAwait(false);
 
-            Cache.ApiKey = apiKeyTask.Result;
-            Cache.HasUserEverConnectedToDatabase = hasUserTask.Result;
+            Cache.StandardAiServiceProviderCredential = await credentialTask;
+            Cache.HasUserEverConnectedToDatabase = await hasUserTask;
         }
     }
 }

@@ -1,8 +1,8 @@
 using AskDB.App.Helpers;
 using AskDB.App.Local_Controls.AIProviderConnections;
 using AskDB.App.View_Models;
+using AskDB.Commons.Enums;
 using AskDB.Commons.Extensions;
-using AskDB.SemanticKernel.Enums;
 using AskDB.SemanticKernel.Factories;
 using AskDB.SemanticKernel.Services;
 using Microsoft.UI.Xaml.Controls;

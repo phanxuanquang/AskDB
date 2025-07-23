@@ -10,6 +10,7 @@
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.57.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureOpenAI" Version="1.57.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.57.0-alpha" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.MistralAI" Version="1.60.0-alpha" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.57.0-alpha" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.Onnx" Version="1.57.0-alpha" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.57.0" />
@@ -18,10 +19,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DatabaseInteractor\DatabaseInteractor.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Plugins\" />
   </ItemGroup>
 
 </Project>

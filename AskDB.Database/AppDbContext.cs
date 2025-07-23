@@ -1,5 +1,4 @@
 ﻿using AskDB.Commons.Enums;
-using AskDB.Commons.Extensions;
 using AskDB.Database.Extensions;
 using AskDB.Database.Models;
 using Microsoft.EntityFrameworkCore;
@@ -8,53 +7,11 @@ namespace AskDB.Database
 {
     public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
     {
-        public static readonly string DbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AskDb", "AskDb-v0.0.5.sqlite");
+        public static readonly string DbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AskDb", "AskDb-v0.0.6.sqlite");
 
         #region Tables
-        public DbSet<UserSetting> UserSettings { get; set; }
         public DbSet<ConnectionString> ConnectionStrings { get; set; }
         public DbSet<DatabaseCredential> DatabaseCredentials { get; set; }
-        #endregion
-
-        #region API Key Configurations
-        public async Task UpdateApiKeyAsync(string apiKey)
-        {
-            var userProfile = await UserSettings.FirstOrDefaultAsync();
-
-            if (userProfile == null)
-            {
-                return;
-            }
-
-            userProfile.ApiKey = apiKey.AesEncrypt();
-            await SaveChangesAsync();
-        }
-
-        public async Task CreateOrUpdateApiKeyAsync(string apiKey)
-        {
-            var user = new UserSetting
-            {
-                ApiKey = apiKey.AesEncrypt(),
-            };
-
-            await UserSettings.AddAsync(user);
-            await SaveChangesAsync();
-        }
-
-        public async Task<string?> GetApiKeyAsync()
-        {
-            var apiKey = await UserSettings
-                .AsNoTracking()
-                .Select(x => x.ApiKey)
-                .FirstOrDefaultAsync();
-
-            if (apiKey == null)
-            {
-                return null;
-            }
-
-            return apiKey.AesDecrypt();
-        }
         #endregion
 
         public async Task SaveDatabaseCredentialAsync(DatabaseCredential credential)

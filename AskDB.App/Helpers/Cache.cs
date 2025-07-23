@@ -1,5 +1,5 @@
-﻿using AskDB.Commons.Helpers;
-using AskDB.SemanticKernel.Factories;
+﻿using AskDB.SemanticKernel.Factories;
+using AskDB.SemanticKernel.Models;
 using System;
 using System.Collections;
 using System.Text;
@@ -9,12 +9,11 @@ namespace AskDB.App.Helpers
 {
     public static class Cache
     {
-        public static string ApiKey { get; set; }
+        public static StandardAiServiceProviderCredential? StandardAiServiceProviderCredential { get; set; } = null;
+        public static KernelFactory? KernelFactory { get; set; } = null;
 
         public static bool HasUserEverConnectedToDatabase { get; set; } = false;
-        public static GeminiCodeAssistConnector GeminiCodeAssistConnector;
 
-        public static KernelFactory? KernelFactory { get; set; }
 
         public const string DefaultModelAlias = "gemini-2.5-flash";
 

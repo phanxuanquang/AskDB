@@ -1,8 +1,9 @@
-﻿using AskDB.SemanticKernel.Enums;
+﻿using AskDB.Commons.Enums;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.Google;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
+#pragma warning disable SKEXP0070
 namespace AskDB.SemanticKernel.Factories
 {
     public static class ChatMessageContentFactory
@@ -11,7 +12,6 @@ namespace AskDB.SemanticKernel.Factories
         {
             ArgumentNullException.ThrowIfNull(chatMessageContent);
 
-#pragma warning disable SKEXP0070
             return serviceProvider switch
             {
                 AiServiceProvider.OpenAI => chatMessageContent as OpenAIChatMessageContent,

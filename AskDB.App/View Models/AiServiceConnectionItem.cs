@@ -1,4 +1,4 @@
-﻿using AskDB.SemanticKernel.Enums;
+﻿using AskDB.Commons.Enums;
 using System.Collections.Generic;
 
 namespace AskDB.App.View_Models

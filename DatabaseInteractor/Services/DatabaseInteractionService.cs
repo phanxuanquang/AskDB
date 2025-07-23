@@ -9,8 +9,8 @@ namespace DatabaseInteractor.Services
     public abstract class DatabaseInteractionService(string connectionString)
     {
         public HashSet<string> CachedAllTableNames { get; set; } = [];
-        protected string SearchTablesByNameQueryTemplate { get; private set; }
-        public string GetTableStructureDetailQueryTemplate { get; private set; }
+        protected string SearchTablesByNameQueryTemplate { get; private set; } = string.Empty;
+        public string GetTableStructureDetailQueryTemplate { get; private set; } = string.Empty;
 
         public DatabaseType DatabaseType { get; protected set; }
         public string ConnectionString { get; } = connectionString ?? throw new ArgumentNullException(nameof(connectionString));

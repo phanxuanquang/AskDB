@@ -35,7 +35,7 @@ namespace AskDB.App
 
             int maxWaitMs = 500;
             int waited = 0;
-            while (string.IsNullOrEmpty(Cache.ApiKey) && waited < maxWaitMs)
+            while (Cache.StandardAiServiceProviderCredential == default && waited < maxWaitMs)
             {
                 await Task.Delay(100);
                 waited += 100;
@@ -43,17 +43,16 @@ namespace AskDB.App
 
             LoadingIndicator.SetLoading(null, false);
 
-            if (string.IsNullOrEmpty(Cache.ApiKey))
+            if (Cache.StandardAiServiceProviderCredential == default)
             {
-                MainFrame.Navigate(typeof(GeminiConnection), null, new DrillInNavigationTransitionInfo());
+                MainFrame.Navigate(typeof(AiServiceConnection), null, new DrillInNavigationTransitionInfo());
                 return;
             }
 
 
             if (Cache.HasUserEverConnectedToDatabase)
             {
-                //MainFrame.Navigate(typeof(ExistingDatabaseConnection), null, new DrillInNavigationTransitionInfo());
-                MainFrame.Navigate(typeof(AiServiceConnection), null, new DrillInNavigationTransitionInfo());
+                MainFrame.Navigate(typeof(ExistingDatabaseConnection), null, new DrillInNavigationTransitionInfo());
             }
             else
             {
@@ -82,23 +81,23 @@ namespace AskDB.App
 
         private async void UpdateApiKeyButton_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(Cache.ApiKey))
+            if (Cache.StandardAiServiceProviderCredential == default)
             {
-                await DialogHelper.ShowErrorAsync("Please enter your Gemini API key.");
+                await DialogHelper.ShowErrorAsync("Please connect to your AI provider service");
                 return;
             }
 
-            if (MainFrame.SourcePageType != typeof(GeminiConnection))
+            if (MainFrame.SourcePageType != typeof(AiServiceConnection))
             {
-                MainFrame.Navigate(typeof(GeminiConnection), null, new DrillInNavigationTransitionInfo());
+                MainFrame.Navigate(typeof(AiServiceConnection), null, new DrillInNavigationTransitionInfo());
             }
         }
 
         private async void HomeButton_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(Cache.ApiKey))
+            if (Cache.StandardAiServiceProviderCredential == default)
             {
-                await DialogHelper.ShowErrorAsync("Please enter your Gemini API key.");
+                await DialogHelper.ShowErrorAsync("Please connect to your AI provider service");
                 return;
             }
 

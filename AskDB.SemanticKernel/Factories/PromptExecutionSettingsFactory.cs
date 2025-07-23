@@ -1,7 +1,8 @@
-﻿using AskDB.SemanticKernel.Enums;
+﻿using AskDB.Commons.Enums;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
 using Microsoft.SemanticKernel.Connectors.Google;
+using Microsoft.SemanticKernel.Connectors.MistralAI;
 using Microsoft.SemanticKernel.Connectors.Ollama;
 using Microsoft.SemanticKernel.Connectors.Onnx;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
@@ -43,7 +44,7 @@ namespace AskDB.SemanticKernel.Factories
                 },
                 AiServiceProvider.AzureOpenAI => AzureOpenAIPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings, maxOutputToken),
                 AiServiceProvider.Ollama => OllamaPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings),
-                AiServiceProvider.ONNX => promptExecutionSettings as OnnxRuntimeGenAIPromptExecutionSettings,
+                AiServiceProvider.ONNX => OnnxRuntimeGenAIPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings),
                 _ => throw new NotImplementedException(),
             };
 
@@ -66,9 +67,14 @@ namespace AskDB.SemanticKernel.Factories
                     MaxTokens = maxOutputToken,
                     Temperature = temperature
                 },
+                AiServiceProvider.Mistral => new MistralAIPromptExecutionSettings
+                {
+                    MaxTokens = maxOutputToken,
+                    Temperature = temperature,
+                },
                 AiServiceProvider.AzureOpenAI => AzureOpenAIPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings, maxOutputToken),
                 AiServiceProvider.Ollama => OllamaPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings),
-                AiServiceProvider.ONNX => promptExecutionSettings as OnnxRuntimeGenAIPromptExecutionSettings,
+                AiServiceProvider.ONNX => OnnxRuntimeGenAIPromptExecutionSettings.FromExecutionSettings(promptExecutionSettings),
                 _ => throw new NotImplementedException(),
             };
 
