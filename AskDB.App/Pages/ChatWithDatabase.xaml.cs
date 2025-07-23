@@ -332,7 +332,7 @@ namespace AskDB.App.Pages
 
                 SetAgentMessage(result.ToString());
 
-                await LoadAgentSuggestionsAsync("Based on the current context, please provide up to 4 **short** and **concise** suggestions as the next step in my viewpoint, for me to use as the quick reply in order to continue the task.");
+                await LoadAgentSuggestionsAsync("Based on the current context, please provide up to 4 **short** and **concise** suggestions as the follow-up replies in my viewpoint, for me to use as the quick reply in order to continue the task, assuming I am not technical but want to understand and explore the data for analysis purpose or predictional purpose.");
             }
             catch (Exception ex)
             {
@@ -414,10 +414,9 @@ namespace AskDB.App.Pages
 
             if (tableNames.Count > 0)
             {
-                await LoadAgentSuggestionsAsync($@"Based on the list of table names provided below, suggest me with 4 concise and interesting ideas from my viewpoint that I might ask to start the conversation.
-The suggested ideas should be phrased as questions or commands in natural language, assuming I am not technical but want to understand and explore the data for analysis purpose or predictional purpose.
+                await LoadAgentSuggestionsAsync($@"Based on the list of table names provided below, suggest me with 4 concise and interesting ideas from my viewpoint that I might ask to start the conversation, assuming I am not technical but want to understand and explore the data for analysis purpose or predictional purpose.
 Focus on common exploratory intents such as: viewing recent records, counting items, finding top or recent entries, understanding relationships, checking for missing/empty data, searching for specific information, or exploring the table structure, etc.
-Avoid SQL or technical jargon in the suggestions. Each suggestion should be unique, short, concise, specific, user-friendly, and **MUST NOT** be relevant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
+Each suggestion should be short, concise, specific, user-friendly, and **MUST NOT** be relevant to sensitive, security-related, or credential-related tables, and do not suggest actions that require elevated permissions or could lead to data loss or sensitive information exposure.
 
 This is the list of table names in the database: {string.Join(", ", tableNames.Take(10).Select(x => $"`{x}`"))}");
             }

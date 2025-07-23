@@ -12,7 +12,7 @@ namespace AskDB.Commons.Enums
         [DefaultModel("gpt-35-turbo")]
         AzureOpenAI,
 
-        [FriendlyName("Gemini")]
+        [FriendlyName("Google Gemini")]
         [DefaultModel("gemini-2.5-flash")]
         Gemini,
 

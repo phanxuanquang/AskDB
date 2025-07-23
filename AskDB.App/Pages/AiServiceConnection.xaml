@@ -48,7 +48,7 @@
                             Spacing="12" 
                             Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}"
                             CornerRadius="{StaticResource OverlayCornerRadius}">
-                            <Image Stretch="Fill" Height="{StaticResource TitleLargeTextBlockFontSize}" Width="{StaticResource TitleLargeTextBlockFontSize}" Source="/Images/icon.png" HorizontalAlignment="Center"/>
+                            <Image Stretch="Fill" Height="{StaticResource TitleLargeTextBlockFontSize}" Width="{StaticResource TitleLargeTextBlockFontSize}" Source="{x:Bind LogoFilePath, Mode=OneWay}" HorizontalAlignment="Center"/>
                             <TextBlock Text="{x:Bind ServiceProvider, Mode=OneWay, Converter={StaticResource EnumToDisplayName}}" HorizontalAlignment="Center" Style="{StaticResource BodyStrongTextBlockStyle}"/>
                         </StackPanel>
                     </ItemContainer>

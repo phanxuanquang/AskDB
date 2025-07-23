@@ -38,13 +38,6 @@
             PlaceholderText="Enter your API key here"
             HorizontalAlignment="Stretch"
             PasswordRevealMode="Peek" 
-            Password="{x:Bind ApiKey, Mode=TwoWay}">
-            <PasswordBox.Header>
-                <StackPanel Orientation="Horizontal" Spacing="4">
-                    <FontIcon Glyph="&#xEC19;" FontSize="{StaticResource BodyTextBlockFontSize}"/>
-                    <TextBlock Text="API Key" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" FontWeight="SemiBold"/>
-                </StackPanel>
-            </PasswordBox.Header>
-        </PasswordBox>
+            Password="{x:Bind ApiKey, Mode=TwoWay}"/>
     </StackPanel>
 </UserControl>

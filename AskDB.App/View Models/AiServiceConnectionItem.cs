@@ -1,5 +1,8 @@
 ﻿using AskDB.Commons.Enums;
+using AskDB.Commons.Extensions;
+using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace AskDB.App.View_Models
 {
@@ -8,6 +11,7 @@ namespace AskDB.App.View_Models
         public required AiServiceProvider ServiceProvider { get; set; }
         public bool IsStandardProvider { get; set; } = false;
         public List<string> AvailableModels { get; set; } = [];
+        public string? LogoFilePath { get; set; } 
 
         public static AiServiceConnectionItem CreateDefault(AiServiceProvider serviceProvider, bool isStandardProvider = false)
         {
@@ -15,7 +19,8 @@ namespace AskDB.App.View_Models
             {
                 ServiceProvider = serviceProvider,
                 IsStandardProvider = isStandardProvider,
-                AvailableModels = []
+                AvailableModels = [],
+                LogoFilePath = Path.Combine(AppContext.BaseDirectory, "Images", "AI Service Provider Logos", $"{serviceProvider.GetFriendlyName()}.png")
             };
         }
     }
