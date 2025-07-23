@@ -1,4 +1,5 @@
-﻿using Microsoft.UI.Xaml;
+﻿using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace AskDB.App.View_Models
@@ -13,14 +14,12 @@ namespace AskDB.App.View_Models
         {
             ChatMessage? selectedObject = item as ChatMessage;
 
-            if (selectedObject?.IsFromUser == true)
+            if (selectedObject?.Role == AuthorRole.User)
             {
                 return UserTemplate;
             }
-            else
-            {
-                return AssistantTemplate;
-            }
+
+            return AssistantTemplate;
         }
     }
 }

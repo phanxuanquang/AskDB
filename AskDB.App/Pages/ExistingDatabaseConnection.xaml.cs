@@ -40,8 +40,7 @@ namespace AskDB.App.Pages
             ExistingConnectionStringInfors.Clear();
 
             var existingCredentials = await _db.GetDatabaseCredentialsAsync();
-            var existingConnectionStrings = await _db.GetConnectionStringsAsync();
-
+            
             if (existingCredentials.Count > 0)
             {
                 foreach (var credential in existingCredentials)
@@ -58,6 +57,8 @@ namespace AskDB.App.Pages
                     });
                 }
             }
+
+            var existingConnectionStrings = await _db.GetConnectionStringsAsync();
 
             if (existingConnectionStrings.Count > 0)
             {

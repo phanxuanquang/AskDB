@@ -8,6 +8,7 @@ using DatabaseInteractor.Factories;
 using DatabaseInteractor.Helpers;
 using DatabaseInteractor.Services;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -290,30 +291,15 @@ namespace AskDB.App.Pages
         }
         private void SetUserMessage(string message)
         {
-            var chatMessage = new ChatMessage
-            {
-                Message = message,
-                IsFromUser = true,
-                IsFromAgent = false,
-            };
-
-            Messages.Add(chatMessage);
+            Messages.Add(ChatMessage.CreateUserMessage(message));
         }
         public void SetAgentMessage(string? message, DataTable? dataTable = null)
         {
             var isDataTableEmpty = dataTable == null || dataTable.Rows.Count == 0;
 
-            var chatMessage = new ChatMessage
-            {
-                Message = message,
-                IsFromUser = false,
-                IsFromAgent = true,
-                Data = isDataTableEmpty ? null : dataTable
-            };
-
             _dispatcherQueue.TryEnqueue(() =>
             {
-                Messages.Add(chatMessage);
+                Messages.Add(ChatMessage.CreateAssistantMessage(message, isDataTableEmpty ? null : dataTable));
             });
         }
         #endregion
