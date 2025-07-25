@@ -40,6 +40,7 @@ namespace DatabaseInteractor.Factories
                 DatabaseType.MariaDB => new MariaDbService(connectionString),
                 DatabaseType.PostgreSQL => new PostgreSqlService(connectionString),
                 DatabaseType.SQLite => new SqliteService(connectionString),
+                DatabaseType.PowerBI => new PowerBiService(connectionString),
                 _ => throw new NotSupportedException($"Database type {dbType} is not supported")
             };
         }

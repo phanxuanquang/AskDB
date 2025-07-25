@@ -18,6 +18,9 @@ namespace AskDB.Commons.Enums
         SQLite = 3,
 
         [Description("MariaDB"), DefaultPort(3306), DefaultHost("127.0.0.1")]
-        MariaDB = 4
+        MariaDB = 4,
+
+        [Description("PowerBI"), DefaultPort(0), DefaultHost("")]
+        PowerBI = 5,
     }
 }

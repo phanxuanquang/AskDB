@@ -18,8 +18,10 @@
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="FuzzySharp" Version="2.0.2" />
+    <PackageReference Include="Microsoft.AnalysisServices.AdomdClient" Version="19.101.1" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
     <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Identity.Client" Version="4.74.1" />
     <PackageReference Include="MySqlConnector" Version="2.4.0" />
     <PackageReference Include="Npgsql" Version="9.0.3" />
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
