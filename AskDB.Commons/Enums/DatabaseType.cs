@@ -20,7 +20,7 @@ namespace AskDB.Commons.Enums
         [Description("MariaDB"), DefaultPort(3306), DefaultHost("127.0.0.1")]
         MariaDB = 4,
 
-        [Description("PowerBI"), DefaultPort(0), DefaultHost("")]
+        [Description("PowerBI DAX"), DefaultPort(0), DefaultHost("")]
         PowerBI = 5,
     }
 }

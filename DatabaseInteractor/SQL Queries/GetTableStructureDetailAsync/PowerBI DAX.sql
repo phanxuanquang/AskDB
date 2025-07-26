@@ -1,0 +1,1 @@
+﻿EVALUATE TOPN(0, '{TableName}')

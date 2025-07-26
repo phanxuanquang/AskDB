@@ -1,4 +1,5 @@
 ﻿using AskDB.Commons.Enums;
+using DatabaseInteractor.Extensions;
 using DatabaseInteractor.Services;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
@@ -23,6 +24,7 @@ namespace DatabaseInteractor.Factories
                 DatabaseType.MariaDB => new MySqlConnection(connectionString),
                 DatabaseType.PostgreSQL => new NpgsqlConnection(connectionString),
                 DatabaseType.SQLite => new SqliteConnection(connectionString),
+                DatabaseType.PowerBI => new PowerBIConnection(connectionString),
                 _ => throw new NotSupportedException($"Database type {dbType} is not supported")
             };
         }
