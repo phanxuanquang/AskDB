@@ -13,6 +13,8 @@
     <Page.Resources>
         <converters:BoolToNegativeBoolConverter x:Key="BoolToNegativeBoolConverter"/>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:DatabaseTypeToIntConverter x:Key="DatabaseTypeToIntConverter"/>
+        
     </Page.Resources>
 
     <Grid MaxWidth="1000">
@@ -27,9 +29,18 @@
             <RichTextBlock>
                 <Paragraph>AskDB needs to connect to your database to understand its structure and execute database queries. Please fill the fields below to configure your database connection.</Paragraph>
             </RichTextBlock>
-            <ComboBox Header="Database Type" SelectedIndex="0" HorizontalAlignment="Stretch" ItemsSource="{x:Bind DatabaseTypes}" SelectionChanged="DatabaseTypeComboBox_SelectionChanged"/>
+            <ComboBox 
+                Header="Database Type" 
+                HorizontalAlignment="Stretch" 
+                ItemsSource="{x:Bind DatabaseTypes}" 
+                SelectedIndex="{x:Bind SelectedDatabaseType, Mode=TwoWay, Converter={StaticResource DatabaseTypeToIntConverter}}" 
+                SelectionChanged="DatabaseTypeComboBox_SelectionChanged"/>
             <Grid>
-                <Grid x:Name="NotUseConnectionStringSpace" Padding="16,18" Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}" CornerRadius="{StaticResource ControlCornerRadius}">
+                <Grid 
+                    x:Name="NotUseConnectionStringSpace" 
+                    Padding="16,18" 
+                    Background="{ThemeResource SystemFillColorNeutralBackgroundBrush}" 
+                    CornerRadius="{StaticResource ControlCornerRadius}">
                     <StackPanel x:Name="NotSqliteComponents" Spacing="12">
                         <StackPanel Spacing="8">
                             <Grid>

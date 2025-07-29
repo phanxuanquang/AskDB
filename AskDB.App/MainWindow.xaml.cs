@@ -85,11 +85,31 @@ namespace AskDB.App
             App.AppTheme = RootGrid.RequestedTheme = RootGrid.RequestedTheme == ElementTheme.Dark ? ElementTheme.Light : ElementTheme.Dark;
         }
 
-        private void BackButton_Click(object sender, RoutedEventArgs e)
+        private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
             if (MainFrame.CanGoBack)
             {
-                MainFrame.GoBack();
+                if (MainFrame.SourcePageType == typeof(ChatWithDatabase))
+                {
+                    var warningDialog = new ContentDialog
+                    {
+                        XamlRoot = RootGrid.XamlRoot,
+                        Title = "Warning",
+                        Content = "Are you sure you want to go back? This will clear your current chat history.",
+                        PrimaryButtonText = "Yes",
+                        CloseButtonText = "Cancel",
+                        DefaultButton = ContentDialogButton.Primary
+                    };
+
+                    if (await warningDialog.ShowAsync() == ContentDialogResult.Primary)
+                    {
+                        MainFrame.GoBack();
+                    }
+                }
+                else
+                {
+                    MainFrame.GoBack();
+                }
             }
         }
 
@@ -120,11 +140,29 @@ namespace AskDB.App
                 return;
             }
 
-            if (Cache.HasUserEverConnectedToDatabase || MainFrame.SourcePageType == typeof(ExistingDatabaseConnection))
+            if (MainFrame.SourcePageType == typeof(ChatWithDatabase))
             {
-                MainFrame.Navigate(typeof(ExistingDatabaseConnection), null, new DrillInNavigationTransitionInfo());
+                var warningDialog = new ContentDialog
+                {
+                    XamlRoot = RootGrid.XamlRoot,
+                    Title = "Warning",
+                    Content = "Are you sure you want to exit? This will clear your current chat history.",
+                    PrimaryButtonText = "Yes",
+                    CloseButtonText = "Cancel",
+                    DefaultButton = ContentDialogButton.Primary
+                };
+
+                if (await warningDialog.ShowAsync() == ContentDialogResult.Primary)
+                {
+                    MainFrame.Navigate(typeof(ExistingDatabaseConnection), null, new DrillInNavigationTransitionInfo());
+                }
+                else
+                {
+                    return;
+                }
             }
-            else
+
+            if (!Cache.HasUserEverConnectedToDatabase)
             {
                 MainFrame.Navigate(typeof(DatabaseConnection), null, new DrillInNavigationTransitionInfo());
             }

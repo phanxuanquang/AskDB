@@ -121,6 +121,11 @@ namespace AskDB.App.Pages
                 {
                     await _db.RemoveDatabaseCredentialAsync(data.Id);
                     ExistingDatabaseConnectionInfors.Remove(data);
+
+                    if (ExistingDatabaseConnectionInfors.Count == 0 && ExistingConnectionStringInfors.Count == 0)
+                    {
+                        Frame.Navigate(typeof(DatabaseConnection), null, new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight });
+                    }
                 }
             }
             finally

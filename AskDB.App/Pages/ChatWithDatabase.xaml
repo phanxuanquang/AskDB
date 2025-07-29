@@ -151,7 +151,7 @@
             <ItemsView.ItemTemplate>
                 <DataTemplate x:DataType="x:String">
                     <ItemContainer>
-                        <HyperlinkButton>
+                        <HyperlinkButton ToolTipService.ToolTip="{x:Bind ToString(), Mode=OneWay}" ToolTipService.Placement="Top">
                             <TextBlock Text="{x:Bind ToString(), Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}"/>
                         </HyperlinkButton>
                     </ItemContainer>
@@ -170,7 +170,7 @@
                 MaxHeight="148" 
                 VerticalAlignment="Stretch" 
                 TextWrapping="Wrap" 
-                PlaceholderText="Enter your message (press Shift + Enter to insert a new line" 
+                PlaceholderText="Enter your message (press Shift + Enter to insert a new line)" 
                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                 AcceptsReturn="True" 
                 x:Name="QueryBox" 

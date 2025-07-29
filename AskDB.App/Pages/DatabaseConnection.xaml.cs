@@ -22,13 +22,26 @@ namespace AskDB.App
 {
     public sealed partial class DatabaseConnection : Page, INotifyPropertyChanged
     {
-
         private List<string> _databaseTypes = [.. EnumExtensions.GetValues<DatabaseType>().Select(x => x.GetDescription())];
         private string _sqliteFilePath;
         private bool _useConnectionString = false;
         private bool _useWindowsAuthentication = false;
         private bool _includePort = false;
         private DatabaseCredential _connectionCredential = new();
+        private ConnectionString _connectionString = new();
+        private DatabaseType _selectedDatabaseType = DatabaseType.SqlServer;
+
+        public DatabaseType SelectedDatabaseType
+        {
+            get => _selectedDatabaseType;
+            set
+            {
+                _selectedDatabaseType = value;
+                ConnectionCredential.DatabaseType = value;
+                ConnectionString.DatabaseType = value;
+                OnPropertyChanged();
+            }
+        }
 
         public string SqliteFilePath
         {
@@ -100,7 +113,15 @@ namespace AskDB.App
                 OnPropertyChanged();
             }
         }
-        private ConnectionString ConnectionString { get; set; } = new();
+        public ConnectionString ConnectionString 
+        {
+            get => _connectionString;
+            set
+            {
+                _connectionString = value;
+                OnPropertyChanged();
+            }
+        }
 
         private readonly AppDbContext _db;
 
@@ -173,12 +194,7 @@ namespace AskDB.App
 
                     if (ConnectionCredential.DatabaseType == DatabaseType.SQLite)
                     {
-                        await _db.SaveConnectionStringAsync(new ConnectionString
-                        {
-                            Name = Path.GetFileNameWithoutExtension(SqliteFilePath),
-                            DatabaseType = DatabaseType.SQLite,
-                            Value = connectionString
-                        });
+                        await _db.SaveConnectionStringAsync(ConnectionString);
                     }
                     else
                     {
@@ -234,13 +250,23 @@ namespace AskDB.App
 
         private void DatabaseTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ConnectionCredential.DatabaseType = (DatabaseType)(sender as ComboBox).SelectedIndex;
-
-            if (!_useConnectionString)
+            if (_useConnectionString)
             {
-                var isSqliteSelected = ConnectionCredential.DatabaseType == DatabaseType.SQLite;
-                NotSqliteComponents.Visibility = VisibilityHelper.SetVisible(!isSqliteSelected);
-                SqliteComponents.Visibility = VisibilityHelper.SetVisible(isSqliteSelected);
+                return;
+            }
+
+            switch (ConnectionCredential.DatabaseType)
+            {
+                case DatabaseType.SQLite:
+                    NotSqliteComponents.Visibility = VisibilityHelper.SetVisible(false);
+                    SqliteComponents.Visibility = VisibilityHelper.SetVisible(true);
+                    break;
+                case DatabaseType.PowerBI:
+                    NotUseConnectionStringSpace.Visibility = VisibilityHelper.SetVisible(false);
+                    UseConnectionString = true;
+                    break;
+                default:
+                    break;
             }
         }
     }
