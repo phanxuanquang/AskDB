@@ -9,6 +9,8 @@
   
 Introducing **AskDB**, an AI agent that lets you interact with your databases in a natural, intuitive way. You can ask questions, get insights, and even let AskDB handle complex data-related tasks without needing deep knowledge about SQL or database management.
 
+![image](https://github.com/user-attachments/assets/49295d11-d439-4e63-b24f-e2f8014452bc)
+
 AskDB is designed to be your go-to tool for interacting with databases, whether you're a business analyst, data scientist, manager, or just someone who needs to work with data. It makes data tasks easier and safer, so you can focus on what matters most.
 
 For further details, please refer to the showcasing video below!
@@ -17,7 +19,6 @@ For further details, please refer to the showcasing video below!
 
 
 ## **Who benefits from AskDB**
-
 *   **Business Analysts & Strategists:** Get answers faster. Ask complex questions and get insights without needing to be a database expert. This means quicker, smarter decisions.
 *   **Data Scientists:** Save time on routine tasks. Let AskDB handle initial data checks and basic troubleshooting, so you can focus on advanced analysis and modeling.
 *   **Managers & Decision Makers:** Understand your business better. Get clear reports and summaries in plain language, helping you act quickly on what your data is telling you.
@@ -40,13 +41,13 @@ AskDB supports 5 popular database providers as listed below, so you can work wit
 No matter how complex your database is and how many tables it has, AskDB can help you understand and manage it easily.
 
 ## **What can AskDB do**
+![image](https://github.com/user-attachments/assets/ae10a017-1986-4c4c-a72c-f084e6d38c9c)
+
 > _In this section, the `AdventureWorksDW2019` database is used for demonstration. AdventureWorks is a large-scale sample data warehouse provided by Microsoft, designed for simulating real-world business analytics scenarios, it can be found and downloaded [**HERE**](https://learn.microsoft.com/en-us/sql/samples/adventureworks-install-configure)_
 
 AskDB can understands your questions and gives you clear answers, even if you're not a database expert. No need for complex code for many tasks, just tell AskDB what you need in everyday words.
 
 In addition, AskDB provides you with dynamic, context-aware suggestions for follow-up questions, data filters, and analytical approaches, tailoring the interaction to your evolving needs and the Agent's own discoveries during its autonomous operation.
-
-![image](https://github.com/user-attachments/assets/fff9f171-28b3-439c-82a7-46aa509f1ad6)
 
 Just provide AskDB with a data-related objective or task, and it will independently devise and execute a multi-step plan to achieve it. This includes understanding complex requests, clarifying your requirements, breaking them down, and managing the workflow through to completion.
 
